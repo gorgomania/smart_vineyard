@@ -1,0 +1,29 @@
+<header>
+    <div class="header">
+        <%= link_to folders_path, class: "logo_link" do %>
+            <img src="http://localhost:3000/logo.png" id = "logo_img" alt="Logo">
+        <%end%>
+        <%= form_for(:photos, url: :photos, html: { method: :get }, class: "search_wrapper") do |f| %>
+          <div class="field">
+            <%= f.text_field :name, id: "search_input", autofocus: true, autocomplete: "name", value: nil, placeholder: "Поиск файлов" %>
+          </div>
+          <div class="actions search_button">
+            <%= f.submit "Поиск", :type => :image, :src => "http://localhost:3000/search.png", class: "search_img" %>
+          </div>
+        <% end %>
+        <div class="buttons">
+            <%= link_to folders_path do %>
+                <img src="http://localhost:3000/explorer.png" alt="Explorer" class = "icon">
+                <span>Проводник</span>
+            <%end%>
+            <%= link_to maps_path do%>
+                <img src="http://localhost:3000/map.png" alt="Map" class = "icon">
+                <span>Карта</span>
+            <%end%>
+            <%= link_to results_path do%>
+                <img src="http://localhost:3000/result.png" alt="Result" class = "icon">
+                <span>Статистика</span>
+            <%end%>
+        </div>
+    </div>
+</header>
