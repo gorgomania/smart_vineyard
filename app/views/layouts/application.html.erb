@@ -23,7 +23,11 @@
     <%= javascript_include_tag "script" %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="bg-[#f2f2f2]">
+    <%= render template: "layouts/header" %>
+    <main class = "mt-[99.4px] py-5 px-[74px]">
+      <%= yield %>
+    </main>
+    <%= render template: "layouts/footer" %>
   </body>
 </html>
