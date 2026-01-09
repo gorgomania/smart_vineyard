@@ -19,15 +19,10 @@
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "jquery" %>
-    <%= javascript_include_tag "script" %>
+    <%= javascript_importmap_tags %>
   </head>
 
   <body class="bg-[#f2f2f2]">
-    <%= render template: "layouts/header" %>
-    <main class = "mt-[99.4px] py-5 px-[74px]">
       <%= yield %>
-    </main>
-    <%= render template: "layouts/footer" %>
   </body>
 </html>

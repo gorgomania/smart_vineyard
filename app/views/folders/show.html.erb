@@ -1,0 +1,40 @@
+<%= render template: "layouts/header" %>
+    <main class = "mt-[106px] py-4 px-[74px]">
+        <div class = "flex gap-1">
+            <% if !@folder.parent_id.nil? %>
+                <%= link_to folder_path(@folder.parent_id), class: "p-[10px] rounded-[12px] hover:bg-[white]" do %>
+                  <img src="http://localhost:3000/back.png" alt="Back" class = "w-8 h-8">
+                <% end %>
+            <% end %>
+            <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]" do %>
+                <img src="http://localhost:3000/create_folder.png" alt="Create folder" class = "min-w-8 h-8">
+            <% end %>
+            <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]" do %>
+                <img src="http://localhost:3000/upload_file.png" alt="Upload file" class = "min-w-8 h-8">
+            <% end %>
+        </div>
+        <% flash.each do |type, msg| %>
+            <div class = "mt-5 px-3 h-[64px] w-[280px] border border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] rounded-lg flex items-center justify-center">
+                <%= msg %>
+            </div>
+        <% end %>
+        <div class = "mt-4 grid grid-cols-10 gap-[10px]">
+            <% @childrens.each do |children| %>
+                <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] text-[16px] gap-1 py-1">
+                    <div class = "flex justify-end w-full">
+                        <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]" do %>
+                            <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
+                        <%end%>
+                        <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку '#{children.title}' вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]" do %>
+                            <img src="http://localhost:3000/trash.png" alt="Del" class = "w-4 h-4">
+                        <%end%>
+                    </div>
+                    <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
+                        <img src="http://localhost:3000/folder.png" alt="Folder" class = "min-w-22 h-16">
+                        <span><%= children.title %></span>
+                    <% end %>
+                </div>
+            <% end %>  
+        </div>
+    </main>
+<%= render template: "layouts/footer" %>

@@ -1,15 +1,24 @@
 * {
     font-family:"PT Sans", Arial, Helvetica, sans-serif;
-    font-size: 16px;
-}
-
-a {
-    color: #4e4e4e;
 }
 
 h1 {
     font-size:32px;
     color:rgb(51,51,51);
+}
+
+button {
+    cursor:pointer;
+}
+/*form_window*/
+
+.field_with_errors .auth_input {
+    width:100%;
+    border: 1px solid #910a0a;
+    background: #e7a0a0;
+    display:flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /*footer*/
