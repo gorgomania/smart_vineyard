@@ -1,0 +1,23 @@
+<%= render template: "layouts/header" %>
+<main class = "mt-[106px] py-4 px-[74px]">
+    <div class = "flex gap-1">
+        <%= nav_buttons %>
+        <%= link_to folder_path(@media_item.folder_id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]" do %>
+            <img src="http://localhost:3000/upload_file.png" alt="Upload file" class = "min-w-8 h-8">
+        <% end %>
+    </div>
+    <div class = "flex justify-between items-start text-[#333]">
+    <div>
+        <h1>Имя</h1>
+        <span class = "text-xl"><%= @media_item.media.filename%> </span>
+        <h1>Расширение</h1>
+        <span class = "text-xl"><%= @media_item.media.blob.filename.extension%> </span>
+        <h1>Размер</h1>
+        <span class = "text-xl"><%= number_to_human_size(@media_item.media.byte_size)%> </span>
+    </div>
+    <%= image_tag @media_item.media, class: "max-w-[30%]" %>
+    <div>
+        <%= button_to "Проанализировать", folder_path(@media_item.folder_id), class: "h-16 w-[280px] bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
+    </div>
+</main>
+<%= render template: "layouts/footer" %>

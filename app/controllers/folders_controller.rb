@@ -1,11 +1,25 @@
 class FoldersController < ApplicationController
+  def index
+    title_search_query = folder_params[:title]
+    if title_search_query.blank?
+      redirect_to folder_path(1)
+    else
+      @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%")
+      @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%")
+      @search_query = title_search_query
+      render "show"
+    end
+  end
   def show
     id = params[:id]
     if id.nil?
       id = 1
     end
     @folder = Folder.find(id)
+    @parent_id = @folder.parent_id
     @childrens = @folder.children
+    @media = @folder.media_items
+    @search_query = ""
   end
   def create
     title = folder_params[:title]
@@ -14,13 +28,9 @@ class FoldersController < ApplicationController
     if folder.save
       redirect_to folder_path(parent_id), notice: "Папка успешно создана."
     else
-      if folder.errors.full_messages[0] == "Title can't be blank"
-         flash.now[:alert] = "Имя не может быть пустым."
-      else
-         flash.now[:alert] = "Имя уже используется."
-      end
+      flash.now[:alert] = folder.errors[:title][0]
       @parent_id = parent_id
-      render "new"
+      render "new", status: :unprocessable_entity
     end
   end
   def new
@@ -36,13 +46,9 @@ class FoldersController < ApplicationController
     if folder.save
       redirect_to folder_path(folder.parent_id), notice: "Имя папки успешно изменено."
     else
-      if folder.errors.full_messages[0] == "Title can't be blank"
-         flash.now[:alert] = "Имя не может быть пустым."
-      else
-         flash.now[:alert] = "Имя уже используется."
-      end
+      flash.now[:alert] = folder.errors[:title][0]
       @folder = folder
-      render "edit"
+      render "edit", status: :unprocessable_entity
     end
   end
   def destroy

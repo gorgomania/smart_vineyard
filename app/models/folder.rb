@@ -1,8 +1,8 @@
 class Folder < ApplicationRecord
   belongs_to :parent, class_name: "Folder", optional: true
   has_many :children, class_name: "Folder", foreign_key: :parent_id, dependent: :destroy
-  has_many_attached :images
-  has_many_attached :videos
-  validates :title, presence: true
-  validates :title, uniqueness: { scope: :parent_id }
+  has_many :media_items
+  validates :title, presence: { message: "Имя не может быть пустым." }
+  validates :title, uniqueness: { scope: :parent_id, message: "Имя папки уже используется." }
+  validates :title, length: { maximum: 15, message: "Длина не более 15 символов." }
 end

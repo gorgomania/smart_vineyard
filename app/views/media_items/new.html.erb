@@ -1,0 +1,30 @@
+<main class="flex justify-center">
+  <div class="fixed top-[112px] w-[320px] bg-white rounded-2xl z-[2] p-5 flex flex-col items-center">
+        <div class="text-[#333] text-[22px] font-bold">
+            <span>Загрузка файлов</span>
+        </div>
+        <% flash.each do |type, message| %>
+            <% message.each do |msg|%>
+                <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+                    <%= msg %>
+                </div>
+            <%end%>
+        <% end %>
+        <%= form_with model: @media_item, local: true, class: "mt-5" do |form| %>
+            <div class="space-y-2 w-[280px]">
+                <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-purple-300 rounded-xl px-6 py-8 bg-purple-50 hover:border-purple-500 hover:bg-purple-100 cursor-pointer transition">
+                    <span class="text-sm text-[#4e4e4e]">
+                        Перетащите файлы сюда или нажмите для выбора
+                    </span>
+                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, class: "hidden" %>
+                    <%= form.text_field :folder_id, value: @folder_id.id, class: "hidden" %>
+                </label>
+                <p class="text-xs text-slate-500">
+                    Поддерживаются фото и видео до 100 МБ.
+                </p>
+            </div>
+            <%= form.submit 'Загрузить', class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+        <% end %>
+        <%= link_to "Назад", "javascript:history.back()", class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+    </div>
+</main>

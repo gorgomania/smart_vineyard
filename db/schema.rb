@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_07_123945) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_15_083727) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -43,7 +43,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_123945) do
   end
 
   create_table "folders", force: :cascade do |t|
-    t.string "title", null: false
+    t.string "title", limit: 15, null: false
     t.bigint "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -51,24 +51,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_07_123945) do
     t.index ["title", "parent_id"], name: "index_folders_on_title_and_parent_id", unique: true
   end
 
-  create_table "maps", force: :cascade do |t|
+  create_table "media_items", force: :cascade do |t|
+    t.bigint "folder_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-  end
-
-  create_table "photos", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "results", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "videos", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

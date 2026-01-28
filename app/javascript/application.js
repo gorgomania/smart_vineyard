@@ -86,10 +86,22 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
+  //Зафиксировать футер внизу окна при необходимости
   fixFooterPosition();
+
+  //Если можно перейти назад по истории
+  if (history.state?.turbo?.restorationIndex > 0) {
+    $("#back-button").show()
+  }
+
+  //Если можно перейти вперёд по истории
+  if (history.state?.turbo?.restorationIndex < history.length - 1) {
+     $("#forward-button").show()
+  }
 
   // При ресайзе окна
   $(window).off("resize.footer").on("resize.footer", fixFooterPosition);
+  
 });
 
 function fixFooterPosition() {
@@ -100,4 +112,5 @@ function fixFooterPosition() {
     $("footer").removeClass("fix_footer");
     $("header").css("padding-right", "");
   }
+  $("footer").css("display", "flex")
 }

@@ -3,12 +3,13 @@
       <div class="text-[#333] text-[22px] font-bold">
           <span>Создание папки</span>
       </div>
+
       <% flash.each do |type, msg| %>
         <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
             <%= msg %>
         </div>
       <% end %>
-
+      
       <%= form_for(:folders, url: :folders, html: { method: :post }) do |f| %>
       
       <div class = "field">
@@ -25,6 +26,6 @@
       </div>
       <% end %>
 
-      <%= link_to "Назад", folder_path(@parent_id), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+      <%= link_to "Назад", "javascript:history.back()", class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
     </div>
 </main>
