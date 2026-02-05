@@ -1,5 +1,5 @@
 <%= render template: "layouts/header" %>
-    <main class = "mt-[106px] py-4 px-[74px]">
+    <main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
         <div class = "flex gap-1">
             <%= nav_buttons %>
             <% if @search_query.blank? %>
@@ -45,7 +45,14 @@
                             <%end%>
                         </div>
                         <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
-                            <%= image_tag file.media, class: "w-33 h-24" %>
+                            <% if file.media.image? %>
+                                <%= image_tag file.media, class: "w-33 h-24" %>
+                            <% else %>
+                                <div class = "flex flex-col items-center">
+                                    <%= image_tag file.video_preview, class: "w-33 h-24" %>
+                                    <%= image_tag "http://localhost:3000/video_play.png", class: "w-6 h-6 relative -top-9 -mt-6" %>
+                                </div>
+                            <% end %>
                             <span> <%= file.media.filename.to_s[0, 15]%> </span>
                         <% end %>   
                     </div>

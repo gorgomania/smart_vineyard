@@ -98,6 +98,7 @@ GEM
     erubi (1.13.1)
     et-orbi (1.4.0)
       tzinfo
+    ffmpeg (0.2.5)
     fugit (1.12.1)
       et-orbi (~> 1.4)
       raabro (~> 1.4)
@@ -330,6 +331,7 @@ DEPENDENCIES
   bootsnap
   brakeman
   debug
+  ffmpeg
   importmap-rails
   jbuilder
   kamal

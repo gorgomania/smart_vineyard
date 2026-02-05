@@ -24,14 +24,12 @@ class MediaItemsController < ApplicationController
     if successfull_uploads_counter.nonzero?
       redirect_to folder_path(folder_id), notice: "Файлы в количестве #{successfull_uploads_counter} успешно загружены."
     else
-      @folder_id = Folder.find(folder_id)
-      @media_item = MediaItem.new
       if filesave_errors.presence
-        flash.now[:alert] = filesave_errors
+        errors_messages = filesave_errors
       else
-        flash.now[:alert] = [ "Сначала выберите файл." ]
+        errors_messages = [ "Сначала выберите файл." ]
       end
-      render "new", status: :unprocessable_entity
+      redirect_to new_media_item_path(folder_id: folder_id), alert: errors_messages
     end
   end
 

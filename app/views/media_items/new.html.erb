@@ -10,18 +10,19 @@
                 </div>
             <%end%>
         <% end %>
-        <%= form_with model: @media_item, local: true, class: "mt-5" do |form| %>
-            <div class="space-y-2 w-[280px]">
-                <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-purple-300 rounded-xl px-6 py-8 bg-purple-50 hover:border-purple-500 hover:bg-purple-100 cursor-pointer transition">
-                    <span class="text-sm text-[#4e4e4e]">
+        <%= form_with model: @media_item, local: true, data: {turbo: false}, class: "mt-5" do |form| %>
+            <div class="space-y-3 w-[280px]">
+                <label id = "dropZone" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-purple-300 rounded-xl px-6 py-8 bg-purple-50 hover:border-purple-500 hover:bg-purple-100 cursor-pointer transition">
+                    <span class="text-sm text-[#4e4e4e] pointer-events-none">
                         Перетащите файлы сюда или нажмите для выбора
                     </span>
-                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, class: "hidden" %>
+                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, id: "fileInput",class: "hidden" %>
                     <%= form.text_field :folder_id, value: @folder_id.id, class: "hidden" %>
                 </label>
-                <p class="text-xs text-slate-500">
+                <p class="text-xs text-slate-500 mb-0">
                     Поддерживаются фото и видео до 100 МБ.
                 </p>
+                <div id = "preview-container" class = "grid grid-cols-3 gap-4"></div>
             </div>
             <%= form.submit 'Загрузить', class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
         <% end %>

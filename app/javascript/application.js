@@ -86,31 +86,206 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
-  //Зафиксировать футер внизу окна при необходимости
-  fixFooterPosition();
-
   //Если можно перейти назад по истории
-  if (history.state?.turbo?.restorationIndex > 0) {
+  if (window.navigation.canGoBack) {
     $("#back-button").show()
   }
 
   //Если можно перейти вперёд по истории
-  if (history.state?.turbo?.restorationIndex < history.length - 1) {
-     $("#forward-button").show()
+  if (window.navigation.canGoForward) {
+    $("#forward-button").show()
   }
 
-  // При ресайзе окна
-  $(window).off("resize.footer").on("resize.footer", fixFooterPosition);
-  
+  //Обработка выбора файлов через проводник
+  $('#fileInput').on('change', function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      $("#preview-container").empty()
+      const dataTransfer = new DataTransfer();
+      const fileInput = document.getElementById("fileInput");
+      // Проверяем добавленные файлы на тип данных
+      const existingFiles = fileInput.files;
+      const filesToPreview = []
+      for (let i = 0; i < existingFiles.length; i++) {
+          if (existingFiles[i].type.startsWith('image/') || existingFiles[i].type.startsWith('video/')) {
+            dataTransfer.items.add(existingFiles[i]);
+            filesToPreview.push(existingFiles[i]);
+          }
+      }
+      fileInput.files = dataTransfer.files;
+      showPreview(filesToPreview)
+  });
+
+  //Объект вошёл в зону броска
+  $("#dropZone").on('dragenter dragover', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    $(this).addClass("border-purple-500 bg-purple-100")
+  });
+
+  //Объект вышёл из зоны броска
+  $("#dropZone").on('dragleave', function () {
+    $(this).removeClass("border-purple-500 bg-purple-100")
+  });
+
+  //Объект бросили в зону
+  $("#dropZone").on('drop', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    $(this).removeClass("border-purple-500 bg-purple-100")
+    const newFiles = event.originalEvent.dataTransfer.files;
+    addFilesWithCheckDuplicates(newFiles)
+  });
 });
 
-function fixFooterPosition() {
-  if ($("body").height() + $("header").height() < $(window).height() - 30) {
-    $("footer").addClass("fix_footer");
-    $("header").css("padding-right", "91.5px");
-  } else {
-    $("footer").removeClass("fix_footer");
-    $("header").css("padding-right", "");
-  }
-  $("footer").css("display", "flex")
+function addFilesWithCheckDuplicates(newFiles) {
+    const dataTransfer = new DataTransfer();
+    const fileInput = document.getElementById("fileInput");
+    // Получаем текущие файлы
+    const existingFiles = fileInput.files;
+    // Создаем Map для быстрой проверки дубликатов по имени и размеру
+    const existingFilesMap = new Map();
+    if (existingFiles) {
+      for (let i = 0; i < existingFiles.length; i++) {
+          const key = `${existingFiles[i].name}_${existingFiles[i].size}`;
+          existingFilesMap.set(key, existingFiles[i]);
+      }
+    }
+    //Добавляем уже существующие файлы из инпут
+    if (existingFiles) {
+      for (let i = 0; i < existingFiles.length; i++) {
+          dataTransfer.items.add(existingFiles[i]);
+      }
+    }
+    // 2. Добавляем только НОВЫЕ файлы (без дубликатов) с проверкой, что файл видео или фото
+    const filesToPreview = [];
+    for (let i = 0; i < newFiles.length; i++) {
+      const key = `${newFiles[i].name}_${newFiles[i].size}`;
+      if ((newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/')) && !existingFilesMap.has(key)) {
+        // Это новый файл, добавляем
+        dataTransfer.items.add(newFiles[i]);
+        filesToPreview.push(newFiles[i]);
+      }
+    }
+    fileInput.files = dataTransfer.files;
+    //Показывает preview
+    showPreview(filesToPreview);
 }
+
+function showPreview(files) {
+  Array.from(files).forEach((file) => {
+    const isVideo = file.type.startsWith('video/');
+    if (isVideo) {
+      createVideoPreview(file)
+    }
+    else {
+      createImagePreview(file)
+    }
+  });
+}
+
+function createImagePreview(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    createPreviewWrapper(e.target.result, file);
+  };
+  reader.readAsDataURL(file);
+}
+
+function createVideoPreview(file) {
+  const video = document.createElement('video');
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    video.src = e.target.result;
+    video.muted = true;
+    video.crossOrigin = 'anonymous';
+    
+    // Когда видео загрузит метаданные
+    video.onloadedmetadata = function() {
+      video.currentTime =video.duration * 0.1;
+    };
+    
+    // Когда видео готово к отрисовке кадра
+    video.onseeked = function() {
+      // Создаем canvas для извлечения кадра
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Получаем Data URL из canvas
+      const url = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Создаем превью с миниатюрой
+      createPreviewWrapper(url, file);
+      
+      // Очищаем video элемент
+      video.src = '';
+      video.remove();
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function createPreviewWrapper(url, file) {
+    // Создаём контейнер элемента Preview
+    const previewContainer = $("#preview-container")
+    const previewWrapper = document.createElement('div');
+    previewWrapper.style.position = 'relative';
+    // Создаем объект изображения
+    const img = new Image();
+    img.src = url;
+    // Создаем объект кнопки удаления изображения
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.innerHTML = '&times;'; // крестик
+    removeBtn.style.position = 'absolute';
+    removeBtn.style.top = '-12px'; // Немного выше изображения
+    removeBtn.style.right = '-12px'; // Немного правее изображения
+    removeBtn.style.zIndex = '10'; // Чтобы кнопка была поверх изображения
+    removeBtn.style.fontSize = '16px';
+    removeBtn.style.width = '24px';
+    removeBtn.style.height = '24px';
+    removeBtn.style.borderRadius = '50%';
+    removeBtn.style.background = '#8a579f';
+    //Обработчик нажатия на кнопку удаления
+    removeBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      previewWrapper.remove();
+      const fileInput = document.getElementById("fileInput");
+      // Получаем текущие файлы
+      const existingFiles = fileInput.files;
+      const dataTransfer = new DataTransfer();
+      if (existingFiles) {
+        for (let i = 0; i < existingFiles.length; i++) {
+          if (existingFiles[i].name != file.name) {
+            dataTransfer.items.add(existingFiles[i]);
+          }
+        }
+      }
+      fileInput.files = dataTransfer.files;
+      if (previewContainer.children().length == 0) {
+        previewContainer.removeClass("mt-3")
+      }
+    });
+    // Добавляем изображение и кнопку в один контейнер
+    previewWrapper.appendChild(img);
+    previewWrapper.appendChild(removeBtn);
+    if (file.type.startsWith('video/')) {
+      const video_play_icon = new Image()
+      video_play_icon.src = "http://localhost:3000/video_play_violet.png"
+      video_play_icon.className = "w-3 h-3 absolute top-[14.5px] left-[35.5px]"
+      previewWrapper.appendChild(video_play_icon);
+    }
+    // Добавляем обработчики
+    img.onload = function() {
+      // Добавляем в контейнер для Preview
+      if (previewContainer.css("margin-top") == "0px") {
+        previewContainer.addClass("mt-3") 
+      }
+      previewContainer.append(previewWrapper);
+    };
+};
