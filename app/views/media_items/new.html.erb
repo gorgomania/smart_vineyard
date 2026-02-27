@@ -1,26 +1,28 @@
 <main class="flex justify-center">
-  <div class="fixed top-[112px] w-[320px] bg-white rounded-2xl z-[2] p-5 flex flex-col items-center">
+    <div class="mt-28 w-80 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center">
         <div class="text-[#333] text-[22px] font-bold">
             <span>Загрузка файлов</span>
         </div>
-        <% flash.each do |type, message| %>
-            <% message.each do |msg|%>
-                <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
-                    <%= msg %>
-                </div>
-            <%end%>
-        <% end %>
+        <div id = "error-container">
+            <% flash.each do |type, message| %>
+                <% message.each do |msg|%>
+                    <div class = "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+                        <%= msg %>
+                    </div>
+                <% end %>
+            <% end %>
+        </div>
         <%= form_with model: @media_item, local: true, data: {turbo: false}, class: "mt-5" do |form| %>
-            <div class="space-y-3 w-[280px]">
+            <div class="space-y-3 w-70">
                 <label id = "dropZone" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-purple-300 rounded-xl px-6 py-8 bg-purple-50 hover:border-purple-500 hover:bg-purple-100 cursor-pointer transition">
                     <span class="text-sm text-[#4e4e4e] pointer-events-none">
                         Перетащите файлы сюда или нажмите для выбора
                     </span>
-                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, id: "fileInput",class: "hidden" %>
-                    <%= form.text_field :folder_id, value: @folder_id.id, class: "hidden" %>
+                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, id: "fileInput", class: "hidden" %>
+                    <%= form.hidden_field :folder_id, value: @folder_id.id%>
                 </label>
                 <p class="text-xs text-slate-500 mb-0">
-                    Поддерживаются фото и видео до 100 МБ.
+                    Поддерживаются фото и видео до 500 МБ.
                 </p>
                 <div id = "preview-container" class = "grid grid-cols-3 gap-4"></div>
             </div>

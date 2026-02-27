@@ -2,8 +2,8 @@
 <main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
     <div class = "flex gap-1">
         <%= nav_buttons %>
-        <%= link_to folder_path(@media_item.folder_id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]" do %>
-            <img src="http://localhost:3000/upload_file.png" alt="Upload file" class = "min-w-8 h-8">
+        <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
+            <img src="http://localhost:3000/download_file.png" alt="Download file" class = "min-w-8 h-8">
         <% end %>
     </div>
     <div class = "flex justify-between items-start text-[#333]">

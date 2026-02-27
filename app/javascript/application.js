@@ -100,6 +100,8 @@ document.addEventListener("turbo:load", function() {
   $('#fileInput').on('change', function(event) {
       event.preventDefault();
       event.stopPropagation();
+      const errorContainer = $("#error-container")
+      errorContainer.empty()
       $("#preview-container").empty()
       const dataTransfer = new DataTransfer();
       const fileInput = document.getElementById("fileInput");
@@ -107,10 +109,28 @@ document.addEventListener("turbo:load", function() {
       const existingFiles = fileInput.files;
       const filesToPreview = []
       for (let i = 0; i < existingFiles.length; i++) {
+        //Файл подходящего размера <= 500МБ
+        if (existingFiles[i].size <= 524288000) {
+          //Файл подходящего типа
           if (existingFiles[i].type.startsWith('image/') || existingFiles[i].type.startsWith('video/')) {
             dataTransfer.items.add(existingFiles[i]);
             filesToPreview.push(existingFiles[i]);
           }
+          else {
+            const erorrWrapper = $("<div>", {
+              class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
+              html: "Недопустимый тип файла " + existingFiles[i].name + "."
+            })
+            errorContainer.append(erorrWrapper)
+          }
+        }
+        else {
+          const erorrWrapper = $("<div>", {
+              class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
+              html: "Недопустимый размер файла " + existingFiles[i].name + "."
+          })
+          errorContainer.append(erorrWrapper)
+        }
       }
       fileInput.files = dataTransfer.files;
       showPreview(filesToPreview)
@@ -130,6 +150,7 @@ document.addEventListener("turbo:load", function() {
 
   //Объект бросили в зону
   $("#dropZone").on('drop', function (event) {
+    $("#error-container").empty()
     event.preventDefault();
     event.stopPropagation();
     $(this).removeClass("border-purple-500 bg-purple-100")
@@ -161,10 +182,31 @@ function addFilesWithCheckDuplicates(newFiles) {
     const filesToPreview = [];
     for (let i = 0; i < newFiles.length; i++) {
       const key = `${newFiles[i].name}_${newFiles[i].size}`;
-      if ((newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/')) && !existingFilesMap.has(key)) {
-        // Это новый файл, добавляем
-        dataTransfer.items.add(newFiles[i]);
-        filesToPreview.push(newFiles[i]);
+      //Файл подходящего размера <= 500МБ
+      if (newFiles[i].size <= 524288000) {
+        console.log(newFiles[i].size)
+         //Файл подходящего типа
+        if ((newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/'))) {
+          // Это новый файл, добавляем
+          if (!existingFilesMap.has(key)) {
+            dataTransfer.items.add(newFiles[i]);
+            filesToPreview.push(newFiles[i]);
+          }
+        }
+        else {
+          const erorrWrapper = $("<div>", {
+            class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
+            html: "Недопустимый тип файла " + newFiles[i].name + "."
+          })
+          $("#error-container").append(erorrWrapper)
+        }  
+      }
+      else {
+        const erorrWrapper = $("<div>", {
+          class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
+          html: "Недопустимый размер файла " + newFiles[i].name + "."
+        })
+        $("#error-container").append(erorrWrapper)
       }
     }
     fileInput.files = dataTransfer.files;
@@ -216,7 +258,7 @@ function createVideoPreview(file) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       // Получаем Data URL из canvas
-      const url = canvas.toDataURL('image/jpeg', 0.8);
+      const url = canvas.toDataURL('image/jpeg');
       
       // Создаем превью с миниатюрой
       createPreviewWrapper(url, file);
@@ -239,17 +281,8 @@ function createPreviewWrapper(url, file) {
     img.src = url;
     // Создаем объект кнопки удаления изображения
     const removeBtn = document.createElement('button');
-    removeBtn.className = 'remove-btn';
+    removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white';
     removeBtn.innerHTML = '&times;'; // крестик
-    removeBtn.style.position = 'absolute';
-    removeBtn.style.top = '-12px'; // Немного выше изображения
-    removeBtn.style.right = '-12px'; // Немного правее изображения
-    removeBtn.style.zIndex = '10'; // Чтобы кнопка была поверх изображения
-    removeBtn.style.fontSize = '16px';
-    removeBtn.style.width = '24px';
-    removeBtn.style.height = '24px';
-    removeBtn.style.borderRadius = '50%';
-    removeBtn.style.background = '#8a579f';
     //Обработчик нажатия на кнопку удаления
     removeBtn.addEventListener('click', function(e) {
       e.preventDefault();
