@@ -184,7 +184,6 @@ function addFilesWithCheckDuplicates(newFiles) {
       const key = `${newFiles[i].name}_${newFiles[i].size}`;
       //Файл подходящего размера <= 500МБ
       if (newFiles[i].size <= 524288000) {
-        console.log(newFiles[i].size)
          //Файл подходящего типа
         if ((newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/'))) {
           // Это новый файл, добавляем
@@ -236,39 +235,34 @@ function createImagePreview(file) {
 
 function createVideoPreview(file) {
   const video = document.createElement('video');
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    video.src = e.target.result;
-    video.muted = true;
-    video.crossOrigin = 'anonymous';
-    
-    // Когда видео загрузит метаданные
-    video.onloadedmetadata = function() {
-      video.currentTime =video.duration * 0.1;
-    };
-    
-    // Когда видео готово к отрисовке кадра
-    video.onseeked = function() {
-      // Создаем canvas для извлечения кадра
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
-      
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Получаем Data URL из canvas
-      const url = canvas.toDataURL('image/jpeg');
-      
-      // Создаем превью с миниатюрой
-      createPreviewWrapper(url, file);
-      
-      // Очищаем video элемент
-      video.src = '';
-      video.remove();
-    };
+  video.src = URL.createObjectURL(file);
+  video.muted = true;
+  video.crossOrigin = 'anonymous';
+  // Когда видео загрузит метаданные
+  video.onloadedmetadata = function() {
+
+    video.currentTime =video.duration * 0.1;
   };
-  reader.readAsDataURL(file);
+  // Когда видео готово к отрисовке кадра
+  video.onseeked = function() {
+    // Создаем canvas для извлечения кадра
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Получаем Data URL из canvas
+    const url = canvas.toDataURL('image/jpeg');
+    // Создаем превью с миниатюрой
+    createPreviewWrapper(url, file);
+    
+    // Очищаем video элемент
+    URL.revokeObjectURL(video.src);
+    video.src = '';
+    video.remove();
+  };
 }
 
 function createPreviewWrapper(url, file) {
