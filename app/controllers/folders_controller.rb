@@ -2,7 +2,7 @@ class FoldersController < ApplicationController
   def index
     title_search_query = folder_params[:title]
     if title_search_query.blank?
-      redirect_to folder_path(1)
+      redirect_to root_path
     else
       @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%")
       @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%")
@@ -13,9 +13,14 @@ class FoldersController < ApplicationController
   def show
     id = params[:id]
     if id.nil?
-      id = 1
+      @folder = Folder.find_or_create_by(title: "Root", parent_id: nil)
+    else
+      @folder = Folder.find_by(id: id)
+      if @folder.nil?
+        redirect_to root_path
+        return
+      end
     end
-    @folder = Folder.find(id)
     @parent_id = @folder.parent_id
     @childrens = @folder.children
     @media = @folder.media_items
@@ -55,10 +60,14 @@ class FoldersController < ApplicationController
     id = params[:id]
     parent_id = Folder.find(id).parent_id
     Folder.delete(id)
-    redirect_to folder_path(parent_id), notice: "Папка успешно удалена."
+    if parent_id
+      redirect_to folder_path(parent_id), notice: "Папка успешно удалена."
+    else
+      redirect_to folder_path, notice: "Папка успешно удалена."
+    end
   end
   private
   def folder_params
-        params.require(:folders).permit(:title, :parent_id)
+    params.require(:folders).permit(:title, :parent_id)
   end
 end

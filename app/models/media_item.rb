@@ -3,8 +3,43 @@ class MediaItem < ApplicationRecord
   has_one_attached :media
   has_one_attached :video_preview
   after_commit :generate_preview, on: [ :create ]
+  validate :validate_media_filename
+  after_destroy :purge_media_files
 
-  private
+private
+  def validate_media_filename
+    filename = media.filename.to_s
+    if filename.length == 0
+      errors.add(:media, "Имя не может быть пустым.")
+    else
+      files_in_same_folder = MediaItem.where(folder_id: folder_id).where.not(id: id).joins(media_attachment: :blob).where(active_storage_attachments: { name: "media" })
+      index = 0
+      filename_is_not_valid = true
+      while filename_is_not_valid
+        filename_is_not_valid = false
+        files_in_same_folder.each do |file|
+          if index == 0
+            if file.media.filename == filename
+              index += 1
+              filename_is_not_valid = true
+              break
+            end
+          else
+            if file.media.filename == filename + " (" + index.to_s() + ")"
+              index += 1
+              filename_is_not_valid = true
+              break
+            end
+          end
+        end
+      end
+      if index == 0
+        media.blob.update!(filename: filename)
+      else
+        media.blob.update!(filename: filename + " (" + index.to_s() + ")")
+      end
+    end
+  end
 
   def generate_preview
       return unless media.attached? && media.video?
@@ -46,10 +81,15 @@ class MediaItem < ApplicationRecord
   end
 
   def format_time(seconds)
-  # Конвертируем секунды в формат HH:MM:SS.ss
-  hours = seconds.to_i / 3600
-  minutes = (seconds.to_i % 3600) / 60
-  secs = seconds % 60
-  sprintf("%02d:%02d:%05.2f", hours, minutes, secs)
+    # Конвертируем секунды в формат HH:MM:SS.ss
+    hours = seconds.to_i / 3600
+    minutes = (seconds.to_i % 3600) / 60
+    secs = seconds % 60
+    sprintf("%02d:%02d:%05.2f", hours, minutes, secs)
+  end
+
+  def purge_media_files
+    media.purge if media.attached?
+    video_preview.purge if video_preview.attached?
   end
 end
