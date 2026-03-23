@@ -1,25 +1,25 @@
 <header class="fixed top-0 flex justify-center bg-white py-4 pl-[74px] pr-[76px] z-10">
-    <%= link_to folder_path(1) do %>
+    <%= link_to maps_path do %>
         <img src="http://localhost:3000/logo.png" class = "w-[180px] hover:opacity-[0.9]" alt="Logo">
     <%end%>
     <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-[51px]") do |f| %>
         <div class="field">
-        <%= f.text_field :title, class: "search_input p-[24px_66px_24px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-[678px] outline-none", autofocus: true, autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов" %>
+        <%= f.text_field :title, class: "search_input p-[24px_66px_24px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-[678px] outline-none", autofocus: true, autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов",  required: true %>
         </div>
         <div class="w-0 h-0">
         <%= f.submit "Поиск", :type => :image, :src => "http://localhost:3000/search.png", class: "search_img relative right-[50px] top-[22px] w-[26px] h-[26px] rounded-[12px] hover:bg-[#f2f2f2] hover:shadow-[0_0_0_10px_#f2f2f2]", title: "Поиск" %>
         </div>
     <% end %>
     <div class="flex items-end ml-[47px]">
-        <%= link_to folder_path(1), class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+        <%= link_to folders_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <img src="http://localhost:3000/explorer.png" alt="Explorer" class = "min-w-[26px] h-[26px] mb-1">
             <span>Проводник</span>
         <%end%>
-        <%= link_to folder_path(1), class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+        <%= link_to maps_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <img src="http://localhost:3000/map.png" alt="Map" class = "min-w-[26px] h-[26px] mb-1">
             <span>Карта</span>
         <%end%>
-        <%= link_to folder_path(1), class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+        <%= link_to stats_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <img src="http://localhost:3000/result.png" alt="Result" class = "min-w-[26px] h-[26px] mb-1">
             <span>Статистика</span>
         <%end%>

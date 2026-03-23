@@ -1,6 +1,8 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 import "@hotwired/turbo-rails"
 import "jquery"
+import "leaflet"
+import "leaflet-providers"
 
 window.jQuery = window.$ = $
 
@@ -86,15 +88,7 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
-  //Если можно перейти назад по истории
-  if (window.navigation.canGoBack) {
-    $("#back-button").show()
-  }
-
-  //Если можно перейти вперёд по истории
-  if (window.navigation.canGoForward) {
-    $("#forward-button").show()
-  }
+  initializeNavigation();
 
   //Обработка выбора файлов через проводник
   $('#fileInput').on('change', function(event) {
@@ -316,3 +310,25 @@ function createPreviewWrapper(url, file) {
       previewContainer.append(previewWrapper);
     };
 };
+
+window.addEventListener('popstate', function(event) {
+  initializeNavigation();
+});
+
+function initializeNavigation () {
+  //Если можно перейти назад по истории
+  if (window.navigation.canGoBack) {
+    $("#back-button").show()
+  }
+  else {
+    $("#back-button").hide()
+  }
+
+  //Если можно перейти вперёд по истории
+  if (window.navigation.canGoForward) {
+    $("#forward-button").show()
+  }
+  else {
+    $("#forward-button").hide()
+  }
+}import "controllers"

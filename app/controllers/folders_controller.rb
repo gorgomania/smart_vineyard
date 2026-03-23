@@ -1,26 +1,33 @@
 class FoldersController < ApplicationController
   def index
-    title_search_query = folder_params[:title]
-    if title_search_query.blank?
-      redirect_to root_path
-    else
-      @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%")
-      @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%")
-      @search_query = title_search_query
-      render "show"
-    end
-  end
-  def show
-    id = params[:id]
-    if id.nil?
-      @folder = Folder.find_or_create_by(title: "Root", parent_id: nil)
-    else
-      @folder = Folder.find_by(id: id)
-      if @folder.nil?
-        redirect_to root_path
+    if params[:folders]
+      title_search_query = folder_params[:title]
+      if title_search_query.present?
+        @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%")
+        @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%")
+        @search_query = title_search_query
+        render "show"
         return
       end
     end
+    @folder = Folder.find_or_create_by(title: "Root", parent_id: nil)
+    @title_path = @folder.title_path
+    @id_path = @folder.id_path
+    @parent_id = @folder.parent_id
+    @childrens = @folder.children
+    @media = @folder.media_items
+    @search_query = ""
+    render "show"
+  end
+  def show
+    id = params[:id]
+    @folder = Folder.find_by(id: id)
+    if @folder.nil?
+      redirect_to folders_path
+      return
+    end
+    @title_path = @folder.title_path
+    @id_path = @folder.id_path
     @parent_id = @folder.parent_id
     @childrens = @folder.children
     @media = @folder.media_items

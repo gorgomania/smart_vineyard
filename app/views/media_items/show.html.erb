@@ -5,11 +5,16 @@
         <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
             <img src="http://localhost:3000/download_file.png" alt="Download file" class = "min-w-8 h-8">
         <% end %>
+        <div class = "flex items-center bg-white px-4 rounded-lg">
+            <% (0...@title_path.length - 1).each do |i| %>
+                <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
+                <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+            <% end %>
+            <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
+        </div>
     </div>
-    <div class = "flex justify-between items-start text-[#333]">
+    <div class = "flex justify-between items-start text-[#333] mt-4">
         <div class = "w-[20%]">
-            <h1>Имя</h1>
-            <span class = "text-xl"><%= @media_item.media.filename%> </span>
             <h1>Расширение</h1>
             <span class = "text-xl"><%= @media_item.media.blob.filename.extension%> </span>
             <h1>Размер</h1>

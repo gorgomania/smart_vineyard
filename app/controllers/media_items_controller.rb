@@ -34,6 +34,9 @@ class MediaItemsController < ApplicationController
   def show
     @media_item = MediaItem.find(params[:id])
     @parent_id = @media_item.folder_id
+    @folder = Folder.find_by(id: @parent_id)
+    @title_path = @folder.title_path + [ @media_item.media.filename ]
+    @id_path = @folder.id_path
   end
 
   def edit
