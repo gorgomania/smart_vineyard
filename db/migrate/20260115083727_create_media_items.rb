@@ -2,7 +2,16 @@ class CreateMediaItems < ActiveRecord::Migration[8.0]
   def change
     create_table :media_items do |t|
       t.references :folder, foreign_key: { to_table: :folders, on_delete: :cascade }
+      # AI classification fields
+      t.string :ai_classification
+      t.float :ai_confidence
+      t.integer :ai_class_id
+      t.datetime :ai_classified_at
+      t.jsonb :ai_full_results, default: {}
       t.timestamps
     end
+    # Add indexes for classification search
+    add_index :media_items, :ai_classification
+    add_index :media_items, :ai_classified_at
   end
 end

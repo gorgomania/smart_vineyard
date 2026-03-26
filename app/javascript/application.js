@@ -151,7 +151,48 @@ document.addEventListener("turbo:load", function() {
     const newFiles = event.originalEvent.dataTransfer.files;
     addFilesWithCheckDuplicates(newFiles)
   });
+
+  //Замена меню при ресайзе
+  $(window).on('resize', function() {
+    handleMenuVisibility();
+  });
+
+  //Замена меню при рендере
+  handleMenuVisibility()
+
+  $('#burgerMenu').on('click', function () {
+    const $dropMenu = $("#dropMenu");
+    const $overlay = $("#overlay");
+    if ($dropMenu.hasClass("hidden")) {
+      $dropMenu.removeClass("hidden");
+      $overlay.removeClass("hidden").removeClass('opacity-0 invisible pointer-events-none').addClass('opacity-50 visible pointer-events-auto');
+    }
+    else {
+      $dropMenu.addClass("hidden").slideUp(300);
+      $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
+    }
+  });
+
+  $('#overlay').on('click', function () {
+    const $dropMenu = $("#dropMenu");
+    const $overlay = $("#overlay");
+    $dropMenu.addClass("hidden").slideUp(300);
+    $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
+  });
 });
+
+function handleMenuVisibility() {
+    const windowWidth = window.innerWidth;
+    if (windowWidth < 1100) {
+      $('#desktopMenu').addClass("hidden");
+      $('#burgerMenu').removeClass("hidden");
+    } else {
+      $("#dropMenu").addClass("hidden");
+      $("#overlay").addClass("hidden");
+      $('#burgerMenu').addClass("hidden");
+      $('#desktopMenu').removeClass("hidden");
+    }
+  }
 
 function addFilesWithCheckDuplicates(newFiles) {
     const dataTransfer = new DataTransfer();

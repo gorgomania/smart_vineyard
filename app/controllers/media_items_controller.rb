@@ -63,6 +63,13 @@ class MediaItemsController < ApplicationController
     redirect_to folder_path(folder_id), notice: "Файл успешно удален."
   end
 
+  def classify
+    id = params[:id]
+    media_item = MediaItem.find(id)
+    media_item.classify!
+    redirect_to media_item_path(id)
+  end
+
 private
   def media_item_params
     params.require(:media_item).permit(:folder_id, :filename, media: [])

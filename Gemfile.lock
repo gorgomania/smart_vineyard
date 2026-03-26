@@ -98,6 +98,8 @@ GEM
     erubi (1.13.1)
     et-orbi (1.4.0)
       tzinfo
+    ffi (1.17.3-x64-mingw-ucrt)
+    ffi (1.17.3-x86_64-linux-gnu)
     ffmpeg (0.2.5)
     fugit (1.12.1)
       et-orbi (~> 1.4)
@@ -106,6 +108,9 @@ GEM
       activesupport (>= 6.1)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
+    image_processing (1.14.0)
+      mini_magick (>= 4.9.5, < 6)
+      ruby-vips (>= 2.0.17, < 3)
     importmap-rails (2.2.2)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
@@ -143,6 +148,8 @@ GEM
       net-pop
       net-smtp
     marcel (1.1.0)
+    mini_magick (5.3.1)
+      logger
     mini_mime (1.1.5)
     minitest (5.26.2)
     msgpack (1.8.0)
@@ -165,6 +172,11 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.10-x86_64-linux-gnu)
       racc (~> 1.4)
+    numo-narray (0.9.2.1)
+    onnxruntime (0.11.1-x64-mingw)
+      ffi
+    onnxruntime (0.11.1-x86_64-linux)
+      ffi
     ostruct (0.6.3)
     parallel (1.27.0)
     parser (3.3.10.0)
@@ -263,6 +275,9 @@ GEM
       rubocop-performance (>= 1.24)
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
+    ruby-vips (2.3.0)
+      ffi (~> 1.12)
+      logger
     securerandom (0.4.1)
     solid_cable (3.0.12)
       actioncable (>= 7.2)
@@ -332,9 +347,13 @@ DEPENDENCIES
   brakeman
   debug
   ffmpeg
+  image_processing
   importmap-rails
   jbuilder
   kamal
+  mini_magick
+  numo-narray
+  onnxruntime
   pg (~> 1.1)
   propshaft
   puma (>= 5.0)

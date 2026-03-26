@@ -27,13 +27,13 @@
         <% end %>
         <% if @search_query.present? && @childrens.empty? && @media.empty?%>
             <div class="mt-4 text-[#333]">
-                <span> В результате поиска не обнаружено файлов и папок с похожим именем.</span>
+                <span> В результате поиска не обнаружено папок и файлов с похожим именем.</span>
             </div>
         <% else %>
-            <div class = "mt-4 grid grid-cols-8 gap-[10px]">
+            <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(164.75px,1fr))] gap-[10px]">
                 <% @childrens.each do |children| %>
                     <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
-                        <div class = "flex justify-end w-full">
+                        <div class = "flex justify-end w-full max-w-33">
                             <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                                 <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
                             <%end%>
@@ -50,7 +50,7 @@
                 <% @media.each do |file| %>
                     <% if file.media.attached? %>
                         <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
-                            <div class = "flex justify-end w-full">
+                            <div class = "flex justify-end w-full max-w-33">
                                 <%= button_to edit_media_item_path(file.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                                     <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
                                 <%end%>
@@ -74,6 +74,5 @@
                 <% end %>
             </div>
         <% end %>
-        
     </main>
 <%= render template: "layouts/footer" %>
