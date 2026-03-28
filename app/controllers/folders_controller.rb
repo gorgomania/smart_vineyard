@@ -6,6 +6,11 @@ class FoldersController < ApplicationController
         @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%")
         @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%")
         @search_query = title_search_query
+        if params[:page].nil?
+          @page = 1
+        else
+          @page = params[:page].to_i
+        end
         render "show"
         return
       end
@@ -16,6 +21,7 @@ class FoldersController < ApplicationController
     @parent_id = @folder.parent_id
     @childrens = @folder.children
     @media = @folder.media_items
+    @page = 1
     @search_query = ""
     render "show"
   end
@@ -32,6 +38,11 @@ class FoldersController < ApplicationController
     @childrens = @folder.children
     @media = @folder.media_items
     @search_query = ""
+    if params[:page].nil?
+      @page = 1
+    else
+      @page = params[:page].to_i
+    end
   end
   def create
     title = folder_params[:title]

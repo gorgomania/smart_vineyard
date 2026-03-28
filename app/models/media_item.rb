@@ -57,34 +57,38 @@ private
   end
 
   def generate_preview
-      return unless media.attached? && media.video?
-      return if video_preview.attached?
-      # Получаем blob
-      blob = media.blob
-      # Получаем путь к файлу
-      file_path = blob.service.send(:path_for, blob.key)
-      duration = get_video_duration(file_path)
-      # Вычисляем время для скриншота (10% от продолжительности, но не более 30 секунд)
-      screenshot_time = duration * 0.1
-      # Форматируем время для FFmpeg (HH:MM:SS.ss)
-      time_formatted = format_time(screenshot_time)
-      # Используем FFmpeg для создания превью
-      preview_path = Rails.root.join("tmp", "preview_#{id}.jpg")
+    return unless media.attached? && media.video?
+    return if video_preview.attached?
+    # Получаем blob
+    blob = media.blob
+    # Получаем путь к файлу
+    file_path = blob.service.send(:path_for, blob.key)
+    duration = get_video_duration(file_path)
+    # Вычисляем время для скриншота (10% от продолжительности, но не более 30 секунд)
+    screenshot_time = duration * 0.1
+    # Форматируем время для FFmpeg (HH:MM:SS.ss)
+    time_formatted = format_time(screenshot_time)
+    # Используем FFmpeg для создания превью
+    preview_path = Rails.root.join("tmp", "preview_#{id}.jpg")
 
-      # Берем кадр на 1-й секунде
-      system(
-        "ffmpeg", "-i", file_path,
-        "-ss", time_formatted,
-        "-vframes", "1",
-        "-q:v", "2",
-        preview_path.to_s
-      )
-
-      video_preview.attach(
-        io: File.open(preview_path),
-        filename: "preview_#{blob.filename.base}.jpg",
-        content_type: "image/jpeg"
-      )
+    # Берем кадр на 1-й секунде
+    system(
+      "ffmpeg", "-i", file_path,
+      "-ss", time_formatted,
+      "-vframes", "1",
+      "-q:v", "2",
+      preview_path.to_s
+    )
+    file = File.open(preview_path)
+    video_preview.attach(
+      io: file,
+      filename: "preview_#{blob.filename.base}.jpg",
+      content_type: "image/jpeg"
+    )
+    file.close
+  ensure
+    # Удаляем временный файл в любом случае
+    File.delete(preview_path) if preview_path && File.exist?(preview_path)
   end
 
   def get_video_duration(file_path)

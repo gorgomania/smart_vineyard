@@ -34,8 +34,6 @@ class GrapeClassifier
       @class_names ||= JSON.parse(
         File.read(Rails.root.join("app/models/onnx/class_names.json"))
       )
-    rescue
-      [ "Сорт 1", "Сорт 2", "Сорт 3" ]
     end
   end
 
@@ -113,37 +111,6 @@ class GrapeClassifier
     # Получаем пиксели
     pixels = image.get_pixels
 
-    Rails.logger.info "Pixels structure: #{pixels.size}x#{pixels.first&.size}x#{pixels.first&.first&.size}"
-
-    # Конвертируем градации серого в RGB
-    processed_pixels = []
-
-    IMAGE_SIZE.times do |h|
-      row = []
-      IMAGE_SIZE.times do |w|
-        pixel = pixels[h][w]
-
-        if pixel.is_a?(Array)
-          if pixel.size == 1
-            # Градации серого
-            gray_value = pixel[0]
-            row << [ gray_value, gray_value, gray_value ]
-          elsif pixel.size >= 3
-            # RGB или RGBA - берем первые 3 канала
-            row << pixel[0..2]
-          else
-            # Неожиданный формат
-            row << [ pixel[0], pixel[0], pixel[0] ]
-          end
-        else
-          # Числовое значение
-          gray_value = pixel
-          row << [ gray_value, gray_value, gray_value ]
-        end
-      end
-      processed_pixels << row
-    end
-
     # Нормализация
     tensor_data = []
 
@@ -152,13 +119,12 @@ class GrapeClassifier
 
       IMAGE_SIZE.times do |h|
         IMAGE_SIZE.times do |w|
-          pixel_value = processed_pixels[h][w][c]
-
-          if pixel_value.nil?
-            raise "No channel #{c} at pixel (#{h}, #{w})"
+          if pixels[h][w].nil? || pixels[h][w][c].nil?
+            Rails.logger.info "h=#{h}, w=#{w}, value=#{pixels[h][w]}"
+            normalized = (128.0 / 255.0 - MEAN[c]) / STD[c]
+          else
+            normalized = (pixels[h][w][c].to_f / 255.0 - MEAN[c]) / STD[c]
           end
-
-          normalized = (pixel_value.to_f / 255.0 - MEAN[c]) / STD[c]
           channel << normalized
         end
       end

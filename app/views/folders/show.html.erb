@@ -1,78 +1,104 @@
 <%= render template: "layouts/header" %>
-    <main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
-        <div class = "flex gap-1">
-            <%= nav_buttons %>
-            <% if @search_query.blank? %>
-                <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать папку" do %>
-                    <img src="http://localhost:3000/create_folder.png" alt="Create folder" class = "min-w-8 h-8">
-                <% end %>
-                <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
-                    <img src="http://localhost:3000/upload_file.png" alt="Upload file" class = "min-w-8 h-8">
-                <% end %>
+<main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
+    <div class = "flex gap-1">
+        <%= nav_buttons %>
+        <% if @search_query.blank? %>
+            <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать папку" do %>
+                <img src="http://localhost:3000/create_folder.png" alt="Create folder" class = "min-w-8 h-8">
             <% end %>
-            <% if @title_path.present?%>
-                <div class = "flex items-center bg-white px-4 rounded-lg">
-                    <% (0...@title_path.length - 1).each do |i| %>
-                        <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
-                        <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
-                    <% end %>
-                    <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
-                </div>
+            <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
+                <img src="http://localhost:3000/upload_file.png" alt="Upload file" class = "min-w-8 h-8">
             <% end %>
-        </div>
+        <% else %>
+            <div class = "flex items-center bg-white px-4 rounded-lg">
+                <span class = "text-[#69377c]"> <%= ru_pluralize(@childrens.length, @media.length, "Найдена", "Найден", "Найдено") %> <%= ru_pluralize(@childrens.length, "папка", "папки", "папок") if @childrens.length > 0 %> <%= " и " if @childrens.length > 0 && @media.length > 0 %> <%= ru_pluralize(@media.length, "медиафайл", "медиафайла", "медиафайлов") if @media.length > 0 %>  </span>
+            </div>
+        <% end %>
+        <% if @title_path.present?%>
+            <div class = "flex items-center bg-white px-4 rounded-lg">
+                <% (0...@title_path.length - 1).each do |i| %>
+                    <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
+                    <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+                <% end %>
+                <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
+            </div>
+        <% end %>
         <% flash.each do |type, msg| %>
-            <div class = "mt-5 px-3 h-[64px] w-fit border border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] rounded-lg flex items-center justify-center">
+            <div class = "px-3 w-fit border border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] rounded-lg flex items-center justify-center">
                 <%= msg %>
             </div>
         <% end %>
-        <% if @search_query.present? && @childrens.empty? && @media.empty?%>
-            <div class="mt-4 text-[#333]">
-                <span> В результате поиска не обнаружено папок и файлов с похожим именем.</span>
-            </div>
-        <% else %>
-            <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(164.75px,1fr))] gap-[10px]">
-                <% @childrens.each do |children| %>
+    </div>
+    <% if @search_query.present? && @childrens.empty? && @media.empty?%>
+        <div class="mt-4 text-[#333]">
+            <span> В результате поиска не обнаружено папок и файлов с похожим именем.</span>
+        </div>
+    <% else %>
+        <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(164.75px,1fr))] gap-[10px]">
+            <% page_length = 21 %>
+            <% last_index = 0 %>
+            <% ((@page - 1) * page_length).upto(@page * page_length - 1) do |i| %>
+                <% i < @childrens.length ? children = @childrens[i] : break %>
+                <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
+                    <div class = "flex justify-end w-full max-w-33">
+                        <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                            <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
+                        <%end%>
+                        <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку '#{children.title}' вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                            <img src="http://localhost:3000/trash.png" alt="Del" class = "w-4 h-4">
+                        <%end%>
+                    </div>
+                    <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
+                        <img src="http://localhost:3000/folder.png" alt="Folder" class = "min-w-33 h-24">
+                        <span><%= children.title %></span>
+                    <% end %>
+                </div>
+                <% last_index = i + 1 %>
+            <% end %>
+            <% last_index = @childrens.length % page_length if last_index == 0 %>
+            <% start_pos = (@page - 1) * page_length - last_index %>
+            <% finish_pos = @page * page_length - 1 - last_index %>
+            <% (start_pos >= 0 ? start_pos : 0).upto(finish_pos) do |i| %>
+                <% i < @media.length ? file = @media[i] : break %>
+                <% if file.media.attached? %>
                     <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
                         <div class = "flex justify-end w-full max-w-33">
-                            <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                            <%= button_to edit_media_item_path(file.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                                 <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
                             <%end%>
-                            <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку '#{children.title}' вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                            <%= button_to media_item_path(file.id), method: :delete, data: { turbo_confirm: "Удалить файл '#{file.media.filename}'?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
                                 <img src="http://localhost:3000/trash.png" alt="Del" class = "w-4 h-4">
                             <%end%>
                         </div>
-                        <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
-                            <img src="http://localhost:3000/folder.png" alt="Folder" class = "min-w-33 h-24">
-                            <span><%= children.title %></span>
-                        <% end %>
+                        <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
+                            <% if file.media.image? %>
+                                <%= image_tag file.media, class: "w-33 h-24" %>
+                            <% else %>
+                                <div class = "flex flex-col items-center">
+                                    <% if file.video_preview.attached? %>
+                                        <%= image_tag file.video_preview, class: "w-33 h-24" %>
+                                    <% end %>
+                                    <%= image_tag "http://localhost:3000/video_play.png", class: "w-6 h-6 relative -top-9 -mt-6" %>
+                                </div>
+                            <% end %>
+                            <span> <%= file.media.filename.to_s[0, 15]%> </span>
+                        <% end %>   
                     </div>
                 <% end %>
-                <% @media.each do |file| %>
-                    <% if file.media.attached? %>
-                        <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
-                            <div class = "flex justify-end w-full max-w-33">
-                                <%= button_to edit_media_item_path(file.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
-                                    <img src="http://localhost:3000/pencil.png" alt="Edit" class = "w-4 h-4">
-                                <%end%>
-                                <%= button_to media_item_path(file.id), method: :delete, data: { turbo_confirm: "Удалить файл '#{file.media.filename}'?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
-                                    <img src="http://localhost:3000/trash.png" alt="Del" class = "w-4 h-4">
-                                <%end%>
-                            </div>
-                            <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
-                                <% if file.media.image? %>
-                                    <%= image_tag file.media, class: "w-33 h-24" %>
-                                <% else %>
-                                    <div class = "flex flex-col items-center">
-                                        <%= image_tag file.video_preview, class: "w-33 h-24" %>
-                                        <%= image_tag "http://localhost:3000/video_play.png", class: "w-6 h-6 relative -top-9 -mt-6" %>
-                                    </div>
-                                <% end %>
-                                <span> <%= file.media.filename.to_s[0, 15]%> </span>
-                            <% end %>   
-                        </div>
-                    <% end %>
-                <% end %>
-            </div>
-        <% end %>
-    </main>
-<%= render template: "layouts/footer" %>
+            <% end %>
+        </div>
+    <% end %>
+</main>
+<%if @childrens.length + @media.length > 21%>
+    <div class = "mt-5 flex justify-center px-5 bg-white">
+        <%((@childrens.length + @media.length) / 21.0).ceil().times do |i|%>
+            <%if i + 1 == @page%>
+                <button class = "bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c] border-b-[3px] border-solid border-[#69377c]">
+                    <span class = "block mt-[3px]"><%=i + 1%></span>
+                </button>
+            <%else%>
+                <%= link_to i + 1, @search_query.present? ? folders_path(folders: { title: @search_query }, page: i + 1) : folder_path(@folder.id, page: i + 1), class: "flex justify-center items-center bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+            <%end%>
+        <%end%>
+    </div>
+<%end%>

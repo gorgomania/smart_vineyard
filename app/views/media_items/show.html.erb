@@ -16,10 +16,10 @@
     <div class = "flex justify-between items-start text-[#333] mt-4">
         <div class = "w-[20%] text-xl">
             <h1 class = "text-2xl text-[#333] text-center mb-4">Сведения о файле</h1>
-            <h2 class = "text-[#69377c]">Расширение</h2>
-            <span><%= @media_item.media.blob.filename.extension%> </span>
             <h2 class = "text-[#69377c]">Размер</h2>
             <span><%= number_to_human_size(@media_item.media.byte_size)%> </span>
+            <h2 class = "text-[#69377c]">Расширение</h2>
+            <span><%= @media_item.media.blob.filename.extension%> </span>
         </div>
         <% if @media_item.media.image? %>
             <%= image_tag @media_item.media, class: "max-w-[50%]" %>
@@ -42,8 +42,7 @@
                     <span><%= @media_item.ai_classified_at.in_time_zone("Moscow").strftime("%d.%m.%Y %H:%M") %> </span>
                 </div>
             <% end %>
-            <%= button_to @media_item.ai_classification.present? ? "Реанализ" : "Проанализировать", classify_media_item_path(@media_item.id), method: :post, class: "h-16 w-[280px] bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
+            <%= button_to @media_item.ai_classification.present? ? "Реанализ" : "Анализ", classify_media_item_path(@media_item.id), method: :post, class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
         </div>
     </div>
 </main>
-<%= render template: "layouts/footer" %>
