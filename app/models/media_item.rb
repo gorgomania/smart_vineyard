@@ -2,26 +2,28 @@ class MediaItem < ApplicationRecord
   belongs_to :folder
   has_one_attached :media
   has_one_attached :video_preview
-  after_commit :generate_preview, on: [ :create ]
+  after_commit :generate_preview, on: :create
   validate :validate_media_filename
   after_destroy :purge_media_files
 
 public
-def classify!
-  return false unless media.attached?
 
-  result = GrapeClassifier.predict_from_media_item(self)
+  def classify!
+    return false unless media.attached?
 
-  update!(
-    ai_classification: result[:top_class],
-    ai_confidence: result[:confidence],
-    ai_class_id: result[:class_id],
-    ai_classified_at: Time.current,
-    ai_full_results: result[:predictions]
-  )
-end
+    result = GrapeClassifier.predict_from_media_item(self)
+
+    update!(
+      ai_classification: result[:top_class],
+      ai_confidence: result[:confidence],
+      ai_class_id: result[:class_id],
+      ai_classified_at: Time.current,
+      ai_full_results: result[:predictions]
+    )
+  end
 
 private
+
   def validate_media_filename
     filename = media.filename.to_s
     if filename.length == 0

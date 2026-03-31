@@ -1,22 +1,19 @@
-development:
+default: &default
   adapter: postgresql
   encoding: unicode
-  database: smart_vineyard
-  pool: 5
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: gorgomania      # ← поменяй с postgres на gorgomania
+  password: 4555008         # ← твой пароль
   host: localhost
-  username: postgres
-  password: 4555008
+
+development:
+  <<: *default
+  database: smart_vineyard_development
 
 test:
-  adapter: postgresql
-  encoding: unicode
-  database: test
-  pool: 5
-  username: postgres
-  password: 4555008
-
-staging:
-  url: <%= ENV['DATABASE_URL'] %>
+  <<: *default
+  database: smart_vineyard_test
 
 production:
-  url: <%= ENV['DATABASE_URL'] %>
+  <<: *default
+  database: smart_vineyard_production

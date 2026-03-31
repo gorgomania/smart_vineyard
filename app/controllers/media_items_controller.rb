@@ -22,9 +22,9 @@ class MediaItemsController < ApplicationController
       end
     end
     if successfull_uploads_counter.nonzero?
-      redirect_to folder_path(folder_id), notice: "Файлы в количестве #{successfull_uploads_counter} успешно загружены."
+      redirect_to folder_path(folder_id), notice: "Файлы в количестве #{successfull_uploads_counter} успешно загружены"
     else
-      flash.now[:alert] = [ "Сначала выберите файл." ]
+      flash.now[:alert] = [ "Сначала выберите файл" ]
       @folder_id = folder_id
       @media_item = MediaItem.new
       render "new", status: :unprocessable_entity
@@ -49,7 +49,7 @@ class MediaItemsController < ApplicationController
     @media_item.media.blob.filename = "#{media_item_params[:filename]}"
     if @media_item.valid?
       @media_item.media.blob.save
-      redirect_to folder_path(@media_item.folder_id), notice: "Имя файла успешно изменено."
+      redirect_to folder_path(@media_item.folder_id), notice: "Имя файла успешно изменено"
     else
       flash.now[:alert] = @media_item.errors[:media][0]
       render "edit", status: :unprocessable_entity
@@ -60,7 +60,7 @@ class MediaItemsController < ApplicationController
     id = params[:id]
     folder_id = MediaItem.find(id).folder_id
     MediaItem.delete(id)
-    redirect_to folder_path(folder_id), notice: "Файл успешно удален."
+    redirect_to folder_path(folder_id), notice: "Файл успешно удален"
   end
 
   def classify

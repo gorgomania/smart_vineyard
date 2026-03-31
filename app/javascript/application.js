@@ -228,7 +228,7 @@ function addFilesWithCheckDuplicates(newFiles) {
         else {
           const erorrWrapper = $("<div>", {
             class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
-            html: "Недопустимый тип файла " + newFiles[i].name + "."
+            html: "Недопустимый тип файла " + newFiles[i].name
           })
           $("#error-container").append(erorrWrapper)
         }  
@@ -236,7 +236,7 @@ function addFilesWithCheckDuplicates(newFiles) {
       else {
         const erorrWrapper = $("<div>", {
           class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
-          html: "Недопустимый размер файла " + newFiles[i].name + "."
+          html: "Недопустимый размер файла " + newFiles[i].name
         })
         $("#error-container").append(erorrWrapper)
       }

@@ -22,7 +22,7 @@
             <span><%= @media_item.media.blob.filename.extension%> </span>
         </div>
         <% if @media_item.media.image? %>
-            <%= image_tag @media_item.media, class: "max-w-[50%]" %>
+            <%= image_tag @media_item.media, class: "max-w-[50%]", loading: "lazy" %>
         <% else %>
             <%= video_tag url_for(@media_item.media),
                 controls: true,

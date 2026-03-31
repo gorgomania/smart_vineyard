@@ -58,6 +58,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_15_083727) do
     t.integer "ai_class_id"
     t.datetime "ai_classified_at"
     t.jsonb "ai_full_results", default: {}
+    t.binary "preview_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["ai_classification"], name: "index_media_items_on_ai_classification"

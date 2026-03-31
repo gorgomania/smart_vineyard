@@ -1,9 +1,8 @@
 # app/services/grape_classifier.rb
 require "onnxruntime"
-require "mini_magick"
+require "vips"
 require "json"
 require "numo/narray"
-require "tempfile"
 
 class GrapeClassifier
   IMAGE_SIZE = 224
@@ -95,21 +94,22 @@ class GrapeClassifier
   def preprocess_image_from_path(image_path)
     Rails.logger.info "Loading image: #{image_path}"
 
-    image = MiniMagick::Image.open(image_path)
+    image = Vips::Image.new_from_file(image_path)
     Rails.logger.info "Original image: #{image.width}x#{image.height}"
 
     # Ресайз и центрирование
-    image.combine_options do |cmd|
-      cmd.resize "#{IMAGE_SIZE}x#{IMAGE_SIZE}^"
-      cmd.gravity "center"
-      cmd.extent "#{IMAGE_SIZE}x#{IMAGE_SIZE}"
-    end
+    scale = IMAGE_SIZE.to_f / [image.width, image.height].min
+    resized_width = (image.width * scale).round
+    resized_height = (image.height * scale).round
+    resized = image.resize(scale)
 
-    # Принудительно конвертируем в RGB
-    image.colorspace "sRGB"
+    # Затем вырезаем центр
+    crop_x = (resized_width - IMAGE_SIZE) / 2
+    crop_y = (resized_height - IMAGE_SIZE) / 2
+    cropped = resized.crop(crop_x, crop_y, IMAGE_SIZE, IMAGE_SIZE)
 
     # Получаем пиксели
-    pixels = image.get_pixels
+    pixels = cropped.to_a.flatten
 
     # Нормализация
     tensor_data = []
