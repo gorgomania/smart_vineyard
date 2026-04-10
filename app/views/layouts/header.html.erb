@@ -15,13 +15,20 @@
             <img src="http://localhost:3000/explorer.png" alt="Explorer" class = "min-w-[26px] h-[26px] mb-1">
             <span>Проводник</span>
         <%end%>
+
         <%= link_to maps_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <img src="http://localhost:3000/map.png" alt="Map" class = "min-w-[26px] h-[26px] mb-1">
             <span>Карта</span>
         <%end%>
+
         <%= link_to stats_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <img src="http://localhost:3000/result.png" alt="Result" class = "min-w-[26px] h-[26px] mb-1">
             <span>Статистика</span>
+        <%end%>
+
+        <%= link_to users_path, class: "ml-1 p-[10px] flex flex-col justify-between items-center rounded-[12px] w-[140px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+            <img src="http://localhost:3000/profile.png" alt="Result" class = "min-w-[26px] h-[26px] mb-1">
+            <span>Профиль</span>
         <%end%>
     </div>
     <button id="burgerMenu" class="hidden ml-[51px] p-5 rounded-lg hover:bg-gray-100 text-[#333]">
@@ -46,6 +53,11 @@
                 <img src="http://localhost:3000/result.png" class="w-5 h-5">
                 <span>Статистика</span>
             <% end %>
+
+            <%= link_to users_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do%>
+                <img src="http://localhost:3000/profile.png" alt="Profile" class="w-5 h-5">
+                <span>Профиль</span>
+            <%end%>
         </nav>
   </div>
   <div id="overlay" class="hidden fixed top-[248.8px] bottom-0 left-0 right-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out opacity-0 pointer-events-none z-5"></div>

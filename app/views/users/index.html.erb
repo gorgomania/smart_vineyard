@@ -1,0 +1,15 @@
+<%= render template: "layouts/header"%>
+<main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
+    <h1>
+        Профиль 
+    </h1>
+    <h2>
+        Email
+    </h2>
+    <span> 
+        <%= current_user.email %>
+    </span>
+    <%= button_to 'Выйти из аккаунта', destroy_user_session_path, :method => :delete, class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+    <%= button_to 'Редактировать профиль', edit_user_registration_path, :method => :get, class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+    <%= button_to "Удалить аккаунт", registration_path(:user), data: { turbo_confirm: "Вы уверены?" }, method: :delete, class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+</main>

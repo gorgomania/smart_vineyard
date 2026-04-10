@@ -13,10 +13,10 @@
             <% if @search_query.present? && flash.empty?%>
                 <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">
                     <span class = "">
-                        <%= ru_pluralize(@childrens.length, @media.length, "Найдена", "Найден", "Найдено") %>
-                        <%= ru_pluralize(@childrens.length, "папка", "папки", "папок") if @childrens.length > 0 %>
-                        <%= " и " if @childrens.length > 0 && @media.length > 0 %>
-                        <%= ru_pluralize(@media.length, "медиафайл", "медиафайла", "медиафайлов") if @media.length > 0 %> 
+                        <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
+                        <%= ru_pluralize(@childrens_length, "папка", "папки", "папок") if @childrens_length > 0 %>
+                        <%= " и " if @childrens_length > 0 && @media_length > 0 %>
+                        <%= ru_pluralize(@media_length, "медиафайл", "медиафайла", "медиафайлов") if @media_length > 0 %> 
                     </span>
                 </div>
             <% end %>
@@ -37,10 +37,7 @@
         <% end %>
     </div>
     <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(164.75px,1fr))] gap-[10px]">
-        <% page_length = 21 %>
-        <% last_index = 0 %>
-        <% ((@page - 1) * page_length).upto(@page * page_length - 1) do |i| %>
-            <% i < @childrens.length ? children = @childrens[i] : break %>
+        <% @childrens.each do |children| %>
             <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
                 <div class = "flex justify-end w-full max-w-33">
                     <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
@@ -55,13 +52,8 @@
                     <span><%= children.title %></span>
                 <% end %>
             </div>
-            <% last_index = i + 1 %>
         <% end %>
-        <% last_index = @childrens.length % page_length if last_index == 0 %>
-        <% start_pos = (@page - 1) * page_length - last_index %>
-        <% finish_pos = @page * page_length - 1 - last_index %>
-        <% (start_pos >= 0 ? start_pos : 0).upto(finish_pos) do |i| %>
-            <% i < @media.length ? file = @media[i] : break %>
+        <% @media.each do |file| %>
             <% if file.media.attached? %>
                 <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
                     <div class = "flex justify-end w-full max-w-33">
@@ -90,9 +82,9 @@
         <% end %>
     </div>
 </main>
-<%if @childrens.length + @media.length > 21%>
+<% if @childrens_length + @media_length > @per_page %>
     <div class = "mt-5 flex justify-center px-5 bg-white">
-        <%((@childrens.length + @media.length) / 21.0).ceil().times do |i|%>
+        <% ((@childrens_length + @media_length) / @per_page.to_f).ceil().times do |i| %>
             <%if i + 1 == @page%>
                 <button class = "bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c] border-b-[3px] border-solid border-[#69377c]">
                     <span class = "block mt-[3px]"><%=i + 1%></span>
