@@ -177,11 +177,17 @@ document.addEventListener("turbo:load", function() {
     $dropMenu.addClass("hidden").slideUp(300);
     $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
   });
+
+  setTimeout(function() {
+    $('.flash').fadeOut(500, function() {
+      $(this).remove();
+    });
+  }, 3000);
 });
 
 function handleMenuVisibility() {
     const windowWidth = window.innerWidth;
-    if (windowWidth < 1100) {
+    if (windowWidth < 1000) {
       $('#desktopMenu').addClass("hidden");
       $('#burgerMenu').removeClass("hidden");
     } else {
@@ -336,7 +342,7 @@ function createPreviewWrapper(url, file) {
     previewWrapper.appendChild(removeBtn);
     if (file.type.startsWith('video/')) {
       const video_play_icon = new Image()
-      video_play_icon.src = "http://localhost:3000/video_play_violet.png"
+      video_play_icon.src = "/video_play_violet.png";
       video_play_icon.className = "w-3 h-3 absolute top-[14.5px] left-[35.5px]"
       previewWrapper.appendChild(video_play_icon);
     }

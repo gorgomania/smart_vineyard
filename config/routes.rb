@@ -9,6 +9,10 @@ Rails.application.routes.draw do
       post :classify  # классификация одного изображения
     end
   end
-  match "*unmatched", to: "application#error_not_found", via: :all
   root "maps#index"
+  get '*unmatched', to: 'application#not_found', via: :all, constraints: ->(req) {
+    # Исключаем Active Storage и ассеты
+    !req.path.start_with?('/rails/active_storage/') &&
+    !req.path.start_with?('/assets/')
+  }
 end

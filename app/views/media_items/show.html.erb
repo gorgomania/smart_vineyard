@@ -1,9 +1,9 @@
 <%= render template: "layouts/header" %>
-<main class = "mt-[106px] py-4 px-[74px] flex-[1_0_auto]">
+<main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
     <div class = "flex gap-1">
         <%= nav_buttons %>
         <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
-            <img src="http://localhost:3000/download_file.png" alt="Download file" class = "min-w-8 h-8">
+            <%= image_tag "/download_file.png", alt: "Download file", class: "min-w-8 h-8" %>
         <% end %>
         <div class = "flex items-center bg-white px-4 rounded-lg">
             <% (0...@title_path.length - 1).each do |i| %>

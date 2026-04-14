@@ -41,6 +41,20 @@ Rails.application.configure do
   # Set localhost to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
 
+  config.action_mailer.delivery_method = :smtp
+
+  config.action_mailer.smtp_settings = {
+    address:              'smtp.yandex.ru',
+    port:                 465,
+    domain:               'yandex.ru',
+    user_name:            'emeretligeorgy@yandex.ru',
+    password:             'mtmqouzuefxtrppo',
+    authentication:       'plain',
+    ssl:                  true,
+    tls:                  false,
+    enable_starttls_auto: false
+  }
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 

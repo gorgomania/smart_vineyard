@@ -56,7 +56,6 @@ export default class extends Controller {
       })
       
       this.map.geoObjects.add(placemark)
-      console.log('Map initialized successfully')
     })
   }
 }
