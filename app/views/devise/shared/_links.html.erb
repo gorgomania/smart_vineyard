@@ -1,27 +1,27 @@
-<div class = "mt-2 flex flex-col items-center"
+<div class = "mt-2 flex flex-col items-center">
   <%- if controller_name != 'sessions' && !user_signed_in? %>
-    <p><%= link_to "Войти", new_session_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
+    <p><%= link_to t(".sign_in"), new_session_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
   <% end %>
 
   <%- if devise_mapping.registerable? && controller_name != 'registrations' %>
-    <p><%= link_to "Зарегистрироваться", new_registration_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
+    <p><%= link_to t(".sign_up"), new_registration_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
   <% end %>
 
   <%- if controller_name == 'sessions' && devise_mapping.recoverable? %>
-    <p><%= link_to "Забыли пароль?", new_password_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
+    <p><%= link_to t(".forgot_your_password"), new_password_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
   <% end %>
 
   <%- if controller_name == 'sessions' && devise_mapping.confirmable? %>
-    <p><%= link_to "Не получили инструкцию подтверждения?", new_confirmation_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
+    <p><%= link_to t('.didn_t_receive_confirmation_instructions'), new_confirmation_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
   <% end %>
 
   <%- if devise_mapping.lockable? && resource_class.unlock_strategy_enabled?(:email) && controller_name != 'unlocks' %>
-    <p><%= link_to "Didn't receive unlock instructions?", new_unlock_path(resource_name) %></p>
+    <p><%= link_to t('.didn_t_receive_unlock_instructions'), new_unlock_path(resource_name) %></p>
   <% end %>
 
   <%- if devise_mapping.omniauthable? %>
     <%- resource_class.omniauth_providers.each do |provider| %>
-      <p><%= button_to "Sign in with #{OmniAuth::Utils.camelize(provider)}", omniauth_authorize_path(resource_name, provider), data: { turbo: false } %></p>
+      <p><%= button_to t('.sign_in_with_provider', provider: OmniAuth::Utils.camelize(provider)), omniauth_authorize_path(resource_name, provider), data: { turbo: false } %></p>
     <% end %>
   <% end %>
 </div>

@@ -1,7 +1,7 @@
 class FoldersController < ApplicationController
 
   def index
-    @per_page = 21
+    @per_page = 24
     if params[:folders]
       title_search_query = folder_params[:title]
       if title_search_query.present?
@@ -36,7 +36,7 @@ class FoldersController < ApplicationController
   end
 
   def show
-    @per_page = 21
+    @per_page = 24
     id = params[:id]
     @folder = Folder.find_by(id: id)
     if @folder.nil?

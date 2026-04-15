@@ -49,12 +49,12 @@
                     <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                         <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
-                    <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку '#{children.title}' вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                    <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
                         <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                     <%end%>
                 </div>
                 <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
-                    <%= image_tag "/folder.png", alt: "Folder", class: "min-w-33 h-24" %>
+                    <%= image_tag "/folder.png", alt: "Folder", class: "min-w-33 h-22" %>
                     <span><%= children.title %></span>
                 <% end %>
             </div>
@@ -66,19 +66,21 @@
                         <%= button_to edit_media_item_path(file.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                             <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>
-                        <%= button_to media_item_path(file.id), method: :delete, data: { turbo_confirm: "Удалить файл '#{file.media.filename}'?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
+                        <%= button_to media_item_path(file.id), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
                             <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     </div>
                     <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
                         <% if file.media.image? %>
-                            <%= image_tag file.media, class: "w-33 h-24" %>
+                            <%= image_tag file.media, class: "w-33 h-22" %>
                         <% else %>
-                            <div class = "flex flex-col items-center">
+                            <div class = "relative flex flex-col items-center">
                                 <% if file.video_preview.attached? %>
-                                    <%= image_tag file.video_preview, class: "w-33 h-24" %>
+                                    <%= image_tag file.video_preview, class: "w-33 h-22" %>
                                 <% end %>
-                                <%= image_tag "/video_play.png", class: "w-6 h-6 relative -top-9 -mt-6" %>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <%= image_tag "/video_play.png", class: "w-6 h-6" %>
+                                </div>
                             </div>
                         <% end %>
                         <span> <%= file.media.filename.to_s[0, 15]%> </span>
@@ -89,7 +91,7 @@
     </div>
 </main>
 <% if @childrens_length + @media_length > @per_page %>
-    <div class = "mt-5 flex justify-center px-5 bg-white">
+    <div class = "flex justify-center px-5 bg-white">
         <% ((@childrens_length + @media_length) / @per_page.to_f).ceil().times do |i| %>
             <%if i + 1 == @page%>
                 <button class = "bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c] border-b-[3px] border-solid border-[#69377c]">

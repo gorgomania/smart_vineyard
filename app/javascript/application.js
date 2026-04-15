@@ -66,7 +66,7 @@ document.addEventListener("turbo:load", function() {
       $label = $(this).parent().prev().children();
     }
     
-    $label.animate({ "top": "22px" }, 250).css("font-size", "13px");
+    $label.animate({ "top": "22px" }, 150).css("font-size", "13px");
   });
 
   // Прыжок label при blur
@@ -82,7 +82,7 @@ document.addEventListener("turbo:load", function() {
         $label = $(this).parent().prev().children();
       }
       
-      $label.animate({ "top": "42px" }, 250).css("font-size", "16px");
+      $label.animate({ "top": "42px" }, 150).css("font-size", "16px");
     }
   });
 
