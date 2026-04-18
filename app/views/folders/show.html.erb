@@ -10,7 +10,7 @@
                 <%= image_tag "/upload_file.png", alt: "Upload file", class: "min-w-8 h-8" %>
             <% end %>
         <% else %>
-            <% if @search_query.present? && flash.empty?%>
+            <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
                 <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">
                     <span class = "">
                         <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
@@ -42,14 +42,14 @@
             <% end %>
         <% end %>
     </div>
-    <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(164.75px,1fr))] gap-[10px]">
+    <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(162.75px,1fr))] gap-[10px]">
         <% @childrens.each do |children| %>
             <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
                 <div class = "flex justify-end w-full max-w-33">
-                    <%= button_to edit_folder_path(children.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                    <%= link_to edit_folder_path(children.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                         <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
-                    <%= button_to folder_path(children.id), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                    <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
                         <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                     <%end%>
                 </div>
@@ -63,10 +63,10 @@
             <% if file.media.attached? %>
                 <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
                     <div class = "flex justify-end w-full max-w-33">
-                        <%= button_to edit_media_item_path(file.id), method: :get, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                        <%= link_to edit_media_item_path(file.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                             <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>
-                        <%= button_to media_item_path(file.id), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
+                        <%= button_to media_item_path(file.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
                             <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     </div>
@@ -90,9 +90,9 @@
         <% end %>
     </div>
 </main>
-<% if @childrens_length + @media_length > @per_page %>
+<% if @page_limit > 1 %>
     <div class = "flex justify-center px-5 bg-white">
-        <% ((@childrens_length + @media_length) / @per_page.to_f).ceil().times do |i| %>
+        <% @page_limit.times do |i| %>
             <%if i + 1 == @page%>
                 <button class = "bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c] border-b-[3px] border-solid border-[#69377c]">
                     <span class = "block mt-[3px]"><%=i + 1%></span>

@@ -1,26 +1,32 @@
 class FoldersController < ApplicationController
-
   def index
-    @per_page = 24
     if params[:folders]
       title_search_query = folder_params[:title]
       if title_search_query.present?
+        per_page = 24
         if params[:page].nil?
           @page = 1
         else
           @page = params[:page].to_i
         end
-        offset = (@page - 1) * @per_page
-        @childrens = Folder.where("title ILIKE ?", "%#{title_search_query}%").limit(@per_page).offset(offset)
-        @childrens_length = Folder.where("title ILIKE ?", "%#{title_search_query}%").count
-        @media_length = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").includes(media_attachment: :blob, video_preview_attachment: :blob).to_a.count
-        if @childrens.length < @per_page
+
+        @childrens_length = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").count
+        @media_length = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").includes(media_attachment: :blob, video_preview_attachment: :blob).to_a.count
+        @page_limit = ((@childrens_length + @media_length) / per_page.to_f).ceil
+        @page_limit = 1 if @page_limit.zero?
+        if @page > @page_limit
+          @page = @page_limit
+        end
+
+        offset = (@page - 1) * per_page
+        @childrens = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").order(created_at: :asc).limit(per_page).offset(offset)
+        if @childrens.length < per_page
           if @childrens_length > offset
             offset = 0
           else
             offset -= @childrens_length
           end
-            @media = MediaItem.joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").limit(@per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
+          @media = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
         else
           @media = []
         end
@@ -32,17 +38,18 @@ class FoldersController < ApplicationController
         return
       end
     end
-    redirect_to folder_path(Folder.find_or_create_by(title: "Root", parent_id: nil).id)
+    redirect_to folder_path(Folder.find_or_create_by(title: "Root", parent_id: nil, user_id: current_user.id).id)
   end
 
   def show
-    @per_page = 24
+    per_page = 24
     id = params[:id]
     @folder = Folder.find_by(id: id)
     if @folder.nil?
-      @folder = Folder.find_or_create_by(title: "Root", parent_id: nil)
+      @folder = Folder.find_or_create_by(title: "Root", parent_id: nil, user_id: current_user.id)
     end
-    if params[:page].nil?
+    authorize @folder
+    if params[:page].blank?
       @page = 1
     else
       @page = params[:page].to_i
@@ -50,29 +57,45 @@ class FoldersController < ApplicationController
     @title_path = @folder.title_path
     @id_path = @folder.id_path
     @parent_id = @folder.parent_id
-    offset = (@page - 1) * @per_page
-    @childrens = @folder.children.limit(@per_page).offset(offset)
-    @childrens_length = @folder.children.count
-    @media_length = @folder.media_items.count
-    if @childrens.length < @per_page
-      if @childrens_length > offset
+
+    childrens_length = @folder.children.count
+    media_length = @folder.media_items.count
+    @page_limit = ((childrens_length + media_length) / per_page.to_f).ceil
+    @page_limit = 1 if @page_limit.zero?
+    if @page > @page_limit
+      @page = @page_limit
+    elsif @page == -1
+      @page = ((childrens_length + media_length - params[:successfull_uploads_count].to_i) / per_page.to_f).ceil
+      @page = 1 if @page.zero?
+    elsif @page == -2
+      @page = (childrens_length / per_page.to_f).ceil
+    end
+
+    offset = (@page - 1) * per_page
+    @childrens = @folder.children.order(created_at: :asc).limit(per_page).offset(offset)
+    if @childrens.length < per_page
+      if childrens_length > offset
         offset = 0
       else
-        offset -= @childrens_length
+        offset -= childrens_length
       end
-        @media = @folder.media_items.limit(@per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
+        @media = @folder.media_items.order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
     else
       @media = []
     end
     @search_query = ""
   end
 
+  def new
+    @parent_id = params[:parent_id]
+  end
+
   def create
     title = folder_params[:title]
     parent_id = folder_params[:parent_id]
-    folder = Folder.new(title: title, parent_id: parent_id)
+    folder = Folder.new(title: title, parent_id: parent_id, user_id: current_user.id)
     if folder.save
-      redirect_to folder_path(parent_id), notice: "Папка успешно создана"
+      redirect_to folder_path(parent_id, page: "-2"), notice: "Папка успешно создана"
     else
       flash.now[:alert] = folder.errors[:title][0]
       @parent_id = parent_id
@@ -80,35 +103,50 @@ class FoldersController < ApplicationController
     end
   end
 
-  def new
-    @parent_id = params[:parent_id]
-  end
-
   def edit
-    id = params[:id]
-    @folder = Folder.find(id)
+    @page = params[:page]
+    @search_query = params[:search_query]
+    @folder = Folder.find(params[:id])
+    authorize @folder
   end
 
   def update
     folder = Folder.find(params[:id])
+    authorize folder
+    search_query = params[:folders][:search_query]
+    page = params[:folders][:page]
     folder.update(title: folder_params[:title])
     if folder.save
-      redirect_to folder_path(folder.parent_id), notice: "Имя папки успешно изменено"
+      if search_query.empty?
+        redirect_to folder_path(folder.parent_id, page: page), notice: "Имя папки успешно изменено"
+      else
+        redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Имя папки успешно изменено"
+      end
     else
       flash.now[:alert] = folder.errors[:title][0]
       @folder = folder
+      @page = page
+      @search_query = search_query
       render "edit", status: :unprocessable_entity
     end
   end
 
   def destroy
     id = params[:id]
-    parent_id = Folder.find(id).parent_id
-    Folder.delete(id)
-    if parent_id
-      redirect_to folder_path(parent_id), notice: "Папка успешно удалена"
+    search_query = params[:search_query]
+    page = params[:page]
+    folder = Folder.find(params[:id])
+    authorize folder
+    parent_id = folder.parent_id
+    folder.destroy
+    if search_query.empty?
+      if parent_id
+        redirect_to folder_path(parent_id, page: page), notice: "Папка успешно удалена"
+      else
+        redirect_to folders_path, notice: "Папка успешно удалена"
+      end
     else
-      redirect_to folder_path, notice: "Папка успешно удалена"
+      redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Папка успешно удалена"
     end
   end
 

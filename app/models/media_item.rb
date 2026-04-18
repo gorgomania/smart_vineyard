@@ -1,10 +1,9 @@
 class MediaItem < ApplicationRecord
   belongs_to :folder
   has_one_attached :media
-  has_one_attached :video_preview
-  after_commit :generate_preview, on: :create
+  has_one_attached :video_preview, dependent: :purge_later
+  after_commit :generate_preview, on: :create, dependent: :purge_later
   validate :validate_media_filename
-  after_destroy :purge_media_files
 
 public
 
@@ -107,10 +106,5 @@ private
     minutes = (seconds.to_i % 3600) / 60
     secs = seconds % 60
     sprintf("%02d:%02d:%05.2f", hours, minutes, secs)
-  end
-
-  def purge_media_files
-    media.purge if media.attached?
-    video_preview.purge if video_preview.attached?
   end
 end

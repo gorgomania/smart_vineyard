@@ -24,7 +24,7 @@
         <% if @media_item.media.image? %>
             <%= image_tag @media_item.media, class: "max-w-[50%]", loading: "lazy" %>
         <% else %>
-            <%= video_tag url_for(@media_item.media),
+            <%= video_tag rails_storage_redirect_path(@media_item.media.blob, disposition: 'inline'),
                 controls: true,
                 controlsList: "nodownload",
                 class: "max-w-[50%]",

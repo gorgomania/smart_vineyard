@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_10_163318) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_15_083727) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -45,10 +45,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_163318) do
   create_table "folders", force: :cascade do |t|
     t.string "title", limit: 15, null: false
     t.bigint "parent_id"
+    t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_folders_on_created_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
-    t.index ["title", "parent_id"], name: "index_folders_on_title_and_parent_id", unique: true
+    t.index ["user_id", "title", "parent_id"], name: "index_folders_on_user_id_and_title_and_parent_id", unique: true
+    t.index ["user_id"], name: "index_folders_on_user_id"
   end
 
   create_table "media_items", force: :cascade do |t|
@@ -58,7 +61,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_163318) do
     t.integer "ai_class_id"
     t.datetime "ai_classified_at"
     t.jsonb "ai_full_results", default: {}
-    t.binary "preview_data"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["ai_classification"], name: "index_media_items_on_ai_classification"
@@ -86,5 +88,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_163318) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
+  add_foreign_key "folders", "users", on_delete: :cascade
   add_foreign_key "media_items", "folders", on_delete: :cascade
 end
