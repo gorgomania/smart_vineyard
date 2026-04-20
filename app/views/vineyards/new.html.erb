@@ -1,0 +1,81 @@
+<%= render template: "layouts/header" %>
+<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
+  <div class = "flex">
+    <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
+      <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Показать список",  data: { map_links_target: "link", link_type: "list" } do %>
+          <%= image_tag "/vineyard_list.png", alt: "Create folder", class: "min-w-8 h-8" %>
+      <% end %>
+
+      <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
+          <%= image_tag "/create_vineyard.png", alt: "Create vineyard", class: "min-w-8 h-8" %>
+      <% end %>
+    </div>
+
+    <div class="w-80 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5">
+      <div class="text-[#333] text-[22px] font-bold">
+          <span>Создание виноградника</span>
+      </div>
+
+      <% flash.each do |type, msg| %>
+        <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+            <%= msg %>
+        </div>
+      <% end %>
+        
+      <%= form_for(:vineyards, url: :vineyards, html: { method: :post }) do |f| %>
+        <div class="field">
+          <%= f.label "Название", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+          <%= f.text_field :name, class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autofocus: true, autocomplete: "title"%>
+        </div>
+
+        <div class = "flex justify-between gap-2">
+          <div class="field">
+            <%= f.label "Сев. широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :north_lat, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+          </div>
+
+          <div class="field">
+            <%= f.label "Юж. широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :south_lat, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+          </div>
+        </div>
+        
+        <div class = "flex justify-between gap-2">
+          <div class="field">
+            <%= f.label "Зап. долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :west_lng, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+          </div>
+
+          <div class="field">
+            <%= f.label "Вост. долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :east_lng, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+          </div>
+        </div>
+
+        <div class="field">
+          <%= f.label "Сорт винограда", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+          <%= f.text_field :grape_variety, class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+        </div>
+
+        <div class="field">
+          <%= f.label "Год посадки", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+          <%= f.text_field :planting_year, class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+        </div>
+
+        <div class="actions">
+          <%= f.submit "Создать", class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+        </div>
+      <% end %>
+    </div>
+
+    <div id="map" 
+        data-controller="map"
+        data-turbo="false"
+        data-map-api-key="<%= Rails.application.credentials.dig(:yandex, :api_key) %>"
+        data-map-center="<%= @map_center %>"
+        data-map-zoom="<%= @map_zoom %>"
+        data-map-draw="<%= @draw_mode %>"
+        class="w-full h-[84.5vh]">
+    </div>
+  </div>
+</main>

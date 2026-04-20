@@ -15,6 +15,10 @@ class MediaItemPolicy < ApplicationPolicy
     show?
   end
 
+  def classify?
+    show?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.joins(:folder).where(folders: { user_id: user.id })

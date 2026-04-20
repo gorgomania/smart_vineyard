@@ -1,5 +1,5 @@
 <header class="fixed top-0 flex justify-between bg-white py-4 pl-[74px] pr-[76px] z-10 w-full">
-    <%= link_to maps_path, class: "hover:opacity-[0.9]" do %>
+    <%= link_to vineyards_path, class: "hover:opacity-[0.9]" do %>
         <%= image_tag "/logo.png", alt: "Logo", class: "h-[50px]" %>
     <%end%>
     <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12") do |f| %>
@@ -15,7 +15,7 @@
             <%= image_tag "/explorer.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>    
         <%end%>
 
-        <%= link_to maps_path, title: "Карта", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+        <%= link_to vineyards_path, title: "Виноградники", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <%= image_tag "/map.png", alt: "Map", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
@@ -40,9 +40,9 @@
                 <span>Проводник</span>
             <% end %>
             
-            <%= link_to maps_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
+            <%= link_to vineyards_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
                 <%= image_tag "/map.png", alt: "Map", class: "w-5 h-5" %> 
-                <span>Карта</span>
+                <span>Виноградники</span>
             <% end %>
             
             <%= link_to stats_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>

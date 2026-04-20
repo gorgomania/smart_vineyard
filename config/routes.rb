@@ -3,7 +3,7 @@ Rails.application.routes.draw do
     registrations: 'users/registrations'
   }
   resources :folders
-  resources :maps
+  resources :vineyards
   resources :users
   resources :stats
   resources :media_items do
@@ -11,7 +11,7 @@ Rails.application.routes.draw do
       post :classify  # классификация одного изображения
     end
   end
-  root "maps#index"
+  root "vineyards#show"
   get '*unmatched', to: 'application#not_found', via: :all, constraints: ->(req) {
     # Исключаем Active Storage и ассеты
     !req.path.start_with?('/rails/active_storage/') &&
