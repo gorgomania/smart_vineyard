@@ -11,8 +11,12 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
+  create_schema "topology"
+
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "postgis"
+  enable_extension "topology.postgis_topology"
 
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
@@ -87,18 +91,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
 
   create_table "vineyards", force: :cascade do |t|
     t.string "name", null: false
-    t.decimal "north_lat", precision: 10, scale: 7, null: false
-    t.decimal "south_lat", precision: 10, scale: 7, null: false
-    t.decimal "east_lng", precision: 10, scale: 7, null: false
-    t.decimal "west_lng", precision: 10, scale: 7, null: false
+    t.geography "polygon", limit: {:srid=>4326, :type=>"st_polygon", :geographic=>true}, null: false
     t.string "grape_variety"
     t.integer "planting_year"
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
-    t.check_constraint "north_lat > south_lat AND east_lng > west_lng AND north_lat >= '-90'::integer::numeric AND north_lat <= 90::numeric AND south_lat >= '-90'::integer::numeric AND south_lat <= 90::numeric AND east_lng >= '-180'::integer::numeric AND east_lng <= 180::numeric AND west_lng >= '-180'::integer::numeric AND west_lng <= 180::numeric", name: "check_coordinates"
+    t.check_constraint "st_numpoints(st_exteriorring(polygon::geometry)) = 5 AND st_isclosed(st_exteriorring(polygon::geometry)) AND st_isvalid(polygon::geometry)", name: "check_polygon_is_rectangle"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

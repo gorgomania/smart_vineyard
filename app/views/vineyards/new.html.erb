@@ -1,5 +1,5 @@
 <%= render template: "layouts/header" %>
-<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
+<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto] overflow-hidden">
   <div class = "flex">
     <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
       <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Показать список",  data: { map_links_target: "link", link_type: "list" } do %>
@@ -11,7 +11,7 @@
       <% end %>
     </div>
 
-    <div class="w-80 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5">
+    <div class="min-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto" data-controller="vineyard-form">
       <div class="text-[#333] text-[22px] font-bold">
           <span>Создание виноградника</span>
       </div>
@@ -23,32 +23,58 @@
       <% end %>
         
       <%= form_for(:vineyards, url: :vineyards, html: { method: :post }) do |f| %>
+        <!-- Скрытое поле для полигона -->
+        <%= f.hidden_field :polygon, id: "vineyard_polygon" %>
+
         <div class="field">
           <%= f.label "Название", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :name, class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autofocus: true, autocomplete: "title"%>
+          <%= f.text_field :name, class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autofocus: true, autocomplete: "name"%>
         </div>
-
-        <div class = "flex justify-between gap-2">
-          <div class="field">
-            <%= f.label "Сев. широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :north_lat, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+        <div class="text-[#69377c] text-sm">Северо-запад</div>
+        <div class="flex justify-between gap-2 -mt-6">
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :north_west_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
           </div>
-
-          <div class="field">
-            <%= f.label "Юж. широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :south_lat, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :north_west_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
           </div>
         </div>
         
-        <div class = "flex justify-between gap-2">
-          <div class="field">
-            <%= f.label "Зап. долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :west_lng, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+        <div class="text-[#69377c] text-sm">Северо-восток</div>
+        <div class="flex justify-between gap-2 -mt-6">
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :north_east_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
           </div>
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :north_east_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
+          </div> 
+        </div>
 
-          <div class="field">
-            <%= f.label "Вост. долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :east_lng, class: "auth_input w-[136px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
+        <div class="text-[#69377c] text-sm">Юго-восток</div>
+        <div class="flex justify-between gap-2 -mt-6">
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :south_east_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
+          </div>
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :south_east_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
+          </div>
+        </div>
+
+        <div class="text-[#69377c] text-sm">Юго-запад</div>
+        <div class="flex justify-between gap-2 -mt-6">
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :south_west_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
+          </div>
+          <div class="field flex-1 min-w-0">
+            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
+            <%= f.text_field :south_west_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
           </div>
         </div>
 

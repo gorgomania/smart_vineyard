@@ -9,7 +9,7 @@ export default class extends Controller {
     this.center = this.parseCenter(this.element.dataset.mapCenter)
     this.zoom = parseInt(this.element.dataset.mapZoom) || 10
     this.enableDrawingOnLoad = this.element.dataset.mapDraw === 'true'
-    this.currentRectangle = null
+    this.currentPolygon = null
 
     if (!this.apiKey) {
       console.error('Map API key is missing')
@@ -56,29 +56,50 @@ export default class extends Controller {
       this.element.__mapInstance = this.map
       
       // Создаем редактируемый прямоугольник
-      this.currentRectangle = new ymaps.Rectangle(
-          [[0, 0], [0, 0]],  // Временные координаты
-          {
-            hintContent: 'Виноградник',
-            balloonContent: 'Перетащите углы для изменения размера'
-          },
-          {
-            draggable: true,      // Можно перетаскивать
-            editable: true,       // Включает режим редактирования
-            fillColor: '#8BC34A',
-            fillOpacity: 0.5,
-            strokeColor: '#4CAF50',
-            strokeWidth: 3,
-            visible: false        // Сначала скрыт
-          }
-        )
+      const size = this.getRectangleSize()
+      const center = this.center
+      this.currentPolygon = new ymaps.Polygon(
+        [[
+          [center[0] + size, center[1] - size],  // северо-запад
+          [center[0] + size, center[1] + size],  // северо-восток
+          [center[0] - size, center[1] + size],  // юго-восток
+          [center[0] - size, center[1] - size],  // юго-запад
+          [center[0] + size, center[1] - size]   // замыкаем
+        ]],
+        {
+          hintContent: 'Виноградник',
+          balloonContent: 'Перетащите углы для изменения размера'
+        },
+        {
+          draggable: true,      // Можно перетаскивать
+          editable: true,       // Включает режим редактирования
+          fillColor: '#8a579f',
+          fillOpacity: 0.5,
+          strokeColor: '#69377c',
+          strokeWidth: 3,
+          visible: false,             // Сначала скрыт
+          editorDrawing: false,      
+          editorMaxPoints: 4       // Отключает режим добавления новых вершин
+        }
+      )
       
       // Добавляем прямоугольник на карту
-      this.map.geoObjects.add(this.currentRectangle)
+      this.map.geoObjects.add(this.currentPolygon)
       
       // Слушаем изменения геометрии
-      this.currentRectangle.geometry.events.add('change', () => {
-        this.saveRectangleBounds()
+      this.currentPolygon.geometry.events.add('change', () => {
+          const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+          const event = new CustomEvent('map:polygonUpdated', {
+            detail: { coordinates: coordinates }
+          })
+          document.dispatchEvent(event)
+      })
+
+      // Подписываемся на события от формы
+      document.addEventListener('form:polygonUpdated', (event) => {
+        if (this.currentPolygon) {
+          this.currentPolygon.geometry.setCoordinates(event.detail.bounds)
+        }
       })
 
       if (this.enableDrawingOnLoad) {
@@ -101,83 +122,40 @@ export default class extends Controller {
   }
 
   enableDrawing() {
-    console.log("Enabling drawing mode")
     
-    if (!this.currentRectangle) {
-      console.error("Rectangle not found")
+    if (!this.currentPolygon) {
+      console.error("Polygon not found")
       return
     }
     
     // Показываем прямоугольник
-    this.currentRectangle.options.set('visible', true)
-    
-    // Сбрасываем координаты на нулевые
-    const size = this.getRectangleSize()
-    const center = this.center
-    const northWest = [center[0] + size, center[1] - size]
-    const southEast = [center[0] - size, center[1] + size]
+    this.currentPolygon.options.set('visible', true)
 
-    this.currentRectangle.geometry.setCoordinates([northWest, southEast])
-    
+    // Обновляем координаты под текущий центр карты
+    const size = this.getRectangleSize()
+    const center = this.map.getCenter()
+    this.currentPolygon.geometry.setCoordinates([[
+      [center[0] + size, center[1] - size],
+      [center[0] + size, center[1] + size],
+      [center[0] - size, center[1] + size],
+      [center[0] - size, center[1] - size],
+      [center[0] + size, center[1] - size]
+    ]])
+
     // Включаем режим редактирования
-    if (this.currentRectangle.editor) {
-      this.currentRectangle.editor.startEditing()
-    }
-    
-    console.log("Drawing mode enabled - now you can drag the rectangle corners")
-  }
-  
-  saveRectangleBounds() {
-    if (!this.currentRectangle) return
-    
-    const bounds = this.currentRectangle.geometry.getBounds()
-    
-    // Проверяем, что прямоугольник не нулевой
-    if (!bounds || bounds[0][0] === bounds[1][0] || bounds[0][1] === bounds[1][1]) {
-      return
-    }
-    
-    const northWest = bounds[0]  // [north_lat, west_lng]
-    const southEast = bounds[1]  // [south_lat, east_lng]
-    
-    console.log("Rectangle bounds saved:", {
-      north_lat: northWest[0],
-      west_lng: northWest[1],
-      south_lat: southEast[0],
-      east_lng: southEast[1]
-    })
-    
-    // Заполняем скрытые поля формы
-    const northLatInput = document.getElementById('vineyard_north_lat')
-    const southLatInput = document.getElementById('vineyard_south_lat')
-    const eastLngInput = document.getElementById('vineyard_east_lng')
-    const westLngInput = document.getElementById('vineyard_west_lng')
-    
-    if (northLatInput && southLatInput && eastLngInput && westLngInput) {
-      northLatInput.value = northWest[0]
-      westLngInput.value = northWest[1]
-      southLatInput.value = southEast[0]
-      eastLngInput.value = southEast[1]
+    if (this.currentPolygon.editor) {
+      this.currentPolygon.editor.startEditing()
     }
   }
 
   getRectangleSize() {
-  // Размер в градусах в зависимости от зума
-  // zoom: 10-19 (обычный диапазон)
     const sizeMap = {
-      10: 0.05,  // ~5 км
-      11: 0.03,  // ~3 км
-      12: 0.02,  // ~2 км
-      13: 0.01,  // ~1 км
-      14: 0.005, // ~500 м
-      15: 0.003, // ~300 м
-      16: 0.002, // ~200 м
-      17: 0.001, // ~100 м
-      18: 0.0005,// ~50 м
-      19: 0.0002 // ~20 м
+      10: 0.05, 11: 0.03, 12: 0.02, 13: 0.01,
+      14: 0.005, 15: 0.003, 16: 0.002, 17: 0.001,
+      18: 0.0005, 19: 0.0002
     }
-    
-    return sizeMap[Math.round(this.zoom)] || 0.01
+    const currentZoom = this.map ? this.map.getZoom() : this.zoom
+    return sizeMap[Math.round(currentZoom)] || 0.01
   }
 
   dispatchMapUpdated() {

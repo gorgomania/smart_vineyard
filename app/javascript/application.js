@@ -56,37 +56,35 @@ document.addEventListener("turbo:load", function() {
 
   // Прыжок label при focus
   $(document).on("focus.auth", ".auth_input", function() {
-    let $label;
-    
-    if ($(this).parent().hasClass("field")) {
-      $label = $(this).prev();
-    } else if ($(this).parent().prev().hasClass("auth_label")) {
-      $label = $(this).parent().prev();
-    } else {
-      $label = $(this).parent().prev().children();
-    }
-    
-    $label.animate({ "top": "22px" }, 150).css("font-size", "13px");
+    moveLabel($(this), 1);
   });
 
   // Прыжок label при blur
   $(document).on("blur.auth", ".auth_input", function() {
     if (!this.value) {
-      let $label;
-      
-      if ($(this).parent().hasClass("field")) {
-        $label = $(this).prev();
-      } else if ($(this).parent().prev().hasClass("auth_label")) {
-        $label = $(this).parent().prev();
-      } else {
-        $label = $(this).parent().prev().children();
-      }
-      
-      $label.animate({ "top": "42px" }, 150).css("font-size", "16px");
+      moveLabel($(this), 0);
     }
   });
 
-  initializeNavigation();
+  // Событие change - при изменении значения
+  $(document).on("change.auth", ".auth_input", function() {
+    if (!this.value) {
+      moveLabel($(this), 0);
+    }
+    else {
+      moveLabel($(this), 1);
+    }
+  });
+
+  // Событие input - при вводе (мгновенная реакция)
+  $(document).on("input.auth", ".auth_input", function() {
+    if (!this.value) {
+      moveLabel($(this), 0);
+    }
+    else {
+      moveLabel($(this), 1);
+    }
+  });
 
   //Обработка выбора файлов через проводник
   $('#fileInput').on('change', function(event) {
@@ -150,6 +148,9 @@ document.addEventListener("turbo:load", function() {
     addFilesWithCheckDuplicates(newFiles)
   });
 
+  //Инициализация навигационного меню
+  initializeNavigation();
+
   //Замена меню при ресайзе
   $(window).on('resize', function() {
     handleMenuVisibility();
@@ -158,6 +159,7 @@ document.addEventListener("turbo:load", function() {
   //Замена меню при рендере
   handleMenuVisibility()
 
+  //Обработка кликов на иконку бургер-меню -> открытие/закрытие меню
   $('#burgerMenu').on('click', function () {
     const $dropMenu = $("#dropMenu");
     const $overlay = $("#overlay");
@@ -170,7 +172,8 @@ document.addEventListener("turbo:load", function() {
       $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
     }
   });
-
+  
+  //Закрытие бургер-меню при клике на оверлей
   $('#overlay').on('click', function () {
     const $dropMenu = $("#dropMenu");
     const $overlay = $("#overlay");
@@ -178,12 +181,31 @@ document.addEventListener("turbo:load", function() {
     $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
   });
 
+  //Анимация исчезновения флеша
   setTimeout(function() {
     $('.flash').fadeOut(500, function() {
       $(this).remove();
     });
   }, 3000);
 });
+
+function moveLabel($input, move) {
+    let $label;
+    if ($input.parent().hasClass("field")) {
+      $label = $input.prev();
+    } else if ($input.parent().prev().hasClass("auth_label")) {
+      $label = $input.parent().prev();
+    } else {
+      $label = $input.parent().prev().children();
+    }
+
+    if (!move) {
+      $label.animate({ "top": "42px" }, 150).css("font-size", "16px");
+    }
+    else {
+      $label.animate({ "top": "22px" }, 150).css("font-size", "13px");
+    }
+  }
 
 function handleMenuVisibility() {
     const windowWidth = window.innerWidth;
