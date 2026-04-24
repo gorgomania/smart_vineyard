@@ -11,7 +11,7 @@ Rails.application.routes.draw do
       post :classify  # классификация одного изображения
     end
   end
-  root "vineyards#show"
+  root "vineyards#index"
   get '*unmatched', to: 'application#not_found', via: :all, constraints: ->(req) {
     # Исключаем Active Storage и ассеты
     !req.path.start_with?('/rails/active_storage/') &&

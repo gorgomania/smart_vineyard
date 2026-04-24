@@ -20,12 +20,12 @@ export default class extends Controller {
   }
   
   parseCenter(centerStr) {
-    if (!centerStr) return [55.76, 37.64]
+    if (!centerStr) return [44.5947, 33.4756]
     try {
       // Парсим строку вида "[55.76, 37.64]"
       return JSON.parse(centerStr)
     } catch(e) {
-      return [55.76, 37.64]
+      return [44.5947, 33.4756]
     }
   }
   
@@ -98,7 +98,8 @@ export default class extends Controller {
       // Подписываемся на события от формы
       document.addEventListener('form:polygonUpdated', (event) => {
         if (this.currentPolygon) {
-          this.currentPolygon.geometry.setCoordinates(event.detail.bounds)
+          console.log(event.detail.coordinates)
+          this.currentPolygon.geometry.setCoordinates(event.detail.coordinates)
         }
       })
 

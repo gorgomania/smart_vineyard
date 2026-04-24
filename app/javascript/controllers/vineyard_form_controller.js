@@ -54,12 +54,12 @@ export default class extends Controller {
     }
     
     // Отправляем все 4 точки в карту
-    const coordinates = [
+    const coordinates = [[
       [northWestLat, northWestLng],
       [northEastLat, northEastLng],
       [southEastLat, southEastLng],
       [southWestLat, southWestLng],
-      [northWestLat, northWestLng]  // замыкаем
+      [northWestLat, northWestLng]]  // замыкаем
     ]
     
     const event = new CustomEvent('form:polygonUpdated', {
@@ -93,7 +93,7 @@ export default class extends Controller {
     const field = document.getElementById(id)
     if (field) {
         field.value = value
-        $(field).trigger('change')
+        $(field).trigger('input')
     } 
   }
   

@@ -66,22 +66,14 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
-  // Событие change - при изменении значения
-  $(document).on("change.auth", ".auth_input", function() {
-    if (!this.value) {
-      moveLabel($(this), 0);
-    }
-    else {
-      moveLabel($(this), 1);
-    }
-  });
-
   // Событие input - при вводе (мгновенная реакция)
   $(document).on("input.auth", ".auth_input", function() {
-    if (!this.value) {
+    const hasFocus = $(this).is(":focus");
+
+    if (!this.value && !hasFocus) {
       moveLabel($(this), 0);
     }
-    else {
+    else if (this.value) {
       moveLabel($(this), 1);
     }
   });

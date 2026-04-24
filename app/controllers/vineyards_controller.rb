@@ -5,6 +5,8 @@ class VineyardsController < ApplicationController
   end
 
   def show
+    @map_center, @map_zoom = initialize_map
+    @draw_mode = params[:draw] == 'true'
     render "index"
   end
   
