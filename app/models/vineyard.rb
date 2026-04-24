@@ -1,8 +1,9 @@
 class Vineyard < ApplicationRecord
   belongs_to :user
   
-  validates :name, presence: true, length: { maximum: 100 }
+  validates :name, presence: true, length: { maximum: 100 }, uniqueness: { scope: :user_id }
   validates :polygon, presence: true
+  validates :area_hectares, numericality: { greater_than: 0, less_than_or_equal_to: 20 }
   validates :grape_variety, length: { maximum: 50 }, allow_blank: true
   validates :planting_year, 
             numericality: { 
@@ -11,6 +12,13 @@ class Vineyard < ApplicationRecord
               less_than_or_equal_to: Date.current.year,
               allow_nil: true 
             }
+  validates :total_rows, numericality: { greater_than: 0 }
+  validates :total_bushes, numericality: { greater_than: 0 }
+  validates :row_spacing, numericality: { greater_than: 2.0, less_than: 3.0 }
+  validates :bush_spacing, numericality: { greater_than: 1.2, less_than: 1.8 }
+
+  # Сериализация JSONB
+  serialize :bushes_per_row, type: Array, coder: JSON
   
   validate :polygon_is_valid_rectangle
   validate :coordinates_in_range

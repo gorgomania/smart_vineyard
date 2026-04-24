@@ -2,6 +2,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
+
   connect() {
 
     // Подписываемся на события от карты
@@ -9,8 +10,23 @@ export default class extends Controller {
       this.updateFormFromPolygon(event.detail)
     })
 
+    document.addEventListener('map:statisticsUpdated', (event) => {
+      this.updateStatistics(event.detail)
+    })
+
     // Настраиваем слушатели полей формы
     this.setupFormListeners()
+  }
+
+  updateStatistics({ rows, bushes, area }) {
+    // Обновляем поля в форме
+    const rowsField = document.getElementById('vineyards_rows_count')
+    const bushesField = document.getElementById('vineyards_bushes_count')
+    const areaField = document.getElementById('vineyards_area')
+    
+    if (rowsField) rowsField.value = rows
+    if (bushesField) bushesField.value = bushes
+    if (areaField) areaField.value = area
   }
   
   // Обновление формы из полигона карты
@@ -85,7 +101,6 @@ export default class extends Controller {
     if (polygonInput && northWestLat && northWestLng) {
       const wkt = `POLYGON((${northWestLat} ${northWestLng}, ${northEastLat} ${northEastLng}, ${southEastLat} ${southEastLng}, ${southWestLat} ${southWestLng}, ${northWestLat} ${northWestLng}))`
       polygonInput.value = wkt
-      console.log("Polygon field updated:", wkt)
     }
   }
   

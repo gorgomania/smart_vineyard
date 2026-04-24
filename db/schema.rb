@@ -95,11 +95,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.string "grape_variety"
     t.integer "planting_year"
     t.bigint "user_id", null: false
+    t.decimal "area_hectares", precision: 10, scale: 4
+    t.integer "total_rows", default: 0, null: false
+    t.integer "total_bushes", default: 0, null: false
+    t.jsonb "rows_details", default: "[]", null: false
+    t.decimal "row_spacing", precision: 5, scale: 2, default: "3.0"
+    t.decimal "bush_spacing", precision: 5, scale: 2, default: "1.5"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
+    t.index ["rows_details"], name: "index_vineyards_on_rows_details", using: :gin
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
+    t.check_constraint "area_hectares <= 20::numeric OR area_hectares IS NULL", name: "check_area_limit"
+    t.check_constraint "bush_spacing >= 1.2 AND bush_spacing <= 1.8", name: "check_bush_spacing_range"
+    t.check_constraint "row_spacing >= 2.0 AND row_spacing <= 3.0", name: "check_row_spacing_range"
     t.check_constraint "st_numpoints(st_exteriorring(polygon::geometry)) = 5 AND st_isclosed(st_exteriorring(polygon::geometry)) AND st_isvalid(polygon::geometry)", name: "check_polygon_is_rectangle"
   end
 
