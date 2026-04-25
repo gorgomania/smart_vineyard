@@ -15,6 +15,8 @@ export default class extends Controller {
     this.bushesCollection = null
     this.rowSpacing = 3.0
     this.bushSpacing = 1.5
+    this.referenceSideIndex = 0
+    this.referenceVertexIsFirst = true
 
     if (!this.apiKey) {
       console.error('Map API key is missing')
@@ -75,7 +77,6 @@ export default class extends Controller {
           strokeWidth: 3,
           visible: false,             // Сначала скрыт
           editorDrawing: false,      
-          editorMaxPoints: 4       // Отключает режим добавления новых вершин
         }
       )
       
@@ -102,6 +103,29 @@ export default class extends Controller {
       
       this.map.geoObjects.add(this.rowsCollection)
       this.map.geoObjects.add(this.bushesCollection)
+
+      // Слушаем изменения расстояния между рядами и кустами
+      document.addEventListener('vineyard:spacingChanged', (event) => {
+        this.rowSpacing = event.detail.rowSpacing
+        this.bushSpacing = event.detail.bushSpacing
+        
+        // Перегенерируем ряды с новыми параметрами
+        this.regenerateRows()
+      })
+
+      // Слушаем изменения опорной стороны
+      document.addEventListener('vineyard:prevSide', () => {
+        this.switchToPreviousSide()
+      })
+
+      document.addEventListener('vineyard:nextSide', () => {
+        this.switchToNextSide()
+      })
+
+      document.addEventListener('vineyard:firstBushChanged', () => {
+        this.referenceVertexIsFirst = !this.referenceVertexIsFirst
+        this.regenerateRows()
+      })
 
       // Слушаем изменения геометрии
       this.currentPolygon.geometry.events.add('change', () => {
@@ -168,185 +192,189 @@ export default class extends Controller {
     }
   }
 
+  switchToPreviousSide() {
+    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+    if (this.referenceSideIndex - 1 >= 0) {
+      this.referenceSideIndex -= 1
+    }
+    else {
+      this.referenceSideIndex = coordinates.length - 2
+    }
+    this.generateRows(coordinates)
+  }
+
+  switchToNextSide() {
+    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+    if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
+      this.referenceSideIndex += 1
+    }
+    else {
+      this.referenceSideIndex = 0
+    }
+    this.generateRows(coordinates)
+  }
+
+  regenerateRows() {
+    if (!this.currentPolygon) return
+  
+    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+    if (coordinates && coordinates.length >= 3) {
+      this.generateRows(coordinates)
+    }
+  }
+
   generateRows(polygonPoints) {
-    if (!polygonPoints || polygonPoints.length < 4) return
+    if (!polygonPoints || polygonPoints.length < 3) return
     
-    // Очищаем предыдущие отрисовки
     this.rowsCollection.removeAll()
-    // this.bushesCollection.removeAll()
-    // Находим самую длинную сторону для определения направления рядов
-    const sides = this.getPolygonSides(polygonPoints)
-    const longestSide = sides.reduce((max, side) => 
-      side.length > max.length ? side : max, sides[0]
-    )
     
-    // Ряды будут параллельны самой длинной стороне
-    const rowDirection = [longestSide.p2[0] - longestSide.p1[0], longestSide.p2[1] - longestSide.p1[1]]
+    // 1. Находим самую длинную сторону (первый ряд)
+    const firstRow = this.getPolygonSide(polygonPoints)
+
+    // 2. Добавляем первый ряд
+    let totalBushes = this.addRow(firstRow.p1, firstRow.p2, 1, true)
+    // 3. Направление перпендикуляра (смещение рядов)
+    const rowVector = [firstRow.p2[0] - firstRow.p1[0], firstRow.p2[1] - firstRow.p1[1]]
+    const perpVector = [-rowVector[1], rowVector[0]] // Поворот на 90°
     
-    // Рассчитываем перпендикулярное направление
-    const perpDirection = [-rowDirection[1], rowDirection[0]]
+    // Нормализуем перпендикуляр
+    const perpLength = Math.sqrt(perpVector[0]**2 + perpVector[1]**2)
+    const perpUnit = [perpVector[0] / perpLength, perpVector[1] / perpLength]
     
-    // Нормализуем перпендикулярное направление
-    const perpLength = Math.sqrt(perpDirection[0]**2 + perpDirection[1]**2)
-    const perpUnit = [perpDirection[0] / perpLength, perpDirection[1] / perpLength]
+    // Шаг смещения в градусах
+    const stepDeg = this.metersToDegrees(this.rowSpacing)
     
-    // Рассчитываем ширину участка в перпендикулярном направлении
-    const width = this.calculateWidth(polygonPoints, perpUnit)
-    const rowSpacingDeg = this.metersToDegrees(this.rowSpacing)
+    // 4. Генерируем ряды в обе стороны
+    let offset = stepDeg
+    let hasNextRow = true
+    let numRows = 1
     
-    // Количество рядов
-    const numRows = Math.floor(width / rowSpacingDeg)
-    
-    // Находим опорную точку
-    const referencePoint = this.findReferencePoint(polygonPoints, perpUnit)
-    let totalBushes = 0;
-    // Генерируем ряды
-    for (let i = 0; i <= numRows; i++) {
-      const offset = i * rowSpacingDeg
-      const linePoints = this.getRowLine(polygonPoints, perpUnit, referencePoint, offset, rowDirection)
-      if (linePoints.length >= 2) {
-        // Добавляем линию ряда
-        const rowLine = new ymaps.Polyline(
-          linePoints.map(p => [p[0], p[1]]),
-          { hintContent: `Ряд ${i + 1}` }
-        )
-        this.rowsCollection.add(rowLine)
-        const rowLengthMeters = this.calculateLineLengthKm(linePoints[0], linePoints[linePoints.length-1]) * 1000
-        // Прибавляем количество кустов
-        totalBushes += Math.floor(rowLengthMeters / this.bushSpacing)
+    // В одну сторону
+    while (hasNextRow) {
+      const shiftedRow = this.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
+      const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
+      if (intersections.length === 2) {
+        numRows += 1
+        totalBushes += this.addRow(intersections[0], intersections[1], numRows)
+        offset += stepDeg
+      } else {
+        hasNextRow = false
+      }
+    }
+    // В другую сторону
+    offset = -stepDeg
+    hasNextRow = true
+    while (hasNextRow) {
+      const shiftedRow = this.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
+      const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
+      if (intersections.length === 2) {
+        numRows += 1
+        totalBushes += this.addRow(intersections[0], intersections[1], numRows)
+        offset -= stepDeg
+      } else {
+        hasNextRow = false
       }
     }
     
     const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
-    this.sendStatisticsToForm(numRows + 1, totalBushes, areaInHectares)
+    this.sendStatisticsToForm(numRows, totalBushes, areaInHectares)
   }
 
-  getPolygonSides(points) {
-    const sides = []
-    for (let i = 0; i < points.length - 1; i++) {
-      sides.push({
-        p1: points[i],
-        p2: points[i + 1],
-        length: this.distance(points[i], points[i + 1])
-      })
+  // Смещение линии
+  shiftLine(p1, p2, perpUnit, offset) {
+    return {
+      p1: [p1[0] + perpUnit[0] * offset, p1[1] + perpUnit[1] * offset],
+      p2: [p2[0] + perpUnit[0] * offset, p2[1] + perpUnit[1] * offset]
     }
-    return sides
   }
 
-  generateBushesOnRow(linePoints, rowIndex) {
-    if (linePoints.length < 2) return
-    
-    // Длина ряда в метрах
-    const rowLengthMeters = this.calculateLineLengthKm(linePoints[0], linePoints[linePoints.length-1]) * 1000
-    
-    // Количество кустов
-    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
-    
-    for (let i = 0; i <= numBushes; i++) {
-      const t = i / numBushes // Пропорция вдоль ряда
-      
-      // Интерполяция позиции куста
-      const bushPoint = this.interpolateOnLine(linePoints, t)
-      
-      if (bushPoint && this.isPointInPolygon(bushPoint, linePoints[0], linePoints[linePoints.length-1])) {
-        // Добавляем куст
-        const bush = new ymaps.Placemark(
-          [bushPoint[0], bushPoint[1]],
-          { 
-            hintContent: `Ряд ${rowIndex + 1}, Куст ${i + 1}`,
-          }
-        )
-        this.bushesCollection.add(bush)
+  // Поиск пересечений линии с полигоном
+  getIntersectionsWithPolygon(lineP1, lineP2, polygonPoints) {
+    const intersections = []
+
+    for (let i = 0; i < polygonPoints.length - 1; i++) {
+      const intersection = this.lineIntersection(
+        lineP1, lineP2,
+        polygonPoints[i], polygonPoints[i + 1]
+      )
+
+      if (intersection) {
+        intersections.push(intersection)
       }
+    }
+    
+    return intersections.sort((a, b) => this.distance(lineP1, a) - this.distance(lineP1, b))
+  }
+
+  // Добавление ряда (только линия, без кустов)
+  addRow(p1, p2, rowNumber, isFirstRow = false) {
+    // Вычисляем количество кустов
+    const rowLengthMeters = this.calculateLineLengthKm(p1, p2) * 1000
+    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
+    // Склонение слова "куст"
+    let bushesText = ''
+    if (numBushes % 10 === 1 && numBushes % 100 !== 11) {
+      bushesText = `${numBushes} куст`
+    } else if ([2, 3, 4].includes(numBushes % 10) && ![12, 13, 14].includes(numBushes % 100)) {
+      bushesText = `${numBushes} куста`
+    } else {
+      bushesText = `${numBushes} кустов`
+    }
+    let rowLine
+    if (!isFirstRow) {
+      rowLine = new ymaps.Polyline(
+      [[p1[0], p1[1]], [p2[0], p2[1]]],
+      { 
+        hintContent: `Ряд ${rowNumber} · ${bushesText}`,
+      }
+    )
+    }
+    else {
+      rowLine = new ymaps.Polyline(
+      [[p1[0], p1[1]], [p2[0], p2[1]]],
+      { 
+        hintContent: `Ряд ${rowNumber} · ${bushesText}`,
+      },
+      {
+        strokeColor: '#FFD700',  // Золотой для первого ряда
+        strokeWidth: 4,
+        strokeOpacity: 0.9
+      })
+      let p
+      if (this.referenceVertexIsFirst) {
+        p = p1
+      }
+      else {
+        p = p2
+      }
+      const startCircle = new ymaps.Circle(
+        [[p[0], p[1]], 3], // 5 метров
+        { hintContent: 'Первый куст' },
+        {
+          fillColor: '#FFD700',
+          fillOpacity: 0.8,
+          strokeColor: '#FFD700',
+          strokeWidth: 2,
+          strokeOpacity: 1
+        }
+      )
+      this.rowsCollection.add(startCircle)
+    }
+    this.rowsCollection.add(rowLine)
+    return numBushes
+  }
+
+  getPolygonSide(points) {
+    if (!points || points.length < 2 || this.referenceSideIndex >= points.length - 1 || this.referenceSideIndex < 0)
+      return null
+    return {
+      p1: points[this.referenceSideIndex],
+      p2: points[this.referenceSideIndex + 1],
     }
   }
 
   distance(p1, p2) {
     return Math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-  }
-
-  metersToDegrees(meters) {
-    // Примерное преобразование: 1 градус ≈ 111 км на экваторе
-    // Для более точного вычисления нужно учитывать широту
-    return meters / 111000
-  }
-
-  calculateWidth(polygonPoints, direction) {
-    const projections = polygonPoints.map(p => 
-      p[0] * direction[0] + p[1] * direction[1]
-    )
-    return Math.max(...projections) - Math.min(...projections)
-  }
-
-  findReferencePoint(polygonPoints, direction) {
-    const projections = polygonPoints.map(p => 
-      p[0] * direction[0] + p[1] * direction[1]
-    )
-    const minIndex = projections.indexOf(Math.min(...projections))
-    return polygonPoints[minIndex]
-  }
-
-  getRowLine(polygonPoints, perpUnit, referencePoint, offset, rowDirection) {
-    // Находим пересечения линии с границами полигона
-    const lineStart = [
-      referencePoint[0] + perpUnit[0] * offset,
-      referencePoint[1] + perpUnit[1] * offset
-    ]
-    
-    const intersections = []
-    for (let i = 0; i < polygonPoints.length - 1; i++) {
-      const intersection = this.lineIntersection(
-        lineStart,
-        [lineStart[0] + rowDirection[0], lineStart[1] + rowDirection[1]],
-        polygonPoints[i],
-        polygonPoints[i + 1]
-      )
-      if (intersection) {
-        intersections.push(intersection)
-      }
-    }
-    return intersections.sort((a, b) => this.distance(lineStart, a) - this.distance(lineStart, b))
-  }
-  
-  lineIntersection(p1, p2, p3, p4) {
-    const denominator = (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1])
-    if (denominator === 0) return null
-    const ua = ((p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0])) / denominator
-    const ub = ((p2[0] - p1[0]) * (p1[1] - p3[1]) - (p2[1] - p1[1]) * (p1[0] - p3[0])) / denominator
-    
-    if (ua < 0 || ua > 1 || ub < 0 || ub > 1) return null
-    
-    return [
-      p1[0] + ua * (p2[0] - p1[0]),
-      p1[1] + ua * (p2[1] - p1[1])
-    ]
-  }
-
-  calculateLineLengthKm(p1, p2) {
-    return GeometryHelpers.distance(p1, p2)
-  }
-
-  interpolateOnLine(points, t) {
-    if (points.length < 2) return null
-    
-    const totalLength = this.getLineLength(points)
-    const targetLength = totalLength * t
-    
-    let accumulatedLength = 0
-    for (let i = 0; i < points.length - 1; i++) {
-      const segmentLength = this.distance(points[i], points[i + 1])
-      if (accumulatedLength + segmentLength >= targetLength) {
-        const remaining = targetLength - accumulatedLength
-        const ratio = remaining / segmentLength
-        return [
-          points[i][0] + (points[i + 1][0] - points[i][0]) * ratio,
-          points[i][1] + (points[i + 1][1] - points[i][1]) * ratio
-        ]
-      }
-      accumulatedLength += segmentLength
-    }
-    
-    return points[points.length - 1]
   }
 
   getLineLength(points) {
@@ -357,9 +385,40 @@ export default class extends Controller {
     return length
   }
 
-  isPointInPolygon(point, startPoint, endPoint) {
-    // Упрощенная проверка - можно расширить для более точной
-    return true
+  calculateLineLengthKm(p1, p2) {
+    return GeometryHelpers.distance(p1, p2)
+  }
+
+  lineIntersection(p1, p2, p3, p4) {
+      const denominator = (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1])
+      if (denominator === 0) return null // Прямая и отрезок параллельны
+      
+      const ua = ((p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0])) / denominator
+      const ub = ((p2[0] - p1[0]) * (p1[1] - p3[1]) - (p2[1] - p1[1]) * (p1[0] - p3[0])) / denominator
+      
+      // ub проверяем (пересечение с отрезком), ua не проверяем (прямая бесконечна)
+      if (ub < 0 || ub > 1) return null
+      
+      return [
+        p1[0] + ua * (p2[0] - p1[0]),
+        p1[1] + ua * (p2[1] - p1[1])
+      ]
+  }
+
+  metersToDegrees(meters) {
+    // Берем широту из центра карты или из первой точки полигона
+    let lat = this.map.getCenter()[0]
+    
+    // 1 градус широты ≈ 111320 метров (всегда)
+    const metersPerDegreeLat = 111320
+    
+    // 1 градус долготы зависит от широты
+    const metersPerDegreeLon = 111320 * Math.cos(lat * Math.PI / 180)
+    
+    // Для рядов используем среднее (ряды могут идти в любом направлении)
+    const avgMetersPerDegree = (metersPerDegreeLat + metersPerDegreeLon) / 2
+    
+    return meters / avgMetersPerDegree
   }
 
   getRectangleSize() {

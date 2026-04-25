@@ -3,6 +3,10 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
 
+  static targets = ["rowSpacing", "bushSpacing", "rowSpacingValue", "bushSpacingValue", 
+                    "prevSide", "nextSide", "sideInfo", "totalSides", 
+                    "firstBushStart", "firstBushEnd", "referenceSideIndex", "referenceVertexIsFirst"]
+
   connect() {
 
     // Подписываемся на события от карты
@@ -16,6 +20,9 @@ export default class extends Controller {
 
     // Настраиваем слушатели полей формы
     this.setupFormListeners()
+    this.setupSpacingListeners()
+    this.setupSideButtons()
+    this.setupFirstBushButtons()
   }
 
   updateStatistics({ rows, bushes, area }) {
@@ -51,6 +58,22 @@ export default class extends Controller {
     this.updatePolygonField()
   }
   
+  updateSidesInfo({ totalSides, currentSide }) {
+    const sideInfo = this.sideInfoTarget
+    const totalSidesSpan = this.totalSidesTarget
+    const referenceSideIndex = this.referenceSideIndexTarget
+    
+    if (sideInfo) {
+      sideInfo.textContent = `Сторона ${currentSide + 1} из ${totalSides}`
+    }
+    if (totalSidesSpan) {
+      totalSidesSpan.textContent = totalSides
+    }
+    if (referenceSideIndex) {
+      referenceSideIndex.value = currentSide
+    }
+  }
+
   // Обновление карты из полей формы
   updateMapFromForm() {
     const northWestLat = parseFloat(this.getFieldValue('vineyards_north_west_lat'))
@@ -102,6 +125,92 @@ export default class extends Controller {
       const wkt = `POLYGON((${northWestLat} ${northWestLng}, ${northEastLat} ${northEastLng}, ${southEastLat} ${southEastLng}, ${southWestLat} ${southWestLng}, ${northWestLat} ${northWestLng}))`
       polygonInput.value = wkt
     }
+  }
+
+  setupSpacingListeners() {
+    // Расстояние между рядами
+    if (this.hasRowSpacingTarget && this.hasRowSpacingValueTarget) {
+      this.rowSpacingTarget.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value).toFixed(1)
+        this.rowSpacingValueTarget.textContent = value
+        this.dispatchSpacingChanged()
+      })
+    }
+
+    // Расстояние между кустами
+    if (this.hasBushSpacingTarget && this.hasBushSpacingValueTarget) {
+      this.bushSpacingTarget.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value).toFixed(1)
+        this.bushSpacingValueTarget.textContent = value
+        this.dispatchSpacingChanged()
+      })
+    }
+  }
+
+  setupSideButtons() {
+    // Предыдущая сторона
+    if (this.hasPrevSideTarget) {
+      this.prevSideTarget.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('vineyard:prevSide'))
+      })
+    }
+
+    // Следующая сторона
+    if (this.hasNextSideTarget) {
+      this.nextSideTarget.addEventListener('click', () => {
+        document.dispatchEvent(new CustomEvent('vineyard:nextSide'))
+      })
+    }
+  }
+
+  setupFirstBushButtons() {
+    // Первый куст в начале ряда
+    if (this.hasFirstBushStartTarget) {
+      this.firstBushStartTarget.addEventListener('click', () => {
+        this.updateFirstBushButtonState('start')
+        if (this.hasReferenceVertexIsFirstTarget) {
+          this.referenceVertexIsFirstTarget.value = 'true'
+        }
+        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged'))
+      })
+    }
+
+    // Первый куст в конце ряда
+    if (this.hasFirstBushEndTarget) {
+      this.firstBushEndTarget.addEventListener('click', () => {
+        this.updateFirstBushButtonState('end')
+        if (this.hasReferenceVertexIsFirstTarget) {
+          this.referenceVertexIsFirstTarget.value = 'false'
+        }
+        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged'))
+      })
+    }
+  }
+
+  updateFirstBushButtonState(active) {
+    const startBtn = this.firstBushStartTarget
+    const endBtn = this.firstBushEndTarget
+    if (active === 'start') {
+      startBtn.classList.add('bg-[#69377c]', 'border-[#69377c]', 'text-white', 'pointer-events-none')
+      startBtn.classList.remove('bg-[#f2f2f2]', 'text-[#69377c]', 'border-[#e5e5e5]', 'hover:bg-[#e8e8e8]')
+      endBtn.classList.remove('bg-[#69377c]','border-[#69377c]', 'text-white', 'pointer-events-none')
+      endBtn.classList.add('bg-[#f2f2f2]', 'hover:bg-[#e8e8e8]', 'text-[#69377c]', 'border-[#e5e5e5]')
+    } else {
+      endBtn.classList.add('bg-[#69377c]', 'border-[#69377c]', 'text-white', 'pointer-events-none')
+      endBtn.classList.remove('bg-[#f2f2f2]', 'text-[#69377c]', 'border-[#e5e5e5]', 'hover:bg-[#e8e8e8]')
+      startBtn.classList.remove('bg-[#69377c]','border-[#69377c]', 'text-white', 'pointer-events-none')
+      startBtn.classList.add('bg-[#f2f2f2]', 'hover:bg-[#e8e8e8]', 'text-[#69377c]', 'border-[#e5e5e5]')
+    }
+  }
+
+  dispatchSpacingChanged() {
+    const event = new CustomEvent('vineyard:spacingChanged', {
+      detail: { 
+        rowSpacing: parseFloat(this.rowSpacingTarget.value), 
+        bushSpacing: parseFloat(this.bushSpacingTarget.value) 
+      }
+    })
+    document.dispatchEvent(event)
   }
   
   setFieldValue(id, value) {

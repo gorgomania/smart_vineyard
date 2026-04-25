@@ -16,6 +16,7 @@ class VineyardsController < ApplicationController
   end
 
   def create
+    render "new"
   end
 
   private
