@@ -98,7 +98,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.decimal "area_hectares", precision: 4, scale: 2
     t.integer "total_rows", default: 0, null: false
     t.integer "total_bushes", default: 0, null: false
-    t.jsonb "rows_details", default: "[]", null: false
+    t.integer "bushes_per_row", default: [], array: true
     t.decimal "row_spacing", precision: 2, scale: 1, default: "3.0"
     t.decimal "bush_spacing", precision: 2, scale: 1, default: "1.5"
     t.integer "reference_side_index", default: 0, null: false
@@ -106,7 +106,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
-    t.index ["rows_details"], name: "index_vineyards_on_rows_details", using: :gin
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
     t.check_constraint "area_hectares <= 20::numeric OR area_hectares IS NULL", name: "check_area_limit"

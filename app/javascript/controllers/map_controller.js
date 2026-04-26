@@ -130,11 +130,8 @@ export default class extends Controller {
       // Слушаем изменения геометрии
       this.currentPolygon.geometry.events.add('change', () => {
           const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+          this.updateForm(coordinates)
           this.generateRows(coordinates)
-          const event = new CustomEvent('map:polygonUpdated', {
-            detail: { coordinates: coordinates }
-          })
-          document.dispatchEvent(event)
       })
 
       // Подписываемся на события от формы
@@ -145,9 +142,7 @@ export default class extends Controller {
       })
 
       if (this.enableDrawingOnLoad) {
-        setTimeout(() => {
-          this.enableDrawing()
-        }, 500)
+        this.enableDrawing()
       }
 
       this.map.events.add('boundschange', () => {
@@ -214,6 +209,13 @@ export default class extends Controller {
     this.generateRows(coordinates)
   }
 
+  updateForm(coordinates) {
+    const event = new CustomEvent('map:geometryChanged', {
+      detail: { coordinates: coordinates }
+    })
+    document.dispatchEvent(event)
+  }
+
   regenerateRows() {
     if (!this.currentPolygon) return
   
@@ -227,12 +229,13 @@ export default class extends Controller {
     if (!polygonPoints || polygonPoints.length < 3) return
     
     this.rowsCollection.removeAll()
-    
+    const bushesPerRow = []
     // 1. Находим самую длинную сторону (первый ряд)
     const firstRow = this.getPolygonSide(polygonPoints)
 
     // 2. Добавляем первый ряд
     let totalBushes = this.addRow(firstRow.p1, firstRow.p2, 1, true)
+    bushesPerRow.push(totalBushes)
     // 3. Направление перпендикуляра (смещение рядов)
     const rowVector = [firstRow.p2[0] - firstRow.p1[0], firstRow.p2[1] - firstRow.p1[1]]
     const perpVector = [-rowVector[1], rowVector[0]] // Поворот на 90°
@@ -255,7 +258,9 @@ export default class extends Controller {
       const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        totalBushes += this.addRow(intersections[0], intersections[1], numRows)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
+        bushesPerRow.push(numBushes)
+        totalBushes += numBushes
         offset += stepDeg
       } else {
         hasNextRow = false
@@ -269,7 +274,9 @@ export default class extends Controller {
       const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        totalBushes += this.addRow(intersections[0], intersections[1], numRows)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
+        bushesPerRow.push(numBushes)
+        totalBushes += numBushes
         offset -= stepDeg
       } else {
         hasNextRow = false
@@ -277,7 +284,7 @@ export default class extends Controller {
     }
     
     const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
-    this.sendStatisticsToForm(numRows, totalBushes, areaInHectares)
+    this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
   }
 
   // Смещение линии
@@ -443,13 +450,14 @@ export default class extends Controller {
     document.dispatchEvent(event)
   }
 
-  sendStatisticsToForm(rowsCount, bushesCount, areaInHectares) {
+  sendStatisticsToForm(rowsCount, bushesCount, areaInHectares, bushesPerRow) {
   // Отправляем событие с данными о рядах и кустах
     const event = new CustomEvent('map:statisticsUpdated', {
       detail: { 
         rows: rowsCount,
         bushes: bushesCount,
-        area: areaInHectares.toFixed(2)
+        area: areaInHectares.toFixed(2),
+        bushesPerRow: bushesPerRow
       }
     })
     document.dispatchEvent(event)

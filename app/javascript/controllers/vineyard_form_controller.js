@@ -9,9 +9,8 @@ export default class extends Controller {
 
   connect() {
 
-    // Подписываемся на события от карты
-    document.addEventListener('map:polygonUpdated', (event) => {
-      this.updateFormFromPolygon(event.detail)
+    document.addEventListener('map:geometryChanged', (event) => {
+      this.updateVerticesFields(event.detail.coordinates)
     })
 
     document.addEventListener('map:statisticsUpdated', (event) => {
@@ -19,43 +18,101 @@ export default class extends Controller {
     })
 
     // Настраиваем слушатели полей формы
-    this.setupFormListeners()
     this.setupSpacingListeners()
     this.setupSideButtons()
     this.setupFirstBushButtons()
   }
 
-  updateStatistics({ rows, bushes, area }) {
+  updateVerticesFields(vertices) {
+    const container = document.getElementById('vertices-container')
+    if (!container) return
+    
+    // Очищаем контейнер
+    container.innerHTML = ''
+    
+    // Создаем поля для каждой вершины
+    vertices.slice(0, -1).forEach((vertex, index) => {
+      const vertexHtml = `
+        <div class="vertex-group" data-vertex-index="${index}">
+          <div class="text-[#69377c] text-sm my-1">Вершина ${index + 1}</div>
+          <div class="flex justify-between gap-2 -mt-6">
+            <div class="field flex-1 min-w-0">
+              <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Широта</label>
+              <input type="text" name="vineyards[vertex_${index}_lat]" value="${vertex[0].toFixed(7)}" 
+                    class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
+                    data-vertex-lat="${index}">
+            </div>
+            <div class="field flex-1 min-w-0">
+              <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Долгота</label>
+              <input type="text" name="vineyards[vertex_${index}_lng]" value="${vertex[1].toFixed(7)}" 
+                    class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
+                    data-vertex-lng="${index}">
+            </div>
+          </div>
+        </div>
+      `
+      container.insertAdjacentHTML('beforeend', vertexHtml)
+    })
+    
+    // Добавляем обработчики для новых полей
+    this.setupVertexListeners()
+  }
+
+  setupVertexListeners() {
+    const latInputs = document.querySelectorAll('[data-vertex-lat]')
+    const lngInputs = document.querySelectorAll('[data-vertex-lng]')
+    
+    latInputs.forEach(input => {
+      input.addEventListener('change', this.vertexChangeHandler.bind(this))
+    })
+    
+    lngInputs.forEach(input => {
+      input.addEventListener('change', this.vertexChangeHandler.bind(this))
+    })
+  }
+
+  vertexChangeHandler() {
+    const vertices = this.collectVerticesFromForm()
+    
+    // Отправляем обновленные вершины на карту
+    const coordinates = [vertices.map(v => [v.lat, v.lng])]
+    coordinates[0].push([vertices[0].lat, vertices[0].lng]) // замыкаем полигон
+    
+    const polygonEvent = new CustomEvent('form:polygonUpdated', {
+      detail: { coordinates: coordinates }
+    })
+    document.dispatchEvent(polygonEvent)
+  }
+
+  collectVerticesFromForm() {
+    const vertices = []
+    const latInputs = document.querySelectorAll('[data-vertex-lat]')
+    
+    latInputs.forEach(latInput => {
+      const index = latInput.dataset.vertexLat
+      const lngInput = document.querySelector(`[data-vertex-lng="${index}"]`)
+      if (lngInput) {
+        vertices.push({
+          lat: parseFloat(latInput.value),
+          lng: parseFloat(lngInput.value)
+        })
+      }
+    })
+    
+    return vertices
+  }
+
+  updateStatistics({ rows, bushes, area, bushesPerRow }) {
     // Обновляем поля в форме
-    const rowsField = document.getElementById('vineyards_rows_count')
-    const bushesField = document.getElementById('vineyards_bushes_count')
-    const areaField = document.getElementById('vineyards_area')
+    const rowsField = document.getElementById('vineyards_total_rows')
+    const bushesField = document.getElementById('vineyards_total_bushes')
+    const areaField = document.getElementById('vineyards_area_hectares')
+    const bushesPerRowField = document.getElementById('vineyards_bushes_per_row')
     
     if (rowsField) rowsField.value = rows
     if (bushesField) bushesField.value = bushes
     if (areaField) areaField.value = area
-  }
-  
-  // Обновление формы из полигона карты
-  updateFormFromPolygon(detail) {
-    let coordinates = detail.coordinates
-    
-    if (!coordinates || coordinates.length < 4) {
-      console.warn("No valid coordinates received")
-      return
-    }
-    
-    // Заполняем поля формы (берем первые 4 точки)
-    this.setFieldValue('vineyards_north_west_lat', coordinates[0][0]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_north_west_lng', coordinates[0][1]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_north_east_lat', coordinates[1][0]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_north_east_lng', coordinates[1][1]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_south_east_lat', coordinates[2][0]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_south_east_lng', coordinates[2][1]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_south_west_lat', coordinates[3][0]?.toFixed(7) || '')
-    this.setFieldValue('vineyards_south_west_lng', coordinates[3][1]?.toFixed(7) || '')
-    
-    this.updatePolygonField()
+    if (bushesPerRowField) bushesPerRowField.value = JSON.stringify(bushesPerRow)
   }
   
   updateSidesInfo({ totalSides, currentSide }) {
@@ -71,59 +128,6 @@ export default class extends Controller {
     }
     if (referenceSideIndex) {
       referenceSideIndex.value = currentSide
-    }
-  }
-
-  // Обновление карты из полей формы
-  updateMapFromForm() {
-    const northWestLat = parseFloat(this.getFieldValue('vineyards_north_west_lat'))
-    const northWestLng = parseFloat(this.getFieldValue('vineyards_north_west_lng'))
-    const northEastLat = parseFloat(this.getFieldValue('vineyards_north_east_lat'))
-    const northEastLng = parseFloat(this.getFieldValue('vineyards_north_east_lng'))
-    const southEastLat = parseFloat(this.getFieldValue('vineyards_south_east_lat'))
-    const southEastLng = parseFloat(this.getFieldValue('vineyards_south_east_lng'))
-    const southWestLat = parseFloat(this.getFieldValue('vineyards_south_west_lat'))
-    const southWestLng = parseFloat(this.getFieldValue('vineyards_south_west_lng'))
-    
-    if (isNaN(northWestLat) || isNaN(northWestLng) ||
-        isNaN(northEastLat) || isNaN(northEastLng) ||
-        isNaN(southEastLat) || isNaN(southEastLng) ||
-        isNaN(southWestLat) || isNaN(southWestLng)) {
-      return
-    }
-    
-    // Отправляем все 4 точки в карту
-    const coordinates = [[
-      [northWestLat, northWestLng],
-      [northEastLat, northEastLng],
-      [southEastLat, southEastLng],
-      [southWestLat, southWestLng],
-      [northWestLat, northWestLng]]  // замыкаем
-    ]
-    
-    const event = new CustomEvent('form:polygonUpdated', {
-      detail: { coordinates: coordinates }
-    })
-    document.dispatchEvent(event)
-    
-    this.updatePolygonField()
-  }
-  
-  // Обновление скрытого поля с WKT полигоном
-  updatePolygonField() {
-    const northWestLat = this.getFieldValue('vineyards_north_west_lat')
-    const northWestLng = this.getFieldValue('vineyards_north_west_lng')
-    const northEastLat = this.getFieldValue('vineyards_north_east_lat')
-    const northEastLng = this.getFieldValue('vineyards_north_east_lng')
-    const southEastLat = this.getFieldValue('vineyards_south_east_lat')
-    const southEastLng = this.getFieldValue('vineyards_south_east_lng')
-    const southWestLat = this.getFieldValue('vineyards_south_west_lat')
-    const southWestLng = this.getFieldValue('vineyards_south_west_lng')
-    
-    const polygonInput = document.getElementById('vineyard_polygon')
-    if (polygonInput && northWestLat && northWestLng) {
-      const wkt = `POLYGON((${northWestLat} ${northWestLng}, ${northEastLat} ${northEastLng}, ${southEastLat} ${southEastLng}, ${southWestLat} ${southWestLng}, ${northWestLat} ${northWestLng}))`
-      polygonInput.value = wkt
     }
   }
 
@@ -211,35 +215,5 @@ export default class extends Controller {
       }
     })
     document.dispatchEvent(event)
-  }
-  
-  setFieldValue(id, value) {
-    const field = document.getElementById(id)
-    if (field) {
-        field.value = value
-        $(field).trigger('input')
-    } 
-  }
-  
-  getFieldValue(id) {
-    const field = document.getElementById(id)
-    return field ? field.value : null
-  }
-  
-  setupFormListeners() {
-    const fieldIds = [
-      'vineyards_north_west_lat', 'vineyards_north_west_lng',
-      'vineyards_north_east_lat', 'vineyards_north_east_lng',
-      'vineyards_south_east_lat', 'vineyards_south_east_lng',
-      'vineyards_south_west_lat', 'vineyards_south_west_lng'
-    ]
-    
-    fieldIds.forEach(id => {
-      const field = document.getElementById(id)
-      if (field) {
-        field.addEventListener('change', () => this.updateMapFromForm())
-        field.addEventListener('input', () => this.updatePolygonField())
-      }
-    })
   }
 }

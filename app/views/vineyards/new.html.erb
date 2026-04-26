@@ -23,10 +23,9 @@
       <% end %>
         
       <%= form_for(:vineyards, url: :vineyards, html: { method: :post, class: "w-[280px]" }) do |f| %>
-        <!-- Скрытое поле для полигона -->
-        <%= f.hidden_field :polygon, id: "vineyard_polygon" %>
-        <%= f.hidden_field :reference_side_index, data: { vineyard_form_target: "referenceSideIndex" } %>
+        <%= f.hidden_field :reference_side_index, data: { vineyard_form_target: "referenceSideIndex" }, value: 0 %>
         <%= f.hidden_field :reference_vertex_is_first, data: { vineyard_form_target: "referenceVertexIsFirst" }, value: true %>
+        <%= f.hidden_field :bushes_per_row, value: "[]" %>
 
         <div class="field">
           <%= f.label "Название", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
@@ -43,53 +42,7 @@
           <%= f.text_field :planting_year, class: "auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
         </div>
 
-        <div class="text-[#69377c] text-sm my-1">Первая вершина</div>
-        <div class="flex justify-between gap-2 -mt-6">
-          <div class="field">
-            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :north_west_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-          <div class="field">
-            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :north_west_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-        </div>
-        
-        <div class="text-[#69377c] text-sm my-1">Вторая вершина</div>
-        <div class="flex justify-between gap-2 -mt-6">
-          <div class="field">
-            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :north_east_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-          <div class="field">
-            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :north_east_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div> 
-        </div>
-
-        <div class="text-[#69377c] text-sm my-1">Третья вершина</div>
-        <div class="flex justify-between gap-2 -mt-6">
-          <div class="field">
-            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :south_east_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-          <div class="field">
-            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :south_east_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-        </div>
-
-        <div class="text-[#69377c] text-sm my-1">Четвёртая вершина</div>
-        <div class="flex justify-between gap-2 -mt-6">
-          <div class="field">
-            <%= f.label "Широта", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :south_west_lat, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-          <div class="field">
-            <%= f.label "Долгота", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :south_west_lng, class: "auth_input w-34 px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white" %>
-          </div>
-        </div>
+        <div id="vertices-container"></div>
 
         <div class="field mt-1">
           <%= f.label "Расстояние между рядами (м)", class: "text-[#69377c] text-sm" %>
@@ -137,17 +90,17 @@
 
         <div class="field flex-1 min-w-0 -mt-1">
           <%= f.label "Площадь", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :area, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+          <%= f.text_field :area_hectares, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
         </div>
 
         <div class="field flex-1 min-w-0 -mt-1">
           <%= f.label "Количество рядов", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :rows_count, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+          <%= f.text_field :total_rows, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
         </div>
 
         <div class="field flex-1 min-w-0 -mt-1">
           <%= f.label "Количество кустов", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :bushes_count, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+          <%= f.text_field :total_bushes, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
         </div>
 
         <div class="actions">

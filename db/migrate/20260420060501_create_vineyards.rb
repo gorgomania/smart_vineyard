@@ -15,7 +15,7 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       t.integer :total_bushes, null: false, default: 0    # Общее количество кустов
 
       # Детализация по рядам (храним в JSON)
-      t.jsonb :rows_details, null: false, default: '[]'     # Информация о каждом ряде
+      t.integer :bushes_per_row, array: true, default: []     # Информация о каждом ряде
       
       # Параметры посадки (с какими параметрами был сделан расчёт)
       t.decimal :row_spacing, precision: 2, scale: 1, default: 3.0    # Расстояние между рядами (м)
@@ -30,7 +30,6 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
     
     add_index :vineyards, [:user_id, :name], unique: true
     add_index :vineyards, :polygon, using: :gist
-    add_index :vineyards, :rows_details, using: :gin  # Индекс для JSONB
 
     # Проверка: Площадь не превышает 20 га
     execute <<-SQL
@@ -74,7 +73,6 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       execute "ALTER TABLE vineyards DROP CONSTRAINT IF EXISTS check_total_bushes_positive"
       remove_index :vineyards, [:user_id, :name] if index_exists?(:vineyards, [:user_id, :name])
       remove_index :vineyards, :polygon if index_exists?(:vineyards, :polygon)
-      remove_index :vineyards, :rows_details if index_exists?(:vineyards, :rows_details)
       drop_table :vineyards
     end
   end

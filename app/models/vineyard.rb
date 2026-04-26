@@ -16,26 +16,22 @@ class Vineyard < ApplicationRecord
   validates :total_bushes, numericality: { greater_than: 0 }
   validates :row_spacing, numericality: { greater_than_or_equal_to: 2.0, less_than_or_equal_to: 3.0 }
   validates :bush_spacing, numericality: { greater_than_or_equal_to: 1.2, less_than_or_equal_to: 1.8 }
-
-  # Сериализация JSONB
-  serialize :bushes_per_row, type: Array, coder: JSON
-  
-  validate :coordinates_in_range
+  validate :bushes_per_row_must_match_totals
   
   private
-  
-  # Валидация: координаты должны быть в допустимых диапазонах
-  def coordinates_in_range
-    return unless polygon
+  def bushes_per_row_must_match_totals
+    return if bushes_per_row.blank? || total_rows.blank?
     
-    bounds = self.bounds
-    
-    if bounds[:north_lat] > 90 || bounds[:south_lat] < -90
-      errors.add(:polygon, "latitude must be between -90 and 90")
+    # Проверка длины
+    if bushes_per_row.length != total_rows
+      errors.add(:bushes_per_row, 
+        "должен содержать #{total_rows} рядов, получено #{bushes_per_row.length}")
     end
     
-    if bounds[:east_lng] > 180 || bounds[:west_lng] < -180
-      errors.add(:polygon, "longitude must be between -180 and 180")
+    # Проверка суммы
+    if total_bushes.present? && bushes_per_row.sum != total_bushes
+      errors.add(:bushes_per_row, 
+        "сумма кустов по рядам (#{bushes_per_row.sum}) не равна total_bushes (#{total_bushes})")
     end
   end
 end
