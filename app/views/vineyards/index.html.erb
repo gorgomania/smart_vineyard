@@ -21,13 +21,35 @@
                 <%= image_tag "/create_vineyard.png", alt: "Create vineyard", class: "min-w-8 h-8" %>
             <% end %>
         </div>
+        <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto">
+            <% @vineyards.each do |vineyard| %>
+                <div class = "flex w-full justify-between bg-white rounded-2xl p-5">
+                    <div class = "flex flex-col text-[#333] text-m">
+                        <%= link_to vineyard_path(vineyard.id) do %>
+                            <span class="text-[#69377c] text-xl font-bold hover:opacity-90"><%= vineyard.name %></span>
+                        <% end %>
+                        <span> Сорт: <%= vineyard.grape_variety %> </span>
+                        <span> Площадь: <%= vineyard.area_hectares %> га </span>
+                    </div>
+                    <div class = "flex max-w-33 h-fit">
+                        <%= link_to edit_vineyard_path(vineyard.id), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                            <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
+                        <%end%>
+                        <%= button_to vineyard_path(vineyard.id), method: :delete, data: { turbo_confirm: "Удалить виноградник \"#{vineyard.name}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
+                            <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
+                        <%end%>
+                    </div>
+                </div>
+            <% end %>
+        </div>
         <div id="map" 
             data-controller="map"
             data-turbo="false"
             data-map-api-key="<%= Rails.application.credentials.dig(:yandex, :api_key) %>"
             data-map-center="<%= @map_center %>"
             data-map-zoom="<%= @map_zoom %>"
-            data-map-draw="<%= @draw_mode %>"
+            data-map-mode="<%= @mode %>"
+            data-map-multiple-polygons="<%= @vineyards_data.to_json %>"
             class="w-full h-[84.5vh]">
         </div>
     </div>

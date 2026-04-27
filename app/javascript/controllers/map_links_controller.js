@@ -23,7 +23,7 @@ export default class extends Controller {
     this.linkTargets.forEach(link => {
       const linkType = link.dataset.linkType
       if (linkType === 'create') {
-        link.href = `/vineyards/new?center_lat=${center[0]}&center_lng=${center[1]}&zoom=${zoom}&draw=true`
+        link.href = `/vineyards/new?center_lat=${center[0]}&center_lng=${center[1]}&zoom=${zoom}`
       } else if (linkType === 'list') {
         link.href = `/vineyards?center_lat=${center[0]}&center_lng=${center[1]}&zoom=${zoom}`
       }

@@ -1,0 +1,124 @@
+<%= render template: "layouts/header" %>
+<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
+    <% flash.each do |type, msg| %>
+        <% if type == "alert" %>
+            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
+                <%= msg %>
+            </div>
+        <% else %>
+            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
+                <%= msg %>
+            </div>
+        <% end %>
+    <% end %>
+    
+    <div class = "flex">
+        <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
+            <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Режим просмотра", data: { map_links_target: "link", link_type: "list" } do %>
+                <%= image_tag "/vineyard_list.png", alt: "Vineyards", class: "min-w-8 h-8" %>
+            <% end %>
+            <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
+                <%= image_tag "/create_vineyard.png", alt: "Create vineyard", class: "min-w-8 h-8" %>
+            <% end %>
+        </div>
+        <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto">
+          <div class="text-[#333] text-[22px] font-bold">
+            <span>Просмотр виноградника</span>
+          </div>
+
+          <div class="w-[280px] mt-2">
+            <!-- Основная информация -->
+            <div class="field">
+              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Название</div>
+              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <%= @vineyard.name %>
+              </div>
+            </div>
+
+            <div class="field -mt-1">
+              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Сорт винограда</div>
+              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <%= @vineyard.grape_variety.presence || "—" %>
+              </div>
+            </div>
+
+            <div class="field -mt-1">
+              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Год посадки</div>
+              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <%= @vineyard.planting_year.presence || "—" %>
+              </div>
+            </div>
+            
+            <!-- Координаты вершин -->
+            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+              <div class="text-[#69377c] text-sm font-medium mb-5">Координаты вершин</div>
+                <% @vineyard.polygon.coordinates[0].each_with_index do |coord, index| %>
+                  <% next if index == @vineyard.polygon.coordinates[0].length - 1 %> <%# пропускаем замыкающую точку %>
+                  <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] ">
+                    <div class="text-[#8c8c8c] pointer-events-none leading-4">Вершина <%= index + 1 %></div>
+                    <div class=" flex flex-col items-center">
+                      <span>Широта: <%= coord[1].round(6) %></span>
+                      <span>Долгота: <%= coord[0].round(6) %></span>
+                    </div>
+                  </div>
+                <% end %>
+            </div>
+
+            <!-- Параметры посадки -->
+            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+              <div class="text-[#69377c] text-sm font-medium mb-2">Параметры посадки</div>
+              
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между рядами</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.row_spacing %> м
+                </div>
+              </div>
+              
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между кустами</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.bush_spacing %> м
+                </div>
+              </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+              <div class="text-[#69377c] text-sm font-medium mb-2">Статистика</div>
+              
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Площадь</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.area_hectares %> га
+                </div>
+              </div>
+
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество рядов</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.total_rows %>
+                </div>
+              </div>
+
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество кустов</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.total_bushes %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="map" 
+            data-controller="map"
+            data-turbo="false"
+            data-map-api-key="<%= Rails.application.credentials.dig(:yandex, :api_key) %>"
+            data-map-center="<%= @map_center %>"
+            data-map-zoom="<%= @map_zoom %>"
+            data-map-mode="<%= @mode %>"
+            data-map-vineyard-data="<%= @vineyard_data.to_json %>"
+            class="w-full h-[84.5vh]">
+        </div>
+    </div>
+</main>

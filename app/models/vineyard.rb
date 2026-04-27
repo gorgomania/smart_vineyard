@@ -18,6 +18,10 @@ class Vineyard < ApplicationRecord
   validates :bush_spacing, numericality: { greater_than_or_equal_to: 1.2, less_than_or_equal_to: 1.8 }
   validate :bushes_per_row_must_match_totals
   
+  scope :for_index, -> { 
+    select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes) 
+  }
+
   private
   def bushes_per_row_must_match_totals
     return if bushes_per_row.blank? || total_rows.blank?

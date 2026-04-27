@@ -9,14 +9,27 @@ export default class extends Controller {
     this.apiKey = this.element.dataset.mapApiKey
     this.center = this.parseCenter(this.element.dataset.mapCenter)
     this.zoom = parseInt(this.element.dataset.mapZoom) || 10
-    this.enableDrawingOnLoad = this.element.dataset.mapDraw === 'true'
+    this.mode = this.element.dataset.mapMode
+    this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
+    this.multiplePolygons = this.element.dataset.mapMultiplePolygons
     this.currentPolygon = null
     this.rowsCollection = null
     this.bushesCollection = null
-    this.rowSpacing = 3.0
-    this.bushSpacing = 1.5
-    this.referenceSideIndex = 0
-    this.referenceVertexIsFirst = true
+
+    // Устанавливаем параметры из данных виноградника или значения по умолчанию
+    if (this.vineyardData) {
+      this.rowSpacing = this.vineyardData.row_spacing
+      this.bushSpacing = this.vineyardData.bush_spacing
+      this.referenceSideIndex = this.vineyardData.reference_side_index
+      this.referenceVertexIsFirst = this.vineyardData.reference_vertex_is_first
+      this.existingPolygon = this.vineyardData.polygon
+    } else {
+      this.rowSpacing = 3.0
+      this.bushSpacing = 1.5
+      this.referenceSideIndex = 0
+      this.referenceVertexIsFirst = true
+      this.existingPolygon = null
+    }
 
     if (!this.apiKey) {
       console.error('Map API key is missing')
@@ -61,48 +74,80 @@ export default class extends Controller {
 
       this.element.__mapInstance = this.map
       
-      // Создаем объект прямоугольника
-      this.currentPolygon = new ymaps.Polygon(
-        [[]],
-        {
-          hintContent: 'Виноградник',
-          balloonContent: 'Перетащите углы для изменения размера'
-        },
-        {
-          draggable: true,      // Можно перетаскивать
-          editable: true,       // Включает режим редактирования
-          fillColor: '#8a579f',
-          fillOpacity: 0.1,
+      if (this.mode == "new") {
+        // Создаем объект прямоугольника
+        this.currentPolygon = new ymaps.Polygon(
+          [[]],
+          {
+            hintContent: 'Виноградник'
+          },
+          {
+            draggable: true,      // Можно перетаскивать
+            editable: true,       // Включает режим редактирования
+            fillColor: '#8a579f',
+            fillOpacity: 0.1,
+            strokeColor: '#69377c',
+            strokeWidth: 3,
+            visible: false,             // Сначала скрыт
+            editorDrawing: false,      
+          }
+        )
+      }
+      else if (this.mode == "show") {
+        // Создаем объект прямоугольника
+        this.currentPolygon = new ymaps.Polygon(
+          [[]],
+          {
+            hintContent: 'Виноградник',
+            balloonContent: 'Перетащите углы для изменения размера'
+          },
+          {
+            draggable: false,      // Можно перетаскивать
+            editable: false,       // Включает режим редактирования
+            fillColor: '#8a579f',
+            fillOpacity: 0.1,
+            strokeColor: '#69377c',
+            strokeWidth: 3,
+            visible: false,             // Сначала скрыт
+            editorDrawing: false,      
+          }
+        )
+      }
+      else {
+        this.loadMultiplePolygons()
+      }
+
+      if (this.mode != "index") {
+        // Добавляем прямоугольник на карту
+        this.map.geoObjects.add(this.currentPolygon)
+        // Создаем коллекции для рядов и кустов
+        this.rowsCollection = new ymaps.GeoObjectCollection({}, {
           strokeColor: '#69377c',
-          strokeWidth: 3,
-          visible: false,             // Сначала скрыт
-          editorDrawing: false,      
-        }
-      )
+          strokeWidth: 2,
+          strokeOpacity: 0.8
+        })
+        
+        this.bushesCollection = new ymaps.GeoObjectCollection({}, {
+          iconLayout: 'default#image',
+          iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
+            <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
+            </svg>
+          `),
+          iconImageSize: [4, 4],
+          iconImageOffset: [-2, -2]
+        })
       
-      // Добавляем прямоугольник на карту
-      this.map.geoObjects.add(this.currentPolygon)
-      
-      // Создаем коллекции для рядов и кустов
-      this.rowsCollection = new ymaps.GeoObjectCollection({}, {
-        strokeColor: '#69377c',
-        strokeWidth: 2,
-        strokeOpacity: 0.8
-      })
-      
-      this.bushesCollection = new ymaps.GeoObjectCollection({}, {
-        iconLayout: 'default#image',
-        iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-          <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
-          </svg>
-        `),
-        iconImageSize: [4, 4],
-        iconImageOffset: [-2, -2]
-      })
-      
-      this.map.geoObjects.add(this.rowsCollection)
-      this.map.geoObjects.add(this.bushesCollection)
+        this.map.geoObjects.add(this.rowsCollection)
+        this.map.geoObjects.add(this.bushesCollection)
+        // Слушаем изменения геометрии
+        this.currentPolygon.geometry.events.add('change', () => {
+          const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+          this.updateForm(coordinates)
+          this.generateRows(coordinates)
+        })
+        this.showPolygon()
+      }
 
       // Слушаем изменения расстояния между рядами и кустами
       document.addEventListener('vineyard:spacingChanged', (event) => {
@@ -119,6 +164,8 @@ export default class extends Controller {
       })
 
       document.addEventListener('vineyard:nextSide', () => {
+        console.trace('nextSide called')
+        console.log(this.currentPolygon)
         this.switchToNextSide()
       })
 
@@ -127,23 +174,12 @@ export default class extends Controller {
         this.regenerateRows()
       })
 
-      // Слушаем изменения геометрии
-      this.currentPolygon.geometry.events.add('change', () => {
-          const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
-          this.updateForm(coordinates)
-          this.generateRows(coordinates)
-      })
-
       // Подписываемся на события от формы
       document.addEventListener('form:polygonUpdated', (event) => {
         if (this.currentPolygon) {
           this.currentPolygon.geometry.setCoordinates(event.detail.coordinates)
         }
       })
-
-      if (this.enableDrawingOnLoad) {
-        this.enableDrawing()
-      }
 
       this.map.events.add('boundschange', () => {
         this.dispatchMapUpdated()
@@ -158,7 +194,56 @@ export default class extends Controller {
     })
   }
 
-  enableDrawing() {
+  loadMultiplePolygons() {
+    try {
+      const polygonsData = JSON.parse(this.multiplePolygons)
+      
+      polygonsData.forEach(data => {
+        const coordinates = this.parseWKT(data.polygon)
+        
+        if (coordinates && coordinates.length >= 3) {
+          const polygon = new ymaps.Polygon(
+            [coordinates],
+            {
+              hintContent: `${data.name}\n🍇 ${data.grape_variety || '—'}\n📊 ${data.area} га`,
+              balloonContent: `
+                <div style="padding: 8px;">
+                  <b style="color: #69377c;">${data.name}</b><br/>
+                  🍇 ${data.grape_variety || 'Сорт не указан'}<br/>
+                  📊 Площадь: ${data.area} га<br/>
+                  📏 Количество рядов: ${data.total_rows}<br/>
+                  🌿 Количество кустов: ${data.total_bushes}<br/>
+                  <hr style="margin: 8px 0;"/>
+                  <a href="/vineyards/${data.id}" style="color: #69377c;">Подробнее →</a>
+                </div>
+              `
+            },
+            {
+              fillColor: '#8a579f',
+              fillOpacity: 0.3,
+              strokeColor: '#69377c',
+              strokeWidth: 2,
+              cursor: 'pointer'
+            }
+          )
+          
+          this.map.geoObjects.add(polygon)
+        }
+      })
+      
+      // Центрируем карту на всех полигонах
+      if (polygonsData.length > 0) {
+        this.map.setBounds(this.map.geoObjects.getBounds(), {
+          checkZoomRange: true,
+          zoomMargin: 50
+        })
+      }
+    } catch (error) {
+      console.error('Error loading multiple polygons:', error)
+    }
+  }
+
+  showPolygon() {
     
     if (!this.currentPolygon) {
       console.error("Polygon not found")
@@ -168,23 +253,60 @@ export default class extends Controller {
     // Показываем прямоугольник
     this.currentPolygon.options.set('visible', true)
 
-    // Обновляем координаты под текущий центр карты
-    const size = this.getRectangleSize()
-    const center = this.map.getCenter()
-    const Coords = [[
-      [center[0] + size, center[1] - size],
-      [center[0] + size, center[1] + size],
-      [center[0] - size, center[1] + size],
-      [center[0] - size, center[1] - size],
-      [center[0] + size, center[1] - size]
-    ]]
+    if (this.mode === "show") {
+       this.loadExistingPolygon()
+    }
+    else {
+      // Обновляем координаты под текущий центр карты
+      const size = this.getRectangleSize()
+      const center = this.map.getCenter()
+      const Coords = [[
+        [center[0] + size, center[1] - size],
+        [center[0] + size, center[1] + size],
+        [center[0] - size, center[1] + size],
+        [center[0] - size, center[1] - size],
+        [center[0] + size, center[1] - size]
+      ]]
 
-    this.currentPolygon.geometry.setCoordinates(Coords)
-
-    // Включаем режим редактирования
-    if (this.currentPolygon.editor) {
+      this.currentPolygon.geometry.setCoordinates(Coords)
+      // Включаем режим редактирования
       this.currentPolygon.editor.startEditing()
     }
+  }
+
+  loadExistingPolygon() {
+    try {
+      // Парсим JSON строку полигона
+      const polygonData = this.existingPolygon
+      // Извлекаем координаты из WKT или GeoJSON
+      let coordinates
+      
+      coordinates = this.parseWKT(polygonData)
+      this.currentPolygon.geometry.setCoordinates([coordinates])
+      const bounds = this.currentPolygon.geometry.getBounds()
+      this.map.setBounds(bounds, {
+        checkZoomRange: true,  // проверить доступные зуммы
+        zoomMargin: 30          // отступ от краёв в пикселях
+      })
+    } catch (error) {
+      console.error('Error loading existing polygon:', error)
+    }
+  }
+
+  parseWKT(wkt) {
+    // Поддержка обоих форматов: "POLYGON((...))" и "POLYGON ((...))"
+    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/i)
+    if (!match) {
+      console.error('Invalid WKT format:', wkt)
+      return null
+    }
+    const points = match[1].split(', ')
+    const coordinates = points.map(point => {
+      const [lng, lat] = point.split(' ')
+      return [parseFloat(lat), parseFloat(lng)]
+    })
+    
+    return coordinates
   }
 
   switchToPreviousSide() {
@@ -199,6 +321,7 @@ export default class extends Controller {
   }
 
   switchToNextSide() {
+    console.log(this.currentPolygon)
     const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
     if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
       this.referenceSideIndex += 1
@@ -227,7 +350,6 @@ export default class extends Controller {
 
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
-    
     this.rowsCollection.removeAll()
     const bushesPerRow = []
     // 1. Находим самую длинную сторону (первый ряд)

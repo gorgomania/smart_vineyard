@@ -1,0 +1,10 @@
+ru:
+  activerecord:
+    attributes:
+      vineyard:
+        name: "Название"
+        area_hectares: "Площадь"
+    errors:
+      messages:
+        blank: "не может быть пустым"
+        less_than_or_equal_to: "может иметь значение не больше %{count}"

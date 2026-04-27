@@ -1,23 +1,44 @@
 class VineyardsController < ApplicationController
   def index
     @map_center, @map_zoom = initialize_map
-    @draw_mode = params[:draw] == 'true'
+    @mode = 'index'
+    @vineyards = current_user.vineyards.for_index
+    @vineyards_data = @vineyards.map do |v|
+      {
+        id: v.id,
+        name: v.name,
+        polygon: v.polygon.to_s,
+        total_rows: v.total_rows,
+        total_bushes: v.total_bushes,
+        area: v.area_hectares.to_f,
+        grape_variety: v.grape_variety
+      }
+    end
   end
 
   def show
     @map_center, @map_zoom = initialize_map
-    @draw_mode = params[:draw] == 'true'
-    render "index"
+    @mode = 'show'
+    @vineyard = Vineyard.find_by(id: params[:id])
+    @vineyard_data = {
+      polygon: @vineyard.polygon.to_s,
+      row_spacing: @vineyard.row_spacing.to_f,
+      bush_spacing: @vineyard.bush_spacing.to_f,
+      reference_side_index: @vineyard.reference_side_index,
+      reference_vertex_is_first: @vineyard.reference_vertex_is_first
+    }
   end
   
   def new
     @map_center, @map_zoom = initialize_map
-    @draw_mode = params[:draw] == 'true'
+    @mode = 'new'
+    @vineyard = current_user.vineyards.new(session.delete(:vineyard_params) || {})
+    @errors = session.delete(:vineyard_errors)
   end
 
   def create
     vertices = []
-    params[:vineyards].each do |key, value|
+    params[:vineyard].each do |key, value|
       if key =~ /vertex_(\d+)_lat/
         index = $1.to_i
         vertices[index] ||= {}
@@ -37,24 +58,29 @@ class VineyardsController < ApplicationController
       wkt_points = vertices.map { |v| "#{v[:lng]} #{v[:lat]}" }.join(', ')
       wkt = "POLYGON((#{wkt_points}, #{vertices[0][:lng]} #{vertices[0][:lat]}))"
       
-      params[:vineyards][:polygon] = wkt
+      params[:vineyard][:polygon] = wkt
     end
 
-    params[:vineyards].delete_if { |k, v| k.to_s.match?(/\Avertex_\d+_(lat|lng)\z/) }
-    
+    params[:vineyard].delete_if { |k, v| k.to_s.match?(/\Avertex_\d+_(lat|lng)\z/) }
+
+    if params[:vineyard][:bushes_per_row].is_a?(String)
+      params[:vineyard][:bushes_per_row] = JSON.parse(params[:vineyard][:bushes_per_row])
+    end
     # Удаляем временные поля вершин из params перед созданием
-    vineyard_params = params.require(:vineyards).permit(
+    vineyard_params = params.require(:vineyard).permit(
       :name, :grape_variety, :planting_year, :row_spacing, :bush_spacing,
       :polygon, :reference_side_index, :reference_vertex_is_first,
       :area_hectares, :total_rows, :total_bushes, :bushes_per_row
     )
   
     @vineyard = current_user.vineyards.build(vineyard_params)
-    
+
     if @vineyard.save
       redirect_to @vineyard, notice: "Виноградник создан"
     else
-      render :new
+      session[:vineyard_params] = vineyard_params.to_h
+      session[:vineyard_errors] = @vineyard.errors.full_messages
+      redirect_to new_vineyard_path
     end
   end
 
