@@ -115,20 +115,26 @@ export default class extends Controller {
     if (bushesPerRowField) bushesPerRowField.value = JSON.stringify(bushesPerRow)
   }
   
-  updateSidesInfo({ totalSides, currentSide }) {
-    const sideInfo = this.sideInfoTarget
-    const totalSidesSpan = this.totalSidesTarget
-    const referenceSideIndex = this.referenceSideIndexTarget
-    
-    if (sideInfo) {
-      sideInfo.textContent = `Сторона ${currentSide + 1} из ${totalSides}`
+  updateSidesInfo({ direction }) {
+    let referenceSideIndex = parseInt(this.referenceSideIndexTarget.value) || 0
+    const vertexCount = document.querySelectorAll('.vertex-group').length
+    if (direction == "next") {
+      if (referenceSideIndex + 1 < vertexCount) {
+        referenceSideIndex += 1
+      }
+      else {
+        referenceSideIndex = 0
+      }
     }
-    if (totalSidesSpan) {
-      totalSidesSpan.textContent = totalSides
+    else {
+      if (referenceSideIndex - 1 >= 0) {
+        referenceSideIndex -= 1
+      }
+      else {
+        referenceSideIndex = vertexCount - 1
+      }
     }
-    if (referenceSideIndex) {
-      referenceSideIndex.value = currentSide
-    }
+    this.referenceSideIndexTarget.value = referenceSideIndex
   }
 
   setupSpacingListeners() {
@@ -155,6 +161,7 @@ export default class extends Controller {
     // Предыдущая сторона
     if (this.hasPrevSideTarget) {
       this.prevSideTarget.addEventListener('click', () => {
+        this.updateSidesInfo({ direction: "prev" })
         document.dispatchEvent(new CustomEvent('vineyard:prevSide'))
       })
     }
@@ -162,6 +169,7 @@ export default class extends Controller {
     // Следующая сторона
     if (this.hasNextSideTarget) {
       this.nextSideTarget.addEventListener('click', () => {
+        this.updateSidesInfo({ direction: "next" })
         document.dispatchEvent(new CustomEvent('vineyard:nextSide'))
       })
     }

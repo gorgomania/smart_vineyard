@@ -109,6 +109,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
     t.check_constraint "area_hectares <= 20::numeric OR area_hectares IS NULL", name: "check_area_limit"
+    t.check_constraint "array_length(bushes_per_row, 1) > 0", name: "check_bushes_per_row_not_empty"
     t.check_constraint "bush_spacing >= 1.2 AND bush_spacing <= 1.8", name: "check_bush_spacing_range"
     t.check_constraint "row_spacing >= 2.0 AND row_spacing <= 3.0", name: "check_row_spacing_range"
     t.check_constraint "total_bushes >= 0", name: "check_total_bushes_positive"

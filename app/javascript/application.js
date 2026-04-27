@@ -66,7 +66,21 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
-  // Событие input - при вводе (мгновенная реакция)
+  // $(".auth_input").each(function() {
+  //   if ($(this).val()) {
+  //     moveLabel($(this), 1);
+  //   }
+  // });
+
+  $(document).on("turbo:load", function() {
+    $(".auth_input").each(function() {
+      if ($(this).val()) {
+        moveLabel($(this), 1);
+      }
+    });
+  });
+
+  // Событие input - при вводе
   $(document).on("input.auth", ".auth_input", function() {
     const hasFocus = $(this).is(":focus");
 

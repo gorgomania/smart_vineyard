@@ -14,7 +14,7 @@
     
     <div class = "flex">
         <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
-            <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Режим просмотра", data: { map_links_target: "link", link_type: "list" } do %>
+            <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников", data: { map_links_target: "link", link_type: "list" } do %>
                 <%= image_tag "/vineyard_list.png", alt: "Vineyards", class: "min-w-8 h-8" %>
             <% end %>
             <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
@@ -22,6 +22,9 @@
             <% end %>
         </div>
         <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto">
+            <% if @vineyards.nil? %>
+                 <div class = "w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для работы нужно сначала создать виноградник </div>
+            <% end %>
             <% @vineyards.each do |vineyard| %>
                 <div class = "flex w-full justify-between bg-white rounded-2xl p-5">
                     <div class = "flex flex-col text-[#333] text-m">

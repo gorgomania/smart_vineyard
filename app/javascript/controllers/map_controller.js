@@ -38,6 +38,14 @@ export default class extends Controller {
     
     this.loadMap()
   }
+
+  disconnect() {
+    // Очищаем обработчики при уничтожении контроллера
+    document.removeEventListener('vineyard:nextSide', this.boundNextSide)
+    document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
+    document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
+    document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+  }
   
   parseCenter(centerStr) {
     if (!centerStr) return [44.5947, 33.4756]
@@ -149,30 +157,42 @@ export default class extends Controller {
         this.showPolygon()
       }
 
-      // Слушаем изменения расстояния между рядами и кустами
-      document.addEventListener('vineyard:spacingChanged', (event) => {
-        this.rowSpacing = event.detail.rowSpacing
-        this.bushSpacing = event.detail.bushSpacing
-        
-        // Перегенерируем ряды с новыми параметрами
-        this.regenerateRows()
-      })
-
-      // Слушаем изменения опорной стороны
-      document.addEventListener('vineyard:prevSide', () => {
-        this.switchToPreviousSide()
-      })
-
-      document.addEventListener('vineyard:nextSide', () => {
-        console.trace('nextSide called')
-        console.log(this.currentPolygon)
+      if (this.boundNextSide) {
+        document.removeEventListener('vineyard:nextSide', this.boundNextSide)
+        document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
+        document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
+        document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+      }
+      
+      // Создаем новые привязанные функции
+      this.boundNextSide = () => {
+        if (!this.currentPolygon?.geometry) return
         this.switchToNextSide()
-      })
-
-      document.addEventListener('vineyard:firstBushChanged', () => {
+      }
+      
+      this.boundPrevSide = () => {
+        if (!this.currentPolygon?.geometry) return
+        this.switchToPreviousSide()
+      }
+      
+      this.boundFirstBush = () => {
+        if (!this.currentPolygon?.geometry) return
         this.referenceVertexIsFirst = !this.referenceVertexIsFirst
         this.regenerateRows()
-      })
+      }
+      
+      this.boundSpacing = (event) => {
+        if (!this.currentPolygon?.geometry) return
+        this.rowSpacing = event.detail.rowSpacing
+        this.bushSpacing = event.detail.bushSpacing
+        this.regenerateRows()
+      }
+
+      // Добавляем обработчики
+      document.addEventListener('vineyard:nextSide', this.boundNextSide)
+      document.addEventListener('vineyard:prevSide', this.boundPrevSide)
+      document.addEventListener('vineyard:firstBushChanged', this.boundFirstBush)
+      document.addEventListener('vineyard:spacingChanged', this.boundSpacing)
 
       // Подписываемся на события от формы
       document.addEventListener('form:polygonUpdated', (event) => {
@@ -321,7 +341,6 @@ export default class extends Controller {
   }
 
   switchToNextSide() {
-    console.log(this.currentPolygon)
     const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
     if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
       this.referenceSideIndex += 1

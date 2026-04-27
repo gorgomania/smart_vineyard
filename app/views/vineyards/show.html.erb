@@ -14,7 +14,7 @@
     
     <div class = "flex">
         <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
-            <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Режим просмотра", data: { map_links_target: "link", link_type: "list" } do %>
+            <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников", data: { map_links_target: "link", link_type: "list" } do %>
                 <%= image_tag "/vineyard_list.png", alt: "Vineyards", class: "min-w-8 h-8" %>
             <% end %>
             <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
@@ -23,7 +23,7 @@
         </div>
         <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto">
           <div class="text-[#333] text-[22px] font-bold">
-            <span>Просмотр виноградника</span>
+            <span>Виноградник</span>
           </div>
 
           <div class="w-[280px] mt-2">
@@ -57,8 +57,8 @@
                   <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] ">
                     <div class="text-[#8c8c8c] pointer-events-none leading-4">Вершина <%= index + 1 %></div>
                     <div class=" flex flex-col items-center">
-                      <span>Широта: <%= coord[1].round(6) %></span>
-                      <span>Долгота: <%= coord[0].round(6) %></span>
+                      <span>Широта: <%= "%.6f" % coord[1] %></span>
+                      <span>Долгота: <%= "%.6f" % coord[0] %></span>
                     </div>
                   </div>
                 <% end %>

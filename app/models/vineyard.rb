@@ -16,6 +16,7 @@ class Vineyard < ApplicationRecord
   validates :total_bushes, numericality: { greater_than: 0 }
   validates :row_spacing, numericality: { greater_than_or_equal_to: 2.0, less_than_or_equal_to: 3.0 }
   validates :bush_spacing, numericality: { greater_than_or_equal_to: 1.2, less_than_or_equal_to: 1.8 }
+  validates :bushes_per_row, presence: true
   validate :bushes_per_row_must_match_totals
   
   scope :for_index, -> { 

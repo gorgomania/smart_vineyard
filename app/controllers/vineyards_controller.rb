@@ -70,11 +70,10 @@ class VineyardsController < ApplicationController
     vineyard_params = params.require(:vineyard).permit(
       :name, :grape_variety, :planting_year, :row_spacing, :bush_spacing,
       :polygon, :reference_side_index, :reference_vertex_is_first,
-      :area_hectares, :total_rows, :total_bushes, :bushes_per_row
+      :area_hectares, :total_rows, :total_bushes, { bushes_per_row: [] }
     )
   
     @vineyard = current_user.vineyards.build(vineyard_params)
-
     if @vineyard.save
       redirect_to @vineyard, notice: "Виноградник создан"
     else
