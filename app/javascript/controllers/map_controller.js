@@ -82,7 +82,7 @@ export default class extends Controller {
 
       this.element.__mapInstance = this.map
       
-      if (this.mode == "new") {
+      if (this.mode == "new" || this.mode == "edit") {
         // Создаем объект прямоугольника
         this.currentPolygon = new ymaps.Polygon(
           [[]],
@@ -274,22 +274,33 @@ export default class extends Controller {
     this.currentPolygon.options.set('visible', true)
 
     if (this.mode === "show") {
-       this.loadExistingPolygon()
+      this.loadExistingPolygon()
     }
     else {
-      // Обновляем координаты под текущий центр карты
-      const size = this.getRectangleSize()
-      const center = this.map.getCenter()
-      const Coords = [[
-        [center[0] + size, center[1] - size],
-        [center[0] + size, center[1] + size],
-        [center[0] - size, center[1] + size],
-        [center[0] - size, center[1] - size],
-        [center[0] + size, center[1] - size]
-      ]]
+      if (this.vineyardData) {
+        this.loadExistingPolygon()
+        document.dispatchEvent(new CustomEvent('vineyard:initFormFromExistingPolygon', {
+          detail: {
+            rowSpacing: this.rowSpacing,
+            bushSpacing: this.bushSpacing,
+            referenceVertexIsFirst: this.referenceVertexIsFirst
+          }
+        }))
+      }
+      else {
+        // Обновляем координаты под текущий центр карты
+        const size = this.getRectangleSize()
+        const center = this.map.getCenter()
+        const Coords = [[
+          [center[0] + size, center[1] - size],
+          [center[0] + size, center[1] + size],
+          [center[0] - size, center[1] + size],
+          [center[0] - size, center[1] - size],
+          [center[0] + size, center[1] - size]
+        ]]
 
-      this.currentPolygon.geometry.setCoordinates(Coords)
-      // Включаем режим редактирования
+        this.currentPolygon.geometry.setCoordinates(Coords)
+      }
       this.currentPolygon.editor.startEditing()
     }
   }

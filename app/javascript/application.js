@@ -66,11 +66,11 @@ document.addEventListener("turbo:load", function() {
     }
   });
 
-  // $(".auth_input").each(function() {
-  //   if ($(this).val()) {
-  //     moveLabel($(this), 1);
-  //   }
-  // });
+  $(".auth_input").each(function() {
+    if ($(this).val()) {
+      moveLabel($(this), 1);
+    }
+  });
 
   $(document).on("turbo:load", function() {
     $(".auth_input").each(function() {

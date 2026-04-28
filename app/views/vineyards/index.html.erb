@@ -22,8 +22,8 @@
             <% end %>
         </div>
         <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto">
-            <% if @vineyards.nil? %>
-                 <div class = "w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для работы нужно сначала создать виноградник </div>
+            <% if @vineyards.empty? %>
+                 <div class = "w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
             <% end %>
             <% @vineyards.each do |vineyard| %>
                 <div class = "flex w-full justify-between bg-white rounded-2xl p-5">

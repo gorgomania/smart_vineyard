@@ -4,7 +4,16 @@ ru:
       vineyard:
         name: "Название"
         area_hectares: "Площадь"
+        planting_year: "Год посадки"
     errors:
+      models:
+          vineyard:
+            attributes:
+              area_hectares:
+                less_than_or_equal_to: "может иметь значение не больше %{count} гектаров"
       messages:
         blank: "не может быть пустым"
+        invalid: "имеет неверное значение"
+        not_a_number: "не является числом"
+        greater_than: "должно быть больше %{count}"
         less_than_or_equal_to: "может иметь значение не больше %{count}"

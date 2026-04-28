@@ -132,7 +132,6 @@ class FoldersController < ApplicationController
   end
 
   def destroy
-    id = params[:id]
     search_query = params[:search_query]
     page = params[:page]
     folder = Folder.find(params[:id])

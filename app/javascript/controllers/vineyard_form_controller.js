@@ -17,6 +17,17 @@ export default class extends Controller {
       this.updateStatistics(event.detail)
     })
 
+    document.addEventListener('vineyard:initFormFromExistingPolygon', (event) => {
+      if (!event.detail.referenceVertexIsFirst) {
+        // Инвертируем текущее состояние
+        this.updateFirstBushButtonState('end')
+      }
+      this.rowSpacingTarget.value = event.detail.rowSpacing
+      this.rowSpacingValueTarget.textContent = event.detail.rowSpacing.toFixed(1)
+      this.bushSpacingTarget.value = event.detail.bushSpacing
+      this.bushSpacingValueTarget.textContent = event.detail.bushSpacing
+    })
+
     // Настраиваем слушатели полей формы
     this.setupSpacingListeners()
     this.setupSideButtons()
@@ -108,7 +119,6 @@ export default class extends Controller {
     const bushesField = document.getElementById('vineyard_total_bushes')
     const areaField = document.getElementById('vineyard_area_hectares')
     const bushesPerRowField = document.getElementById('vineyard_bushes_per_row')
-    
     if (rowsField) rowsField.value = rows
     if (bushesField) bushesField.value = bushes
     if (areaField) areaField.value = area
