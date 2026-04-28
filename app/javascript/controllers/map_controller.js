@@ -12,6 +12,7 @@ export default class extends Controller {
     this.mode = this.element.dataset.mapMode
     this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
     this.multiplePolygons = this.element.dataset.mapMultiplePolygons
+    this.bushesVision = this.element.dataset.mapBushesVision ? JSON.parse(this.element.dataset.mapBushesVision) : null
     this.currentPolygon = null
     this.rowsCollection = null
     this.bushesCollection = null
@@ -381,6 +382,7 @@ export default class extends Controller {
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
     this.rowsCollection.removeAll()
+    this.bushesCollection.removeAll()
     const bushesPerRow = []
     // 1. Находим самую длинную сторону (первый ряд)
     const firstRow = this.getPolygonSide(polygonPoints)
@@ -465,62 +467,125 @@ export default class extends Controller {
     return intersections.sort((a, b) => this.distance(lineP1, a) - this.distance(lineP1, b))
   }
 
-  // Добавление ряда (только линия, без кустов)
+  // Добавление ряда
   addRow(p1, p2, rowNumber, isFirstRow = false) {
     // Вычисляем количество кустов
     const rowLengthMeters = this.calculateLineLengthKm(p1, p2) * 1000
     const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
-    // Склонение слова "куст"
-    let bushesText = ''
-    if (numBushes % 10 === 1 && numBushes % 100 !== 11) {
-      bushesText = `${numBushes} куст`
-    } else if ([2, 3, 4].includes(numBushes % 10) && ![12, 13, 14].includes(numBushes % 100)) {
-      bushesText = `${numBushes} куста`
-    } else {
-      bushesText = `${numBushes} кустов`
-    }
-    let rowLine
-    if (!isFirstRow) {
-      rowLine = new ymaps.Polyline(
-      [[p1[0], p1[1]], [p2[0], p2[1]]],
-      { 
-        hintContent: `Ряд ${rowNumber} · ${bushesText}`,
+    //Вид рядов
+    if (!this.bushesVision) {
+      // Склонение слова "куст"
+      let bushesText = ''
+      if (numBushes % 10 === 1 && numBushes % 100 !== 11) {
+        bushesText = `${numBushes} куст`
+      } else if ([2, 3, 4].includes(numBushes % 10) && ![12, 13, 14].includes(numBushes % 100)) {
+        bushesText = `${numBushes} куста`
+      } else {
+        bushesText = `${numBushes} кустов`
       }
-    )
-    }
-    else {
-      rowLine = new ymaps.Polyline(
-      [[p1[0], p1[1]], [p2[0], p2[1]]],
-      { 
-        hintContent: `Ряд ${rowNumber} · ${bushesText}`,
-      },
-      {
-        strokeColor: '#FFD700',  // Золотой для первого ряда
-        strokeWidth: 4,
-        strokeOpacity: 0.9
-      })
-      let p
-      if (this.referenceVertexIsFirst) {
-        p = p1
-      }
-      else {
-        p = p2
-      }
-      const startCircle = new ymaps.Circle(
-        [[p[0], p[1]], 3], // 5 метров
-        { hintContent: 'Первый куст' },
-        {
-          fillColor: '#FFD700',
-          fillOpacity: 0.8,
-          strokeColor: '#FFD700',
-          strokeWidth: 2,
-          strokeOpacity: 1
+      let rowLine
+      if (!isFirstRow) {
+        rowLine = new ymaps.Polyline(
+        [[p1[0], p1[1]], [p2[0], p2[1]]],
+        { 
+          hintContent: `Ряд ${rowNumber} · ${bushesText}`,
         }
       )
-      this.rowsCollection.add(startCircle)
+      }
+      else {
+        rowLine = new ymaps.Polyline(
+        [[p1[0], p1[1]], [p2[0], p2[1]]],
+        { 
+          hintContent: `Ряд ${rowNumber} · ${bushesText}`,
+        },
+        {
+          strokeColor: '#FFD700',  // Золотой для первого ряда
+          strokeWidth: 4,
+          strokeOpacity: 0.9
+        })
+        let p
+        if (this.referenceVertexIsFirst) {
+          p = p1
+        }
+        else {
+          p = p2
+        }
+        const startCircle = new ymaps.Circle(
+          [[p[0], p[1]], 3], // 5 метров
+          { hintContent: 'Первый куст' },
+          {
+            fillColor: '#FFD700',
+            fillOpacity: 0.8,
+            strokeColor: '#FFD700',
+            strokeWidth: 2,
+            strokeOpacity: 1
+          }
+        )
+        this.rowsCollection.add(startCircle)
+      }
+      this.rowsCollection.add(rowLine)
     }
-    this.rowsCollection.add(rowLine)
+    //Вид кустов
+    else {
+      if (this.referenceVertexIsFirst) {
+        this.generateBushesOnRow([p1, p2], rowNumber)
+      }
+      else {
+        this.generateBushesOnRow([p2, p1], rowNumber)
+      }
+    }
     return numBushes
+  }
+
+  generateBushesOnRow(linePoints, rowIndex) {
+    if (linePoints.length < 2) return
+    
+    // Длина ряда в метрах
+    const rowLengthMeters = this.calculateLineLengthKm(linePoints[0], linePoints[linePoints.length-1]) * 1000
+    
+    // Количество кустов
+    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
+    
+    for (let i = 0; i <= numBushes; i++) {
+      const t = i / numBushes // Пропорция вдоль ряда
+      
+      // Интерполяция позиции куста
+      const bushPoint = this.interpolateOnLine(linePoints, t)
+      
+      if (bushPoint) {
+        // Добавляем куст
+        const bush = new ymaps.Placemark(
+          [bushPoint[0], bushPoint[1]],
+          { 
+            hintContent: `Ряд ${rowIndex}, Куст ${i + 1}`,
+          }
+        )
+        this.bushesCollection.add(bush)
+      }
+    }
+  }
+
+  interpolateOnLine(points, t) {
+    if (points.length < 2) return null
+    
+    const totalLength = this.getLineLength(points)
+    const targetLength = totalLength * t
+    
+    let accumulatedLength = 0
+    for (let i = 0; i < points.length - 1; i++) {
+      const segmentLength = this.distance(points[i], points[i + 1])
+      if (accumulatedLength + segmentLength >= targetLength) {
+        const remaining = targetLength - accumulatedLength
+        const ratio = remaining / segmentLength
+        return [
+          points[i][0] + (points[i + 1][0] - points[i][0]) * ratio,
+          points[i][1] + (points[i + 1][1] - points[i][1]) * ratio
+        ]
+      }
+      accumulatedLength += segmentLength
+    }
+    
+    return points[points.length - 1]
   }
 
   getPolygonSide(points) {

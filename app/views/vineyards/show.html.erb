@@ -22,11 +22,11 @@
             <% end %>
             <% if @bushes_vision %>
               <%= link_to vineyard_path(@vineyard.id, bushes_vision: false), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Скрыть тепловую карту" do %>
-                  <%= image_tag "/create_vineyard.png", alt: "VisionOff", class: "min-w-8 h-8 transform rotate-45" %>
+                  <%= image_tag "/vision_off.png", alt: "VisionOff", class: "w-8 h-8" %>
               <% end %>
             <% else %>
               <%= link_to vineyard_path(@vineyard.id, bushes_vision: true), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Показать тепловую карту" do %>
-                  <%= image_tag "/vision_on.png", alt: "VisionOn", class: "min-w-8 h-8" %>
+                  <%= image_tag "/vision_on.png", alt: "VisionOn", class: "w-8 h-8" %>
               <% end %>
             <% end %>
             <%= link_to edit_vineyard_path(@vineyard.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Редактировать виноградник" do %>
@@ -132,6 +132,7 @@
             data-map-center="<%= @map_center %>"
             data-map-zoom="<%= @map_zoom %>"
             data-map-mode="<%= @mode %>"
+             data-map-bushes-vision="<%= @bushes_vision.to_json %>"
             data-map-vineyard-data="<%= @vineyard_data.to_json %>"
             class="w-full h-[84.5vh]">
         </div>
