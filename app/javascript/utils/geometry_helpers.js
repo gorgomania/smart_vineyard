@@ -15,6 +15,10 @@ export class GeometryHelpers {
     return R * c
   }
 
+  static distance(p1, p2) {
+    return Math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+  }
+
   static calculateArea(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return 0
     
@@ -51,7 +55,7 @@ export class GeometryHelpers {
     const intersections = []
 
     for (let i = 0; i < polygonPoints.length - 1; i++) {
-      const intersection = GeometryHelpers.lineIntersection(
+      const intersection = this.lineIntersection(
         lineP1, lineP2,
         polygonPoints[i], polygonPoints[i + 1]
       )
@@ -61,7 +65,7 @@ export class GeometryHelpers {
       }
     }
     
-    return intersections
+    return intersections.sort((a, b) => this.distance(lineP1, a) - this.distance(lineP1, b))
   }
   
   static lineIntersection(p1, p2, p3, p4) {
@@ -80,7 +84,7 @@ export class GeometryHelpers {
       ]
   }
 
-  static interpolateOnLine(points, t) {
+ static interpolateOnLine(points, t) {
     // Если всего 2 точки - просто интерполируем между ними
     if (points.length === 2) {
       return [

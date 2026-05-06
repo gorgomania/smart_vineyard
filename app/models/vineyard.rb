@@ -3,7 +3,7 @@ class Vineyard < ApplicationRecord
 
   validates :name, presence: true, length: { maximum: 100 }, uniqueness: { scope: :user_id }
   validates :polygon, presence: true
-  validates :area_hectares, numericality: { greater_than: 0, less_than_or_equal_to: 20 }
+  validates :area_hectares, numericality: { greater_than: 0, less_than_or_equal_to: 10 }
   validates :grape_variety, length: { maximum: 50 }, allow_blank: true
   validates :planting_year,
             numericality: {

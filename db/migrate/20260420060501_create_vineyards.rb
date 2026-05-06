@@ -16,7 +16,7 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
 
       # Детализация по рядам (храним в JSON)
       t.integer :bushes_per_row, array: true, default: []     # Информация о каждом ряде
-      
+
       # Параметры посадки (с какими параметрами был сделан расчёт)
       t.decimal :row_spacing, precision: 2, scale: 1, default: 3.0    # Расстояние между рядами (м)
       t.decimal :bush_spacing, precision: 2, scale: 1, default: 1.5   # Расстояние между кустами (м)
@@ -27,15 +27,15 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
-    add_index :vineyards, [:user_id, :name], unique: true
+
+    add_index :vineyards, [ :user_id, :name ], unique: true
     add_index :vineyards, :polygon, using: :gist
 
     # Проверка: Площадь не превышает 20 га
     execute <<-SQL
       ALTER TABLE vineyards
       ADD CONSTRAINT check_area_limit
-      CHECK (area_hectares <= 20 OR area_hectares IS NULL)
+      CHECK (area_hectares <= 10 OR area_hectares IS NULL)
     SQL
 
     # Проверка: Реалистичные значения расстояний
@@ -44,7 +44,7 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       ADD CONSTRAINT check_row_spacing_range
       CHECK (row_spacing BETWEEN 2.0 AND 3.0)
     SQL
-    
+
     execute <<-SQL
       ALTER TABLE vineyards
       ADD CONSTRAINT check_bush_spacing_range
@@ -78,7 +78,7 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       execute "ALTER TABLE vineyards DROP CONSTRAINT IF EXISTS check_total_rows_positive"
       execute "ALTER TABLE vineyards DROP CONSTRAINT IF EXISTS check_total_bushes_positive"
       execute "ALTER TABLE vineyards DROP CONSTRAINT IF EXISTS check_bushes_per_row_not_empty"
-      remove_index :vineyards, [:user_id, :name] if index_exists?(:vineyards, [:user_id, :name])
+      remove_index :vineyards, [ :user_id, :name ] if index_exists?(:vineyards, [ :user_id, :name ])
       remove_index :vineyards, :polygon if index_exists?(:vineyards, :polygon)
       drop_table :vineyards
     end

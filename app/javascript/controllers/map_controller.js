@@ -15,7 +15,7 @@ export default class extends Controller {
     this.bushesVision = this.element.dataset.mapBushesVision ? JSON.parse(this.element.dataset.mapBushesVision) : null
     this.currentPolygon = null
     this.rowsCollection = null
-    this.bushesCollection = null
+    this.objectManager = null
 
     // Устанавливаем параметры из данных виноградника или значения по умолчанию
     if (this.vineyardData) {
@@ -74,15 +74,26 @@ export default class extends Controller {
   
   initMap() {
     ymaps.ready(() => {
-      this.map = new ymaps.Map(this.element, {
-        center: this.center,
-        zoom: this.zoom,
-        type: 'yandex#hybrid',
-        controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
-      })
+      if (!this.bushesVision) {
+        this.map = new ymaps.Map(this.element, {
+          center: this.center,
+          zoom: this.zoom,
+          type: 'yandex#hybrid',
+          controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
+        })
+      }
+      else {
+        this.map = new ymaps.Map(this.element, {
+          center: this.center,
+          zoom: this.zoom,
+          type: null, 
+          controls: ['zoomControl', 'fullscreenControl'] 
+        });
+      }
+      
 
       this.element.__mapInstance = this.map
-      
+
       if (this.mode == "new" || this.mode == "edit") {
         // Создаем объект прямоугольника
         this.currentPolygon = new ymaps.Polygon(
@@ -121,6 +132,24 @@ export default class extends Controller {
             editorDrawing: false,      
           }
         )
+        if (this.bushesVision) {
+          this.objectManager = new ymaps.ObjectManager({
+            clusterize: false
+          });
+
+          this.objectManager.objects.options.set({
+            iconLayout: 'default#image',
+            iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
+              <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
+              </svg>
+            `),
+            iconImageSize: [4, 4],
+            iconImageOffset: [-2, -2]
+          })
+
+          this.map.geoObjects.add(this.objectManager)
+        }
       }
       else {
         this.loadMultiplePolygons()
@@ -135,20 +164,8 @@ export default class extends Controller {
           strokeWidth: 2,
           strokeOpacity: 0.8
         })
-        
-        this.bushesCollection = new ymaps.GeoObjectCollection({}, {
-          iconLayout: 'default#image',
-          iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-            <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
-            </svg>
-          `),
-          iconImageSize: [4, 4],
-          iconImageOffset: [-2, -2]
-        })
       
         this.map.geoObjects.add(this.rowsCollection)
-        this.map.geoObjects.add(this.bushesCollection)
         // Слушаем изменения геометрии
         this.currentPolygon.geometry.events.add('change', () => {
           const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
@@ -378,7 +395,6 @@ export default class extends Controller {
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
     this.rowsCollection.removeAll()
-    this.bushesCollection.removeAll()
     const bushesPerRow = []
     // 1. Находим самую длинную сторону (первый ряд)
     const firstRow = this.getPolygonSide(polygonPoints)
@@ -408,7 +424,7 @@ export default class extends Controller {
       const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows, false, totalBushes)
         bushesPerRow.push(numBushes)
         totalBushes += numBushes
         offset += stepDeg
@@ -424,7 +440,7 @@ export default class extends Controller {
       const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows, false, totalBushes)
         bushesPerRow.push(numBushes)
         totalBushes += numBushes
         offset -= stepDeg
@@ -438,7 +454,7 @@ export default class extends Controller {
   }
 
   // Добавление ряда
-  addRow(p1, p2, rowNumber, isFirstRow = false) {
+  addRow(p1, p2, rowNumber, isFirstRow = false, bushesStartIndex = 0) {
     // Вычисляем количество кустов
     const rowLengthMeters = GeometryHelpers.kmDistance(p1, p2) * 1000
     const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
@@ -498,16 +514,16 @@ export default class extends Controller {
     //Вид кустов
     else {
       if (this.referenceVertexIsFirst) {
-        this.generateBushesOnRow([p1, p2], rowNumber)
+        this.generateBushesOnRow([p1, p2], rowNumber, bushesStartIndex)
       }
       else {
-        this.generateBushesOnRow([p2, p1], rowNumber)
+        this.generateBushesOnRow([p2, p1], rowNumber, bushesStartIndex)
       }
     }
     return numBushes
   }
 
-  generateBushesOnRow(linePoints, rowIndex) {
+  generateBushesOnRow(linePoints, rowIndex, bushesStartIndex = 0) {
     if (linePoints.length < 2) return
     
     // Длина ряда в метрах
@@ -524,13 +540,23 @@ export default class extends Controller {
       
       if (bushPoint) {
         // Добавляем куст
-        const bush = new ymaps.Placemark(
-          [bushPoint[0], bushPoint[1]],
-          { 
-            hintContent: `Ряд ${rowIndex}, Куст ${i + 1}`,
-          }
-        )
-        this.bushesCollection.add(bush)
+        const bushGeoJsonData = {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "id": bushesStartIndex + i + rowIndex,
+              "geometry": {
+                "type": "Point",
+                "coordinates": [bushPoint[0], bushPoint[1]]
+              },
+              "properties": {
+                "hintContent": `Ряд ${rowIndex}, Куст ${i + 1}`
+              }
+            }
+          ]
+        }
+        this.objectManager.add(bushGeoJsonData)
       }
     }
   }
