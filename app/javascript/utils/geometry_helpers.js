@@ -1,6 +1,6 @@
 export class GeometryHelpers {
   // Вычисление расстояния между двумя точками (в км)
-  static distance(p1, p2) {
+  static kmDistance(p1, p2) {
     const R = 6371 // Радиус Земли в км
     const lat1 = p1[0] * Math.PI / 180
     const lat2 = p2[0] * Math.PI / 180
@@ -13,78 +13,6 @@ export class GeometryHelpers {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
     
     return R * c
-  }
-  
-  // Линейная интерполяция между двумя точками
-  static interpolate(p1, p2, t) {
-    return [
-      p1[0] + (p2[0] - p1[0]) * t,
-      p1[1] + (p2[1] - p1[1]) * t
-    ]
-  }
-  
-  // Нахождение проекции точки на отрезок
-  static projectPointOnLine(p, a, b) {
-    const ax = p[1] - a[1]
-    const ay = p[0] - a[0]
-    const bx = b[1] - a[1]
-    const by = b[0] - a[0]
-    
-    const dot = ax * bx + ay * by
-    const len2 = bx * bx + by * by
-    
-    if (len2 === 0) return a
-    
-    let t = dot / len2
-    t = Math.max(0, Math.min(1, t))
-    
-    return [
-      a[0] + (b[0] - a[0]) * t,
-      a[1] + (b[1] - a[1]) * t
-    ]
-  }
-  
-  // Нахождение параллельной линии
-  static parallelLine(p1, p2, distanceKm, isLeft = true) {
-    const R = 6371
-    const lat1 = p1[0] * Math.PI / 180
-    const lon1 = p1[1] * Math.PI / 180
-    const lat2 = p2[0] * Math.PI / 180
-    const lon2 = p2[1] * Math.PI / 180
-    
-    // Направление линии (азимут)
-    const dLon = lon2 - lon1
-    const y = Math.sin(dLon) * Math.cos(lat2)
-    const x = Math.cos(lat1) * Math.sin(lat2) -
-              Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
-    let bearing = Math.atan2(y, x)
-    
-    // Перпендикулярное направление
-    const perpBearing = bearing + (isLeft ? Math.PI / 2 : -Math.PI / 2)
-    
-    // Смещение в км
-    const angularDistance = distanceKm / R
-    
-    const newLat = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
-                   Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(perpBearing))
-    const newLon = lon1 + Math.atan2(Math.sin(perpBearing) * Math.sin(angularDistance) * Math.cos(lat1),
-                   Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(newLat))
-    
-    return [newLat * 180 / Math.PI, newLon * 180 / Math.PI]
-  }
-  
-  // Проверка, находится ли точка внутри четырёхугольника
-  static isPointInPolygon(point, polygon) {
-    let inside = false
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0], yi = polygon[i][1]
-      const xj = polygon[j][0], yj = polygon[j][1]
-      
-      const intersect = ((yi > point[0]) != (yj > point[0])) &&
-        (point[1] < (xj - xi) * (point[0] - yi) / (yj - yi) + xi)
-      if (intersect) inside = !inside
-    }
-    return inside
   }
 
   static calculateArea(polygonPoints) {
@@ -110,4 +38,58 @@ export class GeometryHelpers {
     return area / 10000
   }
 
+  // Смещение линии
+  static shiftLine(p1, p2, perpUnit, offset) {
+    return {
+      p1: [p1[0] + perpUnit[0] * offset, p1[1] + perpUnit[1] * offset],
+      p2: [p2[0] + perpUnit[0] * offset, p2[1] + perpUnit[1] * offset]
+    }
+  }
+
+  // Поиск пересечений линии с полигоном
+  static getIntersectionsWithPolygon(lineP1, lineP2, polygonPoints) {
+    const intersections = []
+
+    for (let i = 0; i < polygonPoints.length - 1; i++) {
+      const intersection = GeometryHelpers.lineIntersection(
+        lineP1, lineP2,
+        polygonPoints[i], polygonPoints[i + 1]
+      )
+
+      if (intersection) {
+        intersections.push(intersection)
+      }
+    }
+    
+    return intersections
+  }
+  
+  static lineIntersection(p1, p2, p3, p4) {
+      const denominator = (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1])
+      if (denominator === 0) return null // Прямая и отрезок параллельны
+      
+      const ua = ((p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0])) / denominator
+      const ub = ((p2[0] - p1[0]) * (p1[1] - p3[1]) - (p2[1] - p1[1]) * (p1[0] - p3[0])) / denominator
+      
+      // ub проверяем (пересечение с отрезком), ua не проверяем (прямая бесконечна)
+      if (ub < 0 || ub > 1) return null
+      
+      return [
+        p1[0] + ua * (p2[0] - p1[0]),
+        p1[1] + ua * (p2[1] - p1[1])
+      ]
+  }
+
+  static interpolateOnLine(points, t) {
+    // Если всего 2 точки - просто интерполируем между ними
+    if (points.length === 2) {
+      return [
+        points[0][0] + (points[1][0] - points[0][0]) * t,
+        points[0][1] + (points[1][1] - points[0][1]) * t
+      ]
+    }
+    else {
+      return null
+    } 
+  }
 }

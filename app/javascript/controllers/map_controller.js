@@ -215,6 +215,47 @@ export default class extends Controller {
     })
   }
 
+  dispatchMapUpdated() {
+    if (!this.map) return
+    
+    const center = this.map.getCenter()
+    const zoom = this.map.getZoom()
+    
+    const event = new CustomEvent('map:updated', {
+      detail: { center, zoom }
+    })
+    document.dispatchEvent(event)
+  }
+
+  updateForm(coordinates) {
+    const event = new CustomEvent('map:geometryChanged', {
+      detail: { coordinates: coordinates }
+    })
+    document.dispatchEvent(event)
+  }
+
+  switchToPreviousSide() {
+    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+    if (this.referenceSideIndex - 1 >= 0) {
+      this.referenceSideIndex -= 1
+    }
+    else {
+      this.referenceSideIndex = coordinates.length - 2
+    }
+    this.generateRows(coordinates)
+  }
+
+  switchToNextSide() {
+    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
+    if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
+      this.referenceSideIndex += 1
+    }
+    else {
+      this.referenceSideIndex = 0
+    }
+    this.generateRows(coordinates)
+  }
+
   loadMultiplePolygons() {
     try {
       const polygonsData = JSON.parse(this.multiplePolygons)
@@ -325,51 +366,6 @@ export default class extends Controller {
     }
   }
 
-  parseWKT(wkt) {
-    // Поддержка обоих форматов: "POLYGON((...))" и "POLYGON ((...))"
-    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/i)
-    if (!match) {
-      console.error('Invalid WKT format:', wkt)
-      return null
-    }
-    const points = match[1].split(', ')
-    const coordinates = points.map(point => {
-      const [lng, lat] = point.split(' ')
-      return [parseFloat(lat), parseFloat(lng)]
-    })
-    
-    return coordinates
-  }
-
-  switchToPreviousSide() {
-    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
-    if (this.referenceSideIndex - 1 >= 0) {
-      this.referenceSideIndex -= 1
-    }
-    else {
-      this.referenceSideIndex = coordinates.length - 2
-    }
-    this.generateRows(coordinates)
-  }
-
-  switchToNextSide() {
-    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
-    if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
-      this.referenceSideIndex += 1
-    }
-    else {
-      this.referenceSideIndex = 0
-    }
-    this.generateRows(coordinates)
-  }
-
-  updateForm(coordinates) {
-    const event = new CustomEvent('map:geometryChanged', {
-      detail: { coordinates: coordinates }
-    })
-    document.dispatchEvent(event)
-  }
-
   regenerateRows() {
     if (!this.currentPolygon) return
   
@@ -408,8 +404,8 @@ export default class extends Controller {
     
     // В одну сторону
     while (hasNextRow) {
-      const shiftedRow = this.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
-      const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
+      const shiftedRow = GeometryHelpers.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
+      const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
         const numBushes = this.addRow(intersections[0], intersections[1], numRows)
@@ -424,8 +420,8 @@ export default class extends Controller {
     offset = -stepDeg
     hasNextRow = true
     while (hasNextRow) {
-      const shiftedRow = this.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
-      const intersections = this.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
+      const shiftedRow = GeometryHelpers.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
+      const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
         const numBushes = this.addRow(intersections[0], intersections[1], numRows)
@@ -441,36 +437,10 @@ export default class extends Controller {
     this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
   }
 
-  // Смещение линии
-  shiftLine(p1, p2, perpUnit, offset) {
-    return {
-      p1: [p1[0] + perpUnit[0] * offset, p1[1] + perpUnit[1] * offset],
-      p2: [p2[0] + perpUnit[0] * offset, p2[1] + perpUnit[1] * offset]
-    }
-  }
-
-  // Поиск пересечений линии с полигоном
-  getIntersectionsWithPolygon(lineP1, lineP2, polygonPoints) {
-    const intersections = []
-
-    for (let i = 0; i < polygonPoints.length - 1; i++) {
-      const intersection = this.lineIntersection(
-        lineP1, lineP2,
-        polygonPoints[i], polygonPoints[i + 1]
-      )
-
-      if (intersection) {
-        intersections.push(intersection)
-      }
-    }
-    
-    return intersections.sort((a, b) => this.distance(lineP1, a) - this.distance(lineP1, b))
-  }
-
   // Добавление ряда
   addRow(p1, p2, rowNumber, isFirstRow = false) {
     // Вычисляем количество кустов
-    const rowLengthMeters = this.calculateLineLengthKm(p1, p2) * 1000
+    const rowLengthMeters = GeometryHelpers.kmDistance(p1, p2) * 1000
     const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
     //Вид рядов
     if (!this.bushesVision) {
@@ -541,7 +511,7 @@ export default class extends Controller {
     if (linePoints.length < 2) return
     
     // Длина ряда в метрах
-    const rowLengthMeters = this.calculateLineLengthKm(linePoints[0], linePoints[linePoints.length-1]) * 1000
+    const rowLengthMeters = GeometryHelpers.kmDistance(linePoints[0], linePoints[linePoints.length-1]) * 1000
     
     // Количество кустов
     const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
@@ -550,7 +520,7 @@ export default class extends Controller {
       const t = i / numBushes // Пропорция вдоль ряда
       
       // Интерполяция позиции куста
-      const bushPoint = this.interpolateOnLine(linePoints, t)
+      const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
       
       if (bushPoint) {
         // Добавляем куст
@@ -565,29 +535,6 @@ export default class extends Controller {
     }
   }
 
-  interpolateOnLine(points, t) {
-    if (points.length < 2) return null
-    
-    const totalLength = this.getLineLength(points)
-    const targetLength = totalLength * t
-    
-    let accumulatedLength = 0
-    for (let i = 0; i < points.length - 1; i++) {
-      const segmentLength = this.distance(points[i], points[i + 1])
-      if (accumulatedLength + segmentLength >= targetLength) {
-        const remaining = targetLength - accumulatedLength
-        const ratio = remaining / segmentLength
-        return [
-          points[i][0] + (points[i + 1][0] - points[i][0]) * ratio,
-          points[i][1] + (points[i + 1][1] - points[i][1]) * ratio
-        ]
-      }
-      accumulatedLength += segmentLength
-    }
-    
-    return points[points.length - 1]
-  }
-
   getPolygonSide(points) {
     if (!points || points.length < 2 || this.referenceSideIndex >= points.length - 1 || this.referenceSideIndex < 0)
       return null
@@ -597,40 +544,24 @@ export default class extends Controller {
     }
   }
 
-  distance(p1, p2) {
-    return Math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-  }
-
-  getLineLength(points) {
-    let length = 0
-    for (let i = 0; i < points.length - 1; i++) {
-      length += this.distance(points[i], points[i + 1])
+  parseWKT(wkt) {
+    // Поддержка обоих форматов: "POLYGON((...))" и "POLYGON ((...))"
+    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/i)
+    if (!match) {
+      console.error('Invalid WKT format:', wkt)
+      return null
     }
-    return length
-  }
-
-  calculateLineLengthKm(p1, p2) {
-    return GeometryHelpers.distance(p1, p2)
-  }
-
-  lineIntersection(p1, p2, p3, p4) {
-      const denominator = (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1])
-      if (denominator === 0) return null // Прямая и отрезок параллельны
-      
-      const ua = ((p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0])) / denominator
-      const ub = ((p2[0] - p1[0]) * (p1[1] - p3[1]) - (p2[1] - p1[1]) * (p1[0] - p3[0])) / denominator
-      
-      // ub проверяем (пересечение с отрезком), ua не проверяем (прямая бесконечна)
-      if (ub < 0 || ub > 1) return null
-      
-      return [
-        p1[0] + ua * (p2[0] - p1[0]),
-        p1[1] + ua * (p2[1] - p1[1])
-      ]
+    const points = match[1].split(', ')
+    const coordinates = points.map(point => {
+      const [lng, lat] = point.split(' ')
+      return [parseFloat(lat), parseFloat(lng)]
+    })
+    
+    return coordinates
   }
 
   metersToDegrees(meters) {
-    // Берем широту из центра карты или из первой точки полигона
+    // Берем широту из центра карты
     let lat = this.map.getCenter()[0]
     
     // 1 градус широты ≈ 111320 метров (всегда)
@@ -653,18 +584,6 @@ export default class extends Controller {
     }
     const currentZoom = this.map ? this.map.getZoom() : this.zoom
     return sizeMap[Math.round(currentZoom)] || 0.01
-  }
-
-  dispatchMapUpdated() {
-    if (!this.map) return
-    
-    const center = this.map.getCenter()
-    const zoom = this.map.getZoom()
-    
-    const event = new CustomEvent('map:updated', {
-      detail: { center, zoom }
-    })
-    document.dispatchEvent(event)
   }
 
   sendStatisticsToForm(rowsCount, bushesCount, areaInHectares, bushesPerRow) {

@@ -98,7 +98,7 @@ class GrapeClassifier
     Rails.logger.info "Original image: #{image.width}x#{image.height}"
 
     # Ресайз и центрирование
-    scale = IMAGE_SIZE.to_f / [image.width, image.height].min
+    scale = IMAGE_SIZE.to_f / [ image.width, image.height ].min
     resized_width = (image.width * scale).round
     resized_height = (image.height * scale).round
     resized = image.resize(scale)
@@ -108,8 +108,12 @@ class GrapeClassifier
     crop_y = (resized_height - IMAGE_SIZE) / 2
     cropped = resized.crop(crop_x, crop_y, IMAGE_SIZE, IMAGE_SIZE)
 
+    # Приводим к RGB и 8-бит
+    cropped = cropped.colourspace(:srgb)
+    cropped = cropped.cast(:uchar)
+
     # Получаем пиксели
-    pixels = cropped.to_a.flatten
+    pixels = cropped.to_a
 
     # Нормализация
     tensor_data = []

@@ -121,7 +121,7 @@ export default class extends Controller {
     const bushesPerRowField = document.getElementById('vineyard_bushes_per_row')
     if (rowsField) rowsField.value = rows
     if (bushesField) bushesField.value = bushes
-    if (areaField) areaField.value = area
+    if (areaField) areaField.value = area + " га"
     if (bushesPerRowField) bushesPerRowField.value = JSON.stringify(bushesPerRow)
   }
   
