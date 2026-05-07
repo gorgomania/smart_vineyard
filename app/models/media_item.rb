@@ -1,11 +1,22 @@
 class MediaItem < ApplicationRecord
   belongs_to :folder
+  belongs_to :bush, optional: true
+
   has_one_attached :media
   has_one_attached :video_preview, dependent: :purge_later
   after_commit :generate_preview, on: :create, dependent: :purge_later
+  validates :bush_id, uniqueness: true, if: :bush_id_present?
   validate :validate_media_filename
 
 public
+
+  def row_number
+    bush&.row&.row_number
+  end
+
+  def vineyard_name
+    bush&.vineyard&.name
+  end
 
   def classify!
     return false unless media.attached?
@@ -22,6 +33,10 @@ public
   end
 
 private
+
+  def bush_id_present?
+    bush_id.present?  # проверяем только если не nil
+  end
 
   def validate_media_filename
     filename = media.filename.to_s

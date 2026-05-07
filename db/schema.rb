@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -46,6 +46,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "bushes", force: :cascade do |t|
+    t.bigint "row_id", null: false
+    t.bigint "vineyard_id", null: false
+    t.integer "bush_number", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["row_id", "bush_number"], name: "index_bushes_on_row_id_and_bush_number", unique: true
+    t.index ["row_id"], name: "index_bushes_on_row_id"
+    t.index ["vineyard_id", "bush_number"], name: "index_bushes_on_vineyard_id_and_bush_number"
+    t.index ["vineyard_id"], name: "index_bushes_on_vineyard_id"
+  end
+
   create_table "folders", force: :cascade do |t|
     t.string "title", limit: 15, null: false
     t.bigint "parent_id"
@@ -60,6 +72,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
 
   create_table "media_items", force: :cascade do |t|
     t.bigint "folder_id"
+    t.bigint "bush_id"
     t.string "ai_classification"
     t.float "ai_confidence"
     t.integer "ai_class_id"
@@ -69,7 +82,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.datetime "updated_at", null: false
     t.index ["ai_classification"], name: "index_media_items_on_ai_classification"
     t.index ["ai_classified_at"], name: "index_media_items_on_ai_classified_at"
+    t.index ["bush_id"], name: "index_media_items_on_bush_id"
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
+  end
+
+  create_table "rows", force: :cascade do |t|
+    t.bigint "vineyard_id", null: false
+    t.integer "row_number", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["vineyard_id", "row_number"], name: "index_rows_on_vineyard_id_and_row_number", unique: true
+    t.index ["vineyard_id"], name: "index_rows_on_vineyard_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -98,7 +121,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.decimal "area_hectares", precision: 4, scale: 2
     t.integer "total_rows", default: 0, null: false
     t.integer "total_bushes", default: 0, null: false
-    t.integer "bushes_per_row", default: [], array: true
     t.decimal "row_spacing", precision: 2, scale: 1, default: "3.0"
     t.decimal "bush_spacing", precision: 2, scale: 1, default: "1.5"
     t.integer "reference_side_index", default: 0, null: false
@@ -109,7 +131,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
     t.check_constraint "area_hectares <= 10::numeric OR area_hectares IS NULL", name: "check_area_limit"
-    t.check_constraint "array_length(bushes_per_row, 1) > 0", name: "check_bushes_per_row_not_empty"
     t.check_constraint "bush_spacing >= 1.2 AND bush_spacing <= 1.8", name: "check_bush_spacing_range"
     t.check_constraint "row_spacing >= 2.0 AND row_spacing <= 3.0", name: "check_row_spacing_range"
     t.check_constraint "total_bushes >= 0", name: "check_total_bushes_positive"
@@ -118,8 +139,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_20_060501) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "bushes", "rows"
+  add_foreign_key "bushes", "vineyards"
   add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
   add_foreign_key "folders", "users", on_delete: :cascade
+  add_foreign_key "media_items", "bushes"
   add_foreign_key "media_items", "folders", on_delete: :cascade
+  add_foreign_key "rows", "vineyards"
   add_foreign_key "vineyards", "users", on_delete: :cascade
 end

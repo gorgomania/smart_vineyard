@@ -6,7 +6,7 @@ gem "rails", "~> 8.0.2"
 gem "propshaft"
 # Use postgresql as the database for Active Record
 gem "pg", "~> 1.1"
-gem 'activerecord-postgis-adapter'
+gem "activerecord-postgis-adapter"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
@@ -18,8 +18,8 @@ gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
 gem "devise"
-gem 'devise-i18n'
-gem 'pundit'
+gem "devise-i18n"
+gem "pundit"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
@@ -63,3 +63,4 @@ group :development do
 end
 gem "tailwindcss-rails", "~> 4.4"
 gem "ffmpeg"
+gem "russian"

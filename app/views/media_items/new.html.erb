@@ -20,7 +20,6 @@
                     </span>
                     <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, id: "fileInput", class: "hidden" %>
                     <%= form.hidden_field :folder_id, value: @folder_id%>
-                    <%= form.hidden_field :page, value: @page%>
                 </label>
                 <p class="text-xs text-slate-500 mb-0">
                     Поддерживаются фото и видео до 500 МБ.
