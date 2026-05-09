@@ -8,12 +8,12 @@ export default class extends Controller {
                     "firstBushStart", "firstBushEnd", "referenceSideIndex", "referenceVertexIsFirst"]
 
   connect() {
-
     document.addEventListener('map:geometryChanged', (event) => {
       this.updateVerticesFields(event.detail.coordinates)
     })
 
     document.addEventListener('map:statisticsUpdated', (event) => {
+      console.log(1)
       this.updateStatistics(event.detail)
     })
 

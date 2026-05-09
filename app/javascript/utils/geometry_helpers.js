@@ -87,6 +87,9 @@ export class GeometryHelpers {
  static interpolateOnLine(points, t) {
     // Если всего 2 точки - просто интерполируем между ними
     if (points.length === 2) {
+      if (isNaN(t)) {
+        t = 0
+      }
       return [
         points[0][0] + (points[1][0] - points[0][0]) * t,
         points[0][1] + (points[1][1] - points[0][1]) * t

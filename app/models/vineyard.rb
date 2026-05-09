@@ -24,6 +24,12 @@ class Vineyard < ApplicationRecord
     select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes)
   }
 
+  def bushes_diagnoses
+    bushes.left_joins(:media_item)
+          .order("rows.row_number ASC, bushes.bush_number ASC")
+          .pluck("media_items.ai_class_id")
+  end
+
   def area_hectares=(value)
     if value.is_a?(String)
       # Удаляем последние 3 символа если это ' га' или просто 'га'

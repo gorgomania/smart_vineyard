@@ -12,7 +12,7 @@ export default class extends Controller {
     this.mode = this.element.dataset.mapMode
     this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
     this.multiplePolygons = this.element.dataset.mapMultiplePolygons
-    this.bushesVision = this.element.dataset.mapBushesVision ? JSON.parse(this.element.dataset.mapBushesVision) : null
+    this.bushesDiagnoses = this.element.dataset.mapBushesVision ? JSON.parse(this.element.dataset.mapBushesVision) : null
     this.currentPolygon = null
     this.rowsCollection = null
     this.objectManager = null
@@ -74,7 +74,7 @@ export default class extends Controller {
   
   initMap() {
     ymaps.ready(() => {
-      if (!this.bushesVision) {
+      if (!this.bushesDiagnoses) {
         this.map = new ymaps.Map(this.element, {
           center: this.center,
           zoom: this.zoom,
@@ -132,24 +132,6 @@ export default class extends Controller {
             editorDrawing: false,      
           }
         )
-        if (this.bushesVision) {
-          this.objectManager = new ymaps.ObjectManager({
-            clusterize: false
-          });
-
-          this.objectManager.objects.options.set({
-            iconLayout: 'default#image',
-            iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-              <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
-              </svg>
-            `),
-            iconImageSize: [4, 4],
-            iconImageOffset: [-2, -2]
-          })
-
-          this.map.geoObjects.add(this.objectManager)
-        }
       }
       else {
         this.loadMultiplePolygons()
@@ -370,7 +352,6 @@ export default class extends Controller {
       const polygonData = this.existingPolygon
       // Извлекаем координаты из WKT или GeoJSON
       let coordinates
-      
       coordinates = this.parseWKT(polygonData)
       this.currentPolygon.geometry.setCoordinates([coordinates])
       const bounds = this.currentPolygon.geometry.getBounds()
@@ -394,6 +375,25 @@ export default class extends Controller {
 
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
+    //Если нужно отображать кусты
+    if (this.bushesDiagnoses) {
+      this.objectManager = new ymaps.ObjectManager({
+        clusterize: false
+      });
+
+      this.objectManager.objects.options.set({
+        iconLayout: 'default#image',
+        iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
+          <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
+          </svg>
+        `),
+        iconImageSize: [4, 4],
+        iconImageOffset: [-2, -2]
+      })
+
+      this.map.geoObjects.add(this.objectManager)
+    }
     this.rowsCollection.removeAll()
     const bushesPerRow = []
     // 1. Находим самую длинную сторону (первый ряд)
@@ -448,7 +448,7 @@ export default class extends Controller {
         hasNextRow = false
       }
     }
-    
+    console.log("Finish generate rows")
     const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
     this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
   }
@@ -457,9 +457,9 @@ export default class extends Controller {
   addRow(p1, p2, rowNumber, isFirstRow = false, bushesStartIndex = 0) {
     // Вычисляем количество кустов
     const rowLengthMeters = GeometryHelpers.kmDistance(p1, p2) * 1000
-    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
+    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing) + 1
     //Вид рядов
-    if (!this.bushesVision) {
+    if (!this.bushesDiagnoses) {
       // Склонение слова "куст"
       let bushesText = ''
       if (numBushes % 10 === 1 && numBushes % 100 !== 11) {
@@ -537,7 +537,7 @@ export default class extends Controller {
       
       // Интерполяция позиции куста
       const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
-      
+      console.log(this.bushesDiagnoses[bushesStartIndex + i])
       if (bushPoint) {
         // Добавляем куст
         const bushGeoJsonData = {
@@ -545,7 +545,7 @@ export default class extends Controller {
           "features": [
             {
               "type": "Feature",
-              "id": bushesStartIndex + i + rowIndex,
+              "id": bushesStartIndex + i,
               "geometry": {
                 "type": "Point",
                 "coordinates": [bushPoint[0], bushPoint[1]]
@@ -613,7 +613,7 @@ export default class extends Controller {
   }
 
   sendStatisticsToForm(rowsCount, bushesCount, areaInHectares, bushesPerRow) {
-  // Отправляем событие с данными о рядах и кустах
+    // Отправляем событие с данными о рядах и кустах
     const event = new CustomEvent('map:statisticsUpdated', {
       detail: { 
         rows: rowsCount,

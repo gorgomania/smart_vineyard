@@ -19,13 +19,13 @@ class VineyardsController < ApplicationController
   def show
     @map_center, @map_zoom = initialize_map
     @mode = "show"
-    if params[:bushes_vision].present?
-      @bushes_vision = params[:bushes_vision] == "true"
+    @vineyard = Vineyard.find_by(id: params[:id])
+    authorize @vineyard
+    if params[:bushes_vision].present? && params[:bushes_vision] == "true"
+      @bushes_vision = @vineyard.bushes_diagnoses
     else
       @bushes_vision = false
     end
-    @vineyard = Vineyard.find_by(id: params[:id])
-    authorize @vineyard
     @vineyard_data = {
       polygon: @vineyard.polygon.to_s,
       row_spacing: @vineyard.row_spacing.to_f,
