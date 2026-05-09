@@ -4,9 +4,12 @@ class MediaItem < ApplicationRecord
 
   has_one_attached :media
   has_one_attached :video_preview, dependent: :purge_later
+
   after_commit :generate_preview, on: :create, dependent: :purge_later
+  after_create_commit :classify_async, if: -> { media.attached? && media.image? }
+
   validates :bush_id, uniqueness: true, if: :bush_id_present?
-  validate :validate_media_filename
+  before_validation :normalize_filename!, if: :media_changed?
 
 public
 
@@ -16,6 +19,10 @@ public
 
   def vineyard_name
     bush&.vineyard&.name
+  end
+
+  def classify_async
+    ClassifyMediaJob.perform_later(id)
   end
 
   def classify!
@@ -34,11 +41,16 @@ public
 
 private
 
+  def media_changed?
+    # Проверяем: новый файл при создании ИЛИ изменился существующий
+    new_record? || media.attached? && media.blob.new_record?
+  end
+
   def bush_id_present?
     bush_id.present?  # проверяем только если не nil
   end
 
-  def validate_media_filename
+  def normalize_filename!
     filename = media.filename.to_s
     if filename.length == 0
       errors.add(:media, "Имя не может быть пустым.")
@@ -64,9 +76,7 @@ private
           end
         end
       end
-      if index == 0
-        media.blob.update!(filename: filename)
-      else
+      if index.nonzero?
         media.blob.update!(filename: filename + " (" + index.to_s() + ")")
       end
     end

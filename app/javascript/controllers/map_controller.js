@@ -380,18 +380,7 @@ export default class extends Controller {
       this.objectManager = new ymaps.ObjectManager({
         clusterize: false
       });
-
-      this.objectManager.objects.options.set({
-        iconLayout: 'default#image',
-        iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-          <svg width="4" height="4" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="2" cy="2" r="2" fill="#2ECC40"/>
-          </svg>
-        `),
-        iconImageSize: [4, 4],
-        iconImageOffset: [-2, -2]
-      })
-
+          
       this.map.geoObjects.add(this.objectManager)
     }
     this.rowsCollection.removeAll()
@@ -448,7 +437,6 @@ export default class extends Controller {
         hasNextRow = false
       }
     }
-    console.log("Finish generate rows")
     const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
     this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
   }
@@ -537,8 +525,21 @@ export default class extends Controller {
       
       // Интерполяция позиции куста
       const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
-      console.log(this.bushesDiagnoses[bushesStartIndex + i])
+
       if (bushPoint) {
+        const bushId = bushesStartIndex + i;
+        const classId = this.bushesDiagnoses[bushId];
+  
+        // Определяем цвет
+        const colors = {
+          0: '#800000',  // Чёрная гниль
+          1: '#FF8C00',  // Эска
+          2: '#2ECC40',   // Здоровый
+          3: '#D63384'    // Антракноз
+        };
+
+        const color = colors[classId] || '#AAAAAA';
+
         // Добавляем куст
         const bushGeoJsonData = {
           "type": "FeatureCollection",
@@ -551,11 +552,22 @@ export default class extends Controller {
                 "coordinates": [bushPoint[0], bushPoint[1]]
               },
               "properties": {
-                "hintContent": `Ряд ${rowIndex}, Куст ${i + 1}`
-              }
+                "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`
+              },
+              "options": {
+              iconLayout: 'default#image',
+              iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
+                <svg width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="6" cy="6" r="6" fill="${color}"/>
+                </svg>
+              `),
+              iconImageSize: [12, 12],
+              iconImageOffset: [-6, -6]
+            }
             }
           ]
         }
+
         this.objectManager.add(bushGeoJsonData)
       }
     }

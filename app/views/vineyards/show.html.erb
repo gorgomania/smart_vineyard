@@ -125,6 +125,42 @@
             </div>
           </div>
         </div>
+        
+        <% if @bushes_vision %>
+          <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-10">
+            <div class="font-bold mb-3 text-[#69377c] flex items-center gap-2">
+              <span>🔬</span> Состояние кустов
+            </div>
+            
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <div class="w-3.5 h-3.5 rounded-full bg-[#2ECC40] shadow-sm"></div>
+                <span class="text-sm text-gray-700">Здоровый</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="w-3.5 h-3.5 rounded-full bg-[#FF8C00]"></div>
+                <span class="text-sm text-gray-700">Эска</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="w-3.5 h-3.5 rounded-full bg-[#800000]"></div>
+                <span class="text-sm text-gray-700">Чёрная гниль</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="w-3.5 h-3.5 rounded-full bg-[#D63384]"></div>
+                <span class="text-sm text-gray-700">Антаракноз</span>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
+                <span class="text-sm text-gray-700">Нет данных</span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
         <div id="map" 
             data-controller="map"
             data-turbo="false"
