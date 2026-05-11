@@ -127,6 +127,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
     t.boolean "reference_vertex_is_first", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "deleted_at"
+    t.index ["deleted_at"], name: "index_vineyards_on_deleted_at"
     t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"

@@ -58,7 +58,8 @@ class VineyardsController < ApplicationController
     vineyard_params = vineyard_params_permit
     @vineyard = current_user.vineyards.build(vineyard_params)
     if @vineyard.save
-      create_rows_and_bushes(@vineyard)
+      bushes_per_row = params[:vineyard][:bushes_per_row]
+      GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
       redirect_to @vineyard, notice: "Виноградник создан"
     else
       session[:vineyard_params] = vineyard_params.to_h
@@ -122,34 +123,6 @@ class VineyardsController < ApplicationController
   end
 
   private
-
-  def create_rows_and_bushes(vineyard)
-    bushes_per_row = params[:vineyard][:bushes_per_row]
-
-    # Если это строка - парсим JSON
-    if bushes_per_row.is_a?(String)
-      bushes_per_row = JSON.parse(bushes_per_row)
-    end
-
-    ActiveRecord::Base.transaction do
-      bushes_per_row.each_with_index do |bushes_count, row_index|
-        row_number = row_index + 1
-
-        # Создаём ряд
-        row = vineyard.rows.create!(row_number: row_number)
-
-        # Создаём кусты в ряду
-        bushes_count.to_i.times do |bush_index|
-          bush_number = bush_index + 1
-          bush_attrs = {
-            vineyard: vineyard,
-            bush_number: bush_number
-          }
-          row.bushes.create!(bush_attrs)
-        end
-      end
-    end
-  end
 
   def vineyard_params_permit
     vertices = []

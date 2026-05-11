@@ -20,9 +20,16 @@ class Vineyard < ApplicationRecord
   validates :row_spacing, numericality: { greater_than_or_equal_to: 2.0, less_than_or_equal_to: 3.0 }
   validates :bush_spacing, numericality: { greater_than_or_equal_to: 1.2, less_than_or_equal_to: 1.8 }
 
+  default_scope { where(deleted_at: nil) }
+
   scope :for_index, -> {
     select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes)
   }
+
+  def destroy
+    update(deleted_at: Time.current)
+    DestroyVineyardJob.perform_later(id)
+  end
 
   def bushes_diagnoses
     bushes.left_joins(:media_item)

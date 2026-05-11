@@ -9,6 +9,9 @@
             <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
                 <%= image_tag "/upload_file.png", alt: "Upload file", class: "min-w-8 h-8" %>
             <% end %>
+            <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать файлы с виноградником" do %>
+                <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
+            <% end %>
         <% else %>
             <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
                 <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">

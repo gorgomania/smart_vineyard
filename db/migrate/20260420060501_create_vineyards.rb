@@ -22,11 +22,13 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       t.integer :reference_side_index, null: false, default: 0   # Номер стороны (индекс) которая была опорной
       t.boolean :reference_vertex_is_first, null: false, default: true # Номер вершины первого куста (относительно опорной стороны)
 
+      t.datetime :deleted_at
       t.timestamps
     end
 
     add_index :vineyards, [ :user_id, :name ], unique: true
     add_index :vineyards, :polygon, using: :gist
+    add_index :vineyards, :deleted_at
 
     # Проверка: Площадь не превышает 20 га
     execute <<-SQL
@@ -70,6 +72,7 @@ class CreateVineyards < ActiveRecord::Migration[8.0]
       execute "ALTER TABLE vineyards DROP CONSTRAINT IF EXISTS check_total_bushes_positive"
       remove_index :vineyards, [ :user_id, :name ] if index_exists?(:vineyards, [ :user_id, :name ])
       remove_index :vineyards, :polygon if index_exists?(:vineyards, :polygon)
+      remove_index :vineyards, :deleted_at if index_exists?(:vineyards, :deleted_at)
       drop_table :vineyards
     end
   end
