@@ -4,10 +4,13 @@ class Folder < ApplicationRecord
   belongs_to :vineyard, optional: true
   has_many :children, class_name: "Folder", foreign_key: :parent_id, dependent: :destroy
   has_many :media_items, dependent: :destroy
+
   validates :title, presence: { message: "Имя не может быть пустым" }
   validates :title, uniqueness: { scope: [ :parent_id, :user_id ], message: "Имя папки уже используется" }
   validates :title, length: { maximum: 15, message: "Длина не более 15 символов" }
   validates :vineyard_id, uniqueness: true, if: :vineyard_id_present?
+
+  after_update_commit :distribute_media, if: :saved_change_to_vineyard_id?
 end
 
 public
@@ -23,6 +26,10 @@ def id_path
 end
 
 private
+
+def distribute_media
+    DistributeMediaJob.perform_later(id)
+end
 
 def vineyard_id_present?
     vineyard_id.present?  # проверяем только если не nil

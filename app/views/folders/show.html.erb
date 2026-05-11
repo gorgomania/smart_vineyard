@@ -54,9 +54,6 @@
                 <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
                     <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
                 <% end %>
-                <%= button_to detach_from_vineyard_folder_path(@folder), method: :delete, data: { confirm: "Вы уверены? Папка будет откреплена от виноградника вместе с содержимым." }, class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Удалить связь с виноградником" do %>
-                    <%= image_tag "/deattach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
-                <% end %>
             <% else %>
                 <%= link_to attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать папку с виноградником" do %>
                     <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
