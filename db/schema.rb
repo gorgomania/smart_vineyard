@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -62,12 +62,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
     t.string "title", limit: 15, null: false
     t.bigint "parent_id"
     t.bigint "user_id", null: false
+    t.bigint "vineyard_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_folders_on_created_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
     t.index ["user_id", "title", "parent_id"], name: "index_folders_on_user_id_and_title_and_parent_id", unique: true
     t.index ["user_id"], name: "index_folders_on_user_id"
+    t.index ["vineyard_id"], name: "index_folders_on_vineyard_id"
   end
 
   create_table "media_items", force: :cascade do |t|
@@ -125,9 +127,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
     t.decimal "bush_spacing", precision: 2, scale: 1, default: "1.5"
     t.integer "reference_side_index", default: 0, null: false
     t.boolean "reference_vertex_is_first", default: true, null: false
+    t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.datetime "deleted_at"
     t.index ["deleted_at"], name: "index_vineyards_on_deleted_at"
     t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
@@ -145,6 +147,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174249) do
   add_foreign_key "bushes", "vineyards"
   add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
   add_foreign_key "folders", "users", on_delete: :cascade
+  add_foreign_key "folders", "vineyards"
   add_foreign_key "media_items", "bushes"
   add_foreign_key "media_items", "folders", on_delete: :cascade
   add_foreign_key "rows", "vineyards"

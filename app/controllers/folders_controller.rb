@@ -149,6 +149,28 @@ class FoldersController < ApplicationController
     end
   end
 
+  def attach
+    @folder = Folder.find(params[:id])
+    @vineyards = current_user.vineyards.order(:name)
+  end
+
+  def attach_to_vineyard
+    @folder = Folder.find(params[:id])
+    @vineyard = Vineyard.find(params[:vineyard_id])
+    if @folder.update(vineyard: @vineyard)
+      redirect_to @folder, notice: "Папка успешно связана с виноградником"
+    else
+      flash[:alert] = "Выбранный виноградник уже занят другой папкой"
+      redirect_to attach_folder_path(@folder)
+    end
+  end
+
+  def detach_from_vineyard
+    @folder = Folder.find(params[:id])
+    @folder.update(vineyard: nil)
+    redirect_to @folder, notice: "Папка успешно откреплена от виноградника"
+  end
+
   private
 
   def folder_params

@@ -3,6 +3,7 @@ class Vineyard < ApplicationRecord
   has_many :rows, dependent: :destroy
   has_many :bushes, through: :rows
   has_many :media_items, through: :bushes
+  has_one :folder, dependent: :nullify
 
   validates :name, presence: true, length: { maximum: 100 }, uniqueness: { scope: :user_id }
   validates :polygon, presence: true

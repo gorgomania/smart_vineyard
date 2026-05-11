@@ -1,50 +1,70 @@
 <%= render template: "layouts/header" %>
 <main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
-    <div class = "flex gap-1">
-        <%= nav_buttons %>
-        <% if @search_query.blank? %>
-            <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать папку" do %>
-                <%= image_tag "/create_folder.png", alt: "Create folder", class: "min-w-8 h-8" %>
-            <% end %>
-            <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
-                <%= image_tag "/upload_file.png", alt: "Upload file", class: "min-w-8 h-8" %>
-            <% end %>
-            <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать файлы с виноградником" do %>
-                <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
-            <% end %>
-        <% else %>
-            <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
-                <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">
-                    <span class = "">
-                        <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
-                        <%= ru_pluralize(@childrens_length, "папка", "папки", "папок") if @childrens_length > 0 %>
-                        <%= " и " if @childrens_length > 0 && @media_length > 0 %>
-                        <%= ru_pluralize(@media_length, "медиафайл", "медиафайла", "медиафайлов") if @media_length > 0 %> 
-                    </span>
-                </div>
-            <% end %>
-        <% end %>
-        <% if @title_path.present?%>
-            <div class = "flex items-center bg-white px-4 rounded-lg">
-                <% (0...@title_path.length - 1).each do |i| %>
-                    <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
-                    <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+    <div class = "flex gap-1 justify-between">
+        <div class = "flex">
+            <%= nav_buttons %>
+
+            <% if @search_query.blank? %>
+                <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать папку" do %>
+                    <%= image_tag "/create_folder.png", alt: "Create folder", class: "min-w-8 h-8" %>
                 <% end %>
-                <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
-            </div>
-        <% end %>
-        <% flash.each do |type, msg| %>
-            <% if type == "alert" %>
-                <div class = "px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
-                    <%= msg %>
-                </div>
+
+                <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
+                    <%= image_tag "/upload_file.png", alt: "Upload file", class: "min-w-8 h-8" %>
+                <% end %>
             <% else %>
-                <div class = "flash px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
-                    <%= msg %>
+                <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
+                    <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">
+                        <span class = "">
+                            <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
+                            <%= ru_pluralize(@childrens_length, "папка", "папки", "папок") if @childrens_length > 0 %>
+                            <%= " и " if @childrens_length > 0 && @media_length > 0 %>
+                            <%= ru_pluralize(@media_length, "медиафайл", "медиафайла", "медиафайлов") if @media_length > 0 %> 
+                        </span>
+                    </div>
+                <% end %>
+            <% end %>
+
+            <% if @title_path.present?%>
+                <div class = "flex items-center bg-white px-4 rounded-lg ml-1">
+                    <% (0...@title_path.length - 1).each do |i| %>
+                        <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
+                        <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+                    <% end %>
+                    <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
                 </div>
             <% end %>
-        <% end %>
+
+            <% flash.each do |type, msg| %>
+                <% if type == "alert" %>
+                    <div class = "px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
+                        <%= msg %>
+                    </div>
+                <% else %>
+                    <div class = "flash px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
+                        <%= msg %>
+                    </div>
+                <% end %>
+            <% end %>
+        </div>
+
+        <div class = "flex">
+            <% if @search_query.blank? && @folder.vineyard.present? %>
+                <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c]", title: "Привязанный виноградник" %>
+                <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
+                    <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
+                <% end %>
+                <%= button_to detach_from_vineyard_folder_path(@folder), method: :delete, data: { confirm: "Вы уверены? Папка будет откреплена от виноградника вместе с содержимым." }, class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Удалить связь с виноградником" do %>
+                    <%= image_tag "/deattach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
+                <% end %>
+            <% else %>
+                <%= link_to attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать папку с виноградником" do %>
+                    <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
+                <% end %>
+            <% end %>
+        </div>
     </div>
+
     <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(162.75px,1fr))] gap-[10px]">
         <% @childrens.each do |children| %>
             <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">

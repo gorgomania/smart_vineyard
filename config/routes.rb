@@ -3,7 +3,7 @@ Rails.application.routes.draw do
     registrations: "users/registrations"
   }
 
-  resources :folders
+  resources :users
 
   resources :vineyards do
     member do
@@ -17,9 +17,17 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :users
-
   resources :stats
+
+  resources :folders do
+    member do
+      get :attach
+      get :edit_attach
+      post :attach_to_vineyard
+      patch :update_attach_to_vineyard  # перекрепление ЭТОГО медиа к кусту
+      delete :detach_from_vineyard
+    end
+  end
 
   resources :media_items do
     member do
