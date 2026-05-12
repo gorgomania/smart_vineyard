@@ -6,11 +6,17 @@ import "jquery"
 
 // Глобальный массив для хранения blob ID
 let uploadedBlobs = []
-let currentUploads = 0
+let pendingUploads = 0
+let totalFiles = 0
 
 window.jQuery = window.$ = $
 
 document.addEventListener("turbo:load", function() {
+  // Сбрасываем глобальные переменные при загрузке страницы
+  uploadedBlobs = []
+  pendingUploads = 0
+  totalFiles = 0
+
   var input_focus = 1, input_hover = 1;
   // Эффект focus для поля поиска
   $(document).on("focus.search", ".search_input", function() {
@@ -105,7 +111,13 @@ document.addEventListener("turbo:load", function() {
       const errorContainer = $("#error-container")
       errorContainer.empty()
       $("#preview-container").empty()
+
       uploadedBlobs = [] // Очищаем массив blob ID
+      pendingUploads = 0
+      totalFiles = 0
+      $('#upload-progress-container').addClass('hidden')
+      $('#upload-progress-bar').css('width', '0%')
+
       const dataTransfer = new DataTransfer();
       const fileInput = document.getElementById("fileInput");
       // Проверяем добавленные файлы на тип данных
@@ -297,6 +309,8 @@ function addFilesWithCheckDuplicates(newFiles) {
 }
 
 function showPreview(files) {
+  totalFiles += files.length  // ← увеличиваем общее количество
+  updateProgress()
   Array.from(files).forEach((file) => {
     const isVideo = file.type.startsWith('video/');
     if (isVideo) {
@@ -366,8 +380,6 @@ function createPreviewWrapper(url, file) {
 
       // Удаляем blob из storage
       const blobData = uploadedBlobs.find(item => item.filename === file.name)
-      console.log(uploadedBlobs)
-      console.log(blobData)
       if (blobData) {
         const csrfToken = document.querySelector('[name="csrf-token"]').content
       
@@ -378,9 +390,14 @@ function createPreviewWrapper(url, file) {
             'Content-Type': 'application/json'
           }
         })
-
         uploadedBlobs = uploadedBlobs.filter(item => item.filename !== file.name)
+      } else if (pendingUploads > 0) {
+        // Файл ещё не загрузился → просто уменьшаем счётчик
+        pendingUploads--
       }
+
+      totalFiles--
+      updateProgress()
 
       previewWrapper.remove();
 
@@ -425,17 +442,58 @@ function createPreviewWrapper(url, file) {
 };
 
 function startDirectUpload(file, previewWrapper) {
+  pendingUploads++
+  
+  // Показываем прогресс-бар
+  $('#upload-progress-container').removeClass('hidden')
+  
+  const $submitBtn = $('#submit-btn')
+  $submitBtn.prop('disabled', true).val(`Загрузка (${uploadedBlobs.length}/${totalFiles})...`)
+  
+  const loadingIndicator = document.createElement('div');
+  loadingIndicator.className = 'absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center text-white text-xs';
+  loadingIndicator.innerHTML = '⏳ Загрузка...';
+  previewWrapper.appendChild(loadingIndicator);
   
   const upload = new DirectUpload(file, "/rails/active_storage/direct_uploads")
   
   upload.create((_, blob) => {
+    // Убираем индикатор загрузки
+    loadingIndicator.remove()
+
     if (blob) {
       uploadedBlobs.push({
       signed_id: blob.signed_id,
       filename: file.name
     })
+      const successMark = document.createElement('div');
+      successMark.className = 'absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center';
+      successMark.innerHTML = '✓';
+      previewWrapper.appendChild(successMark);
     }
+    pendingUploads--
+    updateProgress()
   })
+}
+
+function updateProgress() {
+  const completed = uploadedBlobs.length
+  const percent = totalFiles === 0 ? 0 : Math.round((completed / totalFiles) * 100)
+  
+  $('#upload-progress-percent').text(`${percent}%`)
+  $('#upload-progress-bar').css('width', `${percent}%`)
+  $('#upload-progress-status').text(`Загружено ${completed} из ${totalFiles} файлов`)
+  
+  const $submitBtn = $('#submit-btn')
+  if (pendingUploads > 0) {
+    $submitBtn.prop('disabled', true).val(`Загрузка (${completed}/${totalFiles})...`)
+  } else if (completed === totalFiles && totalFiles > 0) {
+    $submitBtn.prop('disabled', false).val('Загрузить')
+    $('#upload-progress-status').text('✅ Все файлы загружены!')
+  } else if (totalFiles === 0) {
+    $submitBtn.prop('disabled', true).val('Загрузить')
+    $('#upload-progress-container').addClass('hidden')
+  }
 }
 
 function showError(message) {
