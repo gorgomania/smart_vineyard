@@ -40,6 +40,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :active_storage_blobs, only: [ :destroy ], path: "/active_storage/blobs"
+
   root "vineyards#index"
 
   get "*unmatched", to: "application#not_found", via: :all, constraints: ->(req) {

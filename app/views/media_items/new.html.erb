@@ -12,7 +12,7 @@
                 <% end %>
             <% end %>
         </div>
-        <%= form_with model: @media_item, html: { method: :post }, class: "mt-5" do |form| %>
+        <%= form_with model: @media_item, html: { method: :post, id: "media-upload-form" }, class: "mt-5" do |form| %>
             <div class="space-y-3 w-70">
                 <label id = "dropZone" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-purple-300 rounded-xl px-6 py-8 bg-purple-50 hover:border-purple-500 hover:bg-purple-100 cursor-pointer transition">
                     <span class="text-sm text-[#4e4e4e] pointer-events-none">

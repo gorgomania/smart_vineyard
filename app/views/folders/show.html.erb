@@ -26,7 +26,7 @@
             <% end %>
 
             <% if @title_path.present?%>
-                <div class = "flex items-center bg-white px-4 rounded-lg ml-1">
+                <div class = "flex items-center bg-white px-4 rounded-lg mx-1">
                     <% (0...@title_path.length - 1).each do |i| %>
                         <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
                         <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
@@ -49,14 +49,16 @@
         </div>
 
         <div class = "flex">
-            <% if @search_query.blank? && @folder.vineyard.present? %>
-                <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c]", title: "Привязанный виноградник" %>
-                <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
-                    <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
-                <% end %>
-            <% else %>
-                <%= link_to attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать папку с виноградником" do %>
-                    <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
+            <% if @search_query.blank? %>
+                <% if @folder.vineyard.present? %>
+                    <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c]", title: "Привязанный виноградник" %>
+                    <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
+                        <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
+                    <% end %>
+                <% else %>
+                    <%= link_to attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать папку с виноградником" do %>
+                        <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
+                    <% end %>
                 <% end %>
             <% end %>
         </div>

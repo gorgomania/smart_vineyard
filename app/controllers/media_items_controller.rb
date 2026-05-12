@@ -15,27 +15,19 @@ class MediaItemsController < ApplicationController
   end
 
   def create
-    folder_id =  media_item_params[:folder_id]
-    media_items = media_item_params[:media]
-    successfull_uploads_counter = 0
-    filesave_errors = []
-    media_items.each do |file|
-      if file.present?
-        media_item = MediaItem.new(folder_id: folder_id)
-        media_item.media.attach(file)
-        if media_item.save
-          successfull_uploads_counter += 1
-        else
-          filesave_errors.push(media_item.errors[:media][0])
-        end
-      end
-    end
-    if successfull_uploads_counter.nonzero?
-      redirect_to folder_path(folder_id, page: "-1", successfull_uploads_count: successfull_uploads_counter), notice: "Файлы в количестве #{successfull_uploads_counter} успешно загружены"
-    else
+    folder_id = media_item_params[:folder_id]
+    blob_ids = params[:signed_blob_ids]&.split(",")
+
+    if blob_ids.blank?
       flash[:alert] = [ "Сначала выберите файл" ]
       redirect_to new_media_item_path(folder_id: folder_id)
+      return
     end
+
+    # Запускаем фоновую привязку к папке
+    AttachMediaJob.perform_later(folder_id, blob_ids)
+
+    redirect_to folder_path(folder_id, page: "-1"), notice: "#{blob_ids.count} файлов загружаются в фоне"
   end
 
   def edit
@@ -97,9 +89,9 @@ class MediaItemsController < ApplicationController
     @media_item = MediaItem.find(params[:id])
     @bush = Bush.find(params[:bush_id])
     if @media_item.update(bush: @bush)
-      redirect_to @media_item, notice: "Медиа успешно прикреплено к кусту"
+      redirect_to @media_item, notice: "Файл успешно прикреплен к кусту"
     else
-      flash[:alert] = "Выбранный куст уже занят"
+      flash[:alert] = "Выбранный куст уже занят другим файлом"
       redirect_to attach_media_item_path(@media_item)
     end
   end
@@ -129,9 +121,9 @@ class MediaItemsController < ApplicationController
     @media_item = MediaItem.find(params[:id])
     @bush = Bush.find(params[:bush_id])
     if @media_item.update(bush: @bush)
-      redirect_to @media_item, notice: "Медиа успешно переприкреплено к кусту"
+      redirect_to @media_item, notice: "Файл успешно перекреплен к кусту"
     else
-      flash[:alert] = "Выбранный куст уже занят"
+      flash[:alert] = "Выбранный куст уже занят другим файлом"
       redirect_to edit_attach_media_item_path(@media_item)
     end
   end
@@ -139,7 +131,7 @@ class MediaItemsController < ApplicationController
   def detach_from_bush
     @media_item = MediaItem.find(params[:id])
     @media_item.update(bush: nil)
-    redirect_to @media_item, notice: "Медиа успешно откреплено от куста"
+    redirect_to @media_item, notice: "Файл успешно откреплен от куста"
   end
 
 private

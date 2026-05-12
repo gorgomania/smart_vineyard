@@ -16,62 +16,63 @@
     <div class = "flex justify-between items-start text-[#333] mt-4">
         <% if @media_item.media.image? %>
             <%= image_tag @media_item.media, class: "max-w-[30%]", loading: "lazy" %>
+            <div class = "flex flex-col justify-end w-[20%]">
+                <% if @media_item.ai_classification.present?%>
+                    <div class = "text-[#333] text-xl">
+                        <h1 class = "text-2xl text-center mb-4">Результаты анализа</h1>
+                        <h2 class = "text-[#69377c]">Класс</h2>
+                        <span><%= @media_item.ai_classification %> </span>
+                        <h2 class = "text-[#69377c]">Уверенность</h2>
+                        <span><%= number_to_percentage(@media_item.ai_confidence * 100, precision: 2) %> </span>
+                        <h2 class = "text-[#69377c]">Дата классификации</h2>
+                        <span><%= @media_item.ai_classified_at.in_time_zone("Moscow").strftime("%d.%m.%Y %H:%M") %> </span>
+                    </div>
+                <% end %>
+                <%= button_to @media_item.ai_classification.present? ? "Реанализ" : "Анализ", classify_media_item_path(@media_item.id), method: :post, class: "h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
+            </div>
+
+            <div class = "w-[20%] text-xl">
+                <h1 class = "text-2xl text-[#333] text-center mb-4">Виноградник</h1>
+                <% if @media_item.bush.present? %>
+                    <h2 class = "text-[#69377c]">Название</h2>
+                    <span><%= @media_item.vineyard_name %> </span>                
+                    <h2 class = "text-[#69377c]">
+                        Ряд <span class="text-[#333]"><%= @media_item.row_number %></span> 
+                        Куст <span class="text-[#333]"><%= @media_item.bush.bush_number %></span>
+                    </h2>
+                <% else %>
+                    <span class = "flex text-center"> Позиция на винограднике не определена </span>
+                <% end %>
+                <% if @media_item.bush.present? %>
+                        <%= link_to "Перекрепить к кусту", edit_attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                        <%= button_to "Открепить от куста", 
+                                detach_from_bush_media_item_path(@media_item), 
+                                method: :delete,
+                                data: { turbo_confirm: "Открепить файл от куста?" },
+                                class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                <% else %>
+                    <%= link_to "Прикрепить к кусту", attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                <% end %>
+                <% flash.each do |type, msg| %>
+                    <% if type == "alert" %>
+                        <div class = "h-16 mt-5 px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
+                            <%= msg %>
+                        </div>
+                    <% else %>
+                        <div class = "flash h-16 mt-5  px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
+                            <%= msg %>
+                        </div>
+                    <% end %>
+                <% end %>
+            </div>
         <% else %>
             <%= video_tag rails_storage_redirect_path(@media_item.media.blob, disposition: 'inline'),
                 controls: true,
                 controlsList: "nodownload",
-                class: "max-w-[50%]",
+                class: "max-w-[70%]",
                 data: { video_id: @media_item.id } %>
         <% end %>
-        <div class = "flex flex-col justify-end w-[20%]">
-            <% if @media_item.ai_classification.present?%>
-                <div class = "text-[#333] text-xl">
-                    <h1 class = "text-2xl text-center mb-4">Результаты анализа</h1>
-                    <h2 class = "text-[#69377c]">Класс</h2>
-                    <span><%= @media_item.ai_classification %> </span>
-                    <h2 class = "text-[#69377c]">Уверенность</h2>
-                    <span><%= number_to_percentage(@media_item.ai_confidence * 100, precision: 2) %> </span>
-                    <h2 class = "text-[#69377c]">Дата классификации</h2>
-                    <span><%= @media_item.ai_classified_at.in_time_zone("Moscow").strftime("%d.%m.%Y %H:%M") %> </span>
-                </div>
-            <% end %>
-            <%= button_to @media_item.ai_classification.present? ? "Реанализ" : "Анализ", classify_media_item_path(@media_item.id), method: :post, class: "h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
-        </div>
-
-        <div class = "w-[20%] text-xl">
-            <h1 class = "text-2xl text-[#333] text-center mb-4">Виноградник</h1>
-            <% if @media_item.bush.present? %>
-                <h2 class = "text-[#69377c]">Название</h2>
-                <span><%= @media_item.vineyard_name %> </span>                
-                <h2 class = "text-[#69377c]">
-                    Ряд <span class="text-[#333]"><%= @media_item.row_number %></span> 
-                    Куст <span class="text-[#333]"><%= @media_item.bush.bush_number %></span>
-                </h2>
-            <% else %>
-                <span class = "flex text-center"> Позиция на винограднике не определена </span>
-            <% end %>
-            <% if @media_item.bush.present? %>
-                    <%= link_to "Перекрепить к кусту", edit_attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
-                    <%= button_to "Открепить от куста", 
-                            detach_from_bush_media_item_path(@media_item), 
-                            method: :delete,
-                            data: { confirm: "Вы уверены? Медиа будет откреплено от куста." },
-                            class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
-            <% else %>
-                <%= link_to "Прикрепить к кусту", attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
-            <% end %>
-            <% flash.each do |type, msg| %>
-                <% if type == "alert" %>
-                    <div class = "h-16 mt-5 px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
-                        <%= msg %>
-                    </div>
-                <% else %>
-                    <div class = "flash h-16 mt-5  px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
-                        <%= msg %>
-                    </div>
-                <% end %>
-            <% end %>
-        </div>
+        
 
         <div class = "w-[20%] text-xl">
             <h1 class = "text-2xl text-[#333] text-center mb-4">Сведения о файле</h1>

@@ -158,7 +158,7 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
     if @folder.update(vineyard: @vineyard)
-      redirect_to @folder, notice: "Папка успешно связана с виноградником"
+      redirect_to @folder, notice: "Папка успешно прикреплена к винограднику"
     else
       flash[:alert] = "Выбранный виноградник уже занят другой папкой"
       redirect_to attach_folder_path(@folder)
@@ -175,9 +175,9 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
     if @folder.update(vineyard: @vineyard)
-      redirect_to @folder, notice: "Папка успешно переприкреплена к винограднику"
+      redirect_to @folder, notice: "Папка успешно перекреплена к винограднику"
     else
-      flash[:alert] = "Выбранный виноградник уже занят"
+      flash[:alert] = "Выбранный виноградник уже занят другой папкой"
       redirect_to edit_attach_folder_path(@folder)
     end
   end

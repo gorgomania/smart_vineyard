@@ -1,6 +1,12 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 import "@hotwired/turbo-rails"
+import { DirectUpload } from "@rails/activestorage"
 import "jquery"
+
+
+// Глобальный массив для хранения blob ID
+let uploadedBlobs = []
+let currentUploads = 0
 
 window.jQuery = window.$ = $
 
@@ -99,6 +105,7 @@ document.addEventListener("turbo:load", function() {
       const errorContainer = $("#error-container")
       errorContainer.empty()
       $("#preview-container").empty()
+      uploadedBlobs = [] // Очищаем массив blob ID
       const dataTransfer = new DataTransfer();
       const fileInput = document.getElementById("fileInput");
       // Проверяем добавленные файлы на тип данных
@@ -187,6 +194,23 @@ document.addEventListener("turbo:load", function() {
     $overlay.addClass("hidden").addClass('opacity-0 invisible pointer-events-none').removeClass('opacity-50 visible pointer-events-auto');
   });
 
+  const $mediaForm = $('#media-upload-form') // добавь id форме
+
+  $mediaForm.on('submit', function(e) {
+    if (uploadedBlobs.length === 0) {
+      e.preventDefault()
+      showError("Нет загруженных файлов")
+      return
+    }
+  
+    const blobInput = $('<input>', { 
+      type: 'hidden', 
+      name: 'signed_blob_ids', 
+      value: uploadedBlobs.map(b => b.signed_id).join(',') 
+    })
+    $(this).append(blobInput)
+  })
+
   //Анимация исчезновения флеша
   setTimeout(function() {
     $('.flash').fadeOut(500, function() {
@@ -260,19 +284,11 @@ function addFilesWithCheckDuplicates(newFiles) {
           }
         }
         else {
-          const erorrWrapper = $("<div>", {
-            class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
-            html: "Недопустимый тип файла " + newFiles[i].name
-          })
-          $("#error-container").append(erorrWrapper)
+          showError("Недопустимый тип файла " + newFiles[i].name)
         }  
       }
       else {
-        const erorrWrapper = $("<div>", {
-          class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center", 
-          html: "Недопустимый размер файла " + newFiles[i].name
-        })
-        $("#error-container").append(erorrWrapper)
+        showError("Недопустимый размер файла " + newFiles[i].name)
       }
     }
     fileInput.files = dataTransfer.files;
@@ -307,8 +323,7 @@ function createVideoPreview(file) {
   video.crossOrigin = 'anonymous';
   // Когда видео загрузит метаданные
   video.onloadedmetadata = function() {
-
-    video.currentTime =video.duration * 0.1;
+    video.currentTime = video.duration * 0.1;
   };
   // Когда видео готово к отрисовке кадра
   video.onseeked = function() {
@@ -345,11 +360,32 @@ function createPreviewWrapper(url, file) {
     removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white';
     removeBtn.innerHTML = '&times;'; // крестик
     //Обработчик нажатия на кнопку удаления
-    removeBtn.addEventListener('click', function(e) {
+    removeBtn.addEventListener('click', async function(e) {
       e.preventDefault();
       e.stopPropagation();
+
+      // Удаляем blob из storage
+      const blobData = uploadedBlobs.find(item => item.filename === file.name)
+      console.log(uploadedBlobs)
+      console.log(blobData)
+      if (blobData) {
+        const csrfToken = document.querySelector('[name="csrf-token"]').content
+      
+        const response = await fetch(`/active_storage/blobs/${blobData.signed_id}`, { 
+          method: 'DELETE',
+          headers: {
+            'X-CSRF-Token': csrfToken,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        uploadedBlobs = uploadedBlobs.filter(item => item.filename !== file.name)
+      }
+
       previewWrapper.remove();
+
       const fileInput = document.getElementById("fileInput");
+      
       // Получаем текущие файлы
       const existingFiles = fileInput.files;
       const dataTransfer = new DataTransfer();
@@ -361,10 +397,13 @@ function createPreviewWrapper(url, file) {
         }
       }
       fileInput.files = dataTransfer.files;
+      const index = uploadedBlobs.findIndex(b => b.filename === file.name);
+      if (index !== -1) uploadedBlobs.splice(index, 1);
       if (previewContainer.children().length == 0) {
         previewContainer.removeClass("mt-3")
       }
     });
+
     // Добавляем изображение и кнопку в один контейнер
     previewWrapper.appendChild(img);
     previewWrapper.appendChild(removeBtn);
@@ -381,8 +420,39 @@ function createPreviewWrapper(url, file) {
         previewContainer.addClass("mt-3") 
       }
       previewContainer.append(previewWrapper);
+      startDirectUpload(file, previewWrapper)
     };
 };
+
+function startDirectUpload(file, previewWrapper) {
+  
+  const upload = new DirectUpload(file, "/rails/active_storage/direct_uploads")
+  
+  upload.create((_, blob) => {
+    if (blob) {
+      uploadedBlobs.push({
+      signed_id: blob.signed_id,
+      filename: file.name
+    })
+    }
+  })
+}
+
+function showError(message) {
+  const errorContainer = $("#error-container")
+  if (!errorContainer.length) {
+    // Если контейнера нет, создаём временный
+    const $temp = $('<div id="error-container"></div>')
+    $('body').append($temp)
+  }
+  
+  const errorWrapper = $("<div>", {
+    class: "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center",
+    html: message
+  })
+  
+  $("#error-container").append(errorWrapper)
+}
 
 window.addEventListener('popstate', function(event) {
   initializeNavigation();
@@ -404,4 +474,4 @@ function initializeNavigation () {
   else {
     $("#forward-button").hide()
   }
-}import "controllers"
+}
