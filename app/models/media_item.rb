@@ -6,7 +6,6 @@ class MediaItem < ApplicationRecord
   has_one_attached :video_preview, dependent: :purge_later
 
   after_commit :generate_preview, on: :create, dependent: :purge_later
-  after_create_commit :classify_async, if: -> { media.attached? && media.image? }
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?
   before_validation :normalize_filename!, if: :media_changed?
@@ -19,10 +18,6 @@ public
 
   def vineyard_name
     bush&.vineyard&.name
-  end
-
-  def classify_async
-    ClassifyMediaJob.perform_later(id)
   end
 
   def classify!

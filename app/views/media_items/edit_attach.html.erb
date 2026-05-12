@@ -28,6 +28,7 @@
                     <%= select_tag :row_id,
                         options_from_collection_for_select(@rows || [], :id, :display_name, @selected_row_id),
                         include_blank: "- Выберите ряд -",
+                        required: true,
                         class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#69377c] focus:ring-1 focus:ring-[#69377c] bg-white",
                         data: { action: "change->bush-select#loadBushes" }
                     %>

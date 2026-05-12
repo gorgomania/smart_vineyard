@@ -1,8 +1,8 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 import "@hotwired/turbo-rails"
+import "controllers"
 import { DirectUpload } from "@rails/activestorage"
 import "jquery"
-
 
 // Глобальный массив для хранения blob ID
 let uploadedBlobs = []

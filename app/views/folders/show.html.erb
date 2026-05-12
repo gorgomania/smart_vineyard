@@ -97,9 +97,11 @@
                             <%= image_tag file.media, class: "w-33 h-22" %>
                         <% else %>
                             <div class = "relative flex flex-col items-center">
+                                <div class = "w-33 h-22">
                                 <% if file.video_preview.attached? %>
-                                    <%= image_tag file.video_preview, class: "w-33 h-22" %>
+                                    <%= image_tag file.video_preview, class: "h-full" %>
                                 <% end %>
+                                </div>
                                 <div class="absolute inset-0 flex items-center justify-center">
                                     <%= image_tag "/video_play.png", class: "w-6 h-6" %>
                                 </div>

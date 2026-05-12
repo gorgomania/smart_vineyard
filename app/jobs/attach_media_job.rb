@@ -11,21 +11,27 @@ class AttachMediaJob < ApplicationJob
       media_item = MediaItem.new(folder_id: folder_id)
       media_item.media.attach(blob)
 
-      if media_item.save && vineyard.present?
-        # Пробуем определить куст по имени файла
-        filename = blob.filename.to_s
-        match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
+      if media_item.save
+        if blob.content_type.start_with?("image/")
+          ClassifyMediaJob.perform_later(media_item.id)
+        end
 
-        if match
-          row_number = match[1].to_i
-          bush_number = match[2].to_i
+        if vineyard.present?
+          # Пробуем определить куст по имени файла
+          filename = blob.filename.to_s
+          match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
 
-          bush = vineyard.bushes
-            .joins(:row)
-            .where(rows: { row_number: row_number })
-            .find_by(bush_number: bush_number)
+          if match
+            row_number = match[1].to_i
+            bush_number = match[2].to_i
 
-          media_item.update(bush: bush) if bush
+            bush = vineyard.bushes
+              .joins(:row)
+              .where(rows: { row_number: row_number })
+              .find_by(bush_number: bush_number)
+
+            media_item.update(bush: bush) if bush
+          end
         end
       end
     end
