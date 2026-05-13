@@ -20,6 +20,7 @@ gem "jbuilder"
 gem "devise"
 gem "devise-i18n"
 gem "pundit"
+gem "rubyzip"
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
