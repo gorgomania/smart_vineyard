@@ -18,11 +18,12 @@
                     <span class="text-sm text-[#4e4e4e] pointer-events-none">
                         Перетащите файлы сюда или нажмите для выбора
                     </span>
-                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*', direct_upload: true, id: "fileInput", class: "hidden" %>
+                    <%= form.file_field :media, multiple: true, accept: 'image/*,video/*,.zip,application/zip', direct_upload: true, id: "fileInput", class: "hidden" %>
                     <%= form.hidden_field :folder_id, value: @folder_id%>
                 </label>
                 <p class="text-xs text-slate-500 mb-0">
-                    Поддерживаются фото и видео до 500 МБ.
+                    Форматы: JPG, PNG, WebP, MP4, ZIP<br>
+                    Максимальный размер файла: 1 ГБ
                 </p>
                 <div id = "preview-container" class = "grid grid-cols-3 gap-4"></div>
             </div>

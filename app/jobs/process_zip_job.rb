@@ -8,6 +8,11 @@ class ProcessZipJob < ApplicationJob
     puts "Время запуска: #{start_time.strftime('%Y-%m-%d %H:%M:%S')}"
     folder = Folder.find(folder_id)
     vineyard = folder.vineyard
+
+    # Создаём уникальную папку для этого ZIP
+    zip_basename = File.basename(zip_path, ".*")
+    temp_extract_dir = Rails.root.join("tmp", "zip_extract", zip_basename)
+    FileUtils.mkdir_p(temp_extract_dir)
     # MIME типы
     mime_types = {
       ".jpg" => "image/jpeg",
@@ -67,7 +72,7 @@ class ProcessZipJob < ApplicationJob
         bush_updates << { index: index, bush_id: bush_id } if bush_id
 
         # Пока что сохраняем файл во временное место для batch upload
-        temp_path = Rails.root.join("tmp", "zip_extract", SecureRandom.hex, filename)
+        temp_path = File.join(temp_extract_dir.to_s, filename.force_encoding("UTF-8"))
         FileUtils.mkdir_p(File.dirname(temp_path))
         File.binwrite(temp_path, content)
 
@@ -130,7 +135,7 @@ class ProcessZipJob < ApplicationJob
     puts "Общее время: #{total_time} секунд (около #{(total_time / 60).round(1)} минут)"
 
     # Очистка временной папки
-    FileUtils.rm_rf(Rails.root.join("tmp", "zip_extract"))
+    FileUtils.rm_rf(temp_extract_dir)
 
     # Запуск классификации для всех (асинхронно)
     media_item_ids.each do |media_id|

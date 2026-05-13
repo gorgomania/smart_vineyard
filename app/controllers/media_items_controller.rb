@@ -17,17 +17,38 @@ class MediaItemsController < ApplicationController
   def create
     folder_id = media_item_params[:folder_id]
     blob_ids = params[:signed_blob_ids]&.split(",")
+    uploaded_files = params[:media_item][:media].select(&:present?)
 
-    if blob_ids.blank?
+    # Находим все ZIP среди загруженных файлов
+    zip_files = uploaded_files.select { |f| f.original_filename.to_s.end_with?(".zip") }
+
+    # Обрабатываем все ZIP
+    zip_files.each do |zip_file|
+      zip_filename = "#{SecureRandom.hex(8)}_#{zip_file.original_filename}"
+      temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
+      FileUtils.mkdir_p(File.dirname(temp_path))
+      File.binwrite(temp_path, zip_file.read)
+      ProcessZipJob.perform_later(folder_id, temp_path.to_s)
+    end
+
+    # Обрабатываем обычные файлы если есть
+    if blob_ids.present?
+      AttachMediaJob.perform_later(folder_id, blob_ids)
+    end
+
+    # Проверяем, было ли что-то загружено
+    if zip_files.blank? && blob_ids.blank?
       flash[:alert] = [ "Сначала выберите файл" ]
       redirect_to new_media_item_path(folder_id: folder_id)
       return
     end
 
-    # Запускаем фоновую привязку к папке
-    AttachMediaJob.perform_later(folder_id, blob_ids)
+    # Формируем сообщение
+    messages = []
+    messages << "#{blob_ids.count} файлов" if blob_ids.present?
+    messages << "#{zip_files.count} ZIP архив#{'а' if zip_files.count.between?(2, 4)}#{'ов' if zip_files.count > 4}" if zip_files.present?
 
-    redirect_to folder_path(folder_id, page: "-1"), notice: "#{blob_ids.count} файлов загружаются в фоне"
+    redirect_to folder_path(folder_id, page: "-1"), notice: "#{messages.join(' и ')} загружаются в фоне"
   end
 
   def edit

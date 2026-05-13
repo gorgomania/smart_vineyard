@@ -124,10 +124,13 @@ document.addEventListener("turbo:load", function() {
       const existingFiles = fileInput.files;
       const filesToPreview = []
       for (let i = 0; i < existingFiles.length; i++) {
-        //Файл подходящего размера <= 500МБ
-        if (existingFiles[i].size <= 524288000) {
+        const isZip = existingFiles[i].name.toLowerCase().endsWith('.zip');
+        const isSizeValid = existingFiles[i].size <= 1073741824; // 1 ГБ
+
+        if (isSizeValid) {
+          const isValidType = isZip || existingFiles[i].type.startsWith('image/') || existingFiles[i].type.startsWith('video/');
           //Файл подходящего типа
-          if (existingFiles[i].type.startsWith('image/') || existingFiles[i].type.startsWith('video/')) {
+          if (isValidType) {
             dataTransfer.items.add(existingFiles[i]);
             filesToPreview.push(existingFiles[i]);
           }
@@ -277,10 +280,15 @@ function addFilesWithCheckDuplicates(newFiles) {
     const filesToPreview = [];
     for (let i = 0; i < newFiles.length; i++) {
       const key = `${newFiles[i].name}_${newFiles[i].size}`;
+
+      const isZip = newFiles[i].name.toLowerCase().endsWith('.zip');
+      const isSizeValid = newFiles[i].size <= 1073741824; // 1 ГБ
+
       //Файл подходящего размера <= 500МБ
-      if (newFiles[i].size <= 524288000) {
+      if (isSizeValid) {
+        const isValidType = isZip || newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/');
          //Файл подходящего типа
-        if ((newFiles[i].type.startsWith('image/') || newFiles[i].type.startsWith('video/'))) {
+        if (isValidType) {
           // Это новый файл, добавляем
           if (!existingFilesMap.has(key)) {
             dataTransfer.items.add(newFiles[i]);
@@ -302,16 +310,91 @@ function addFilesWithCheckDuplicates(newFiles) {
 
 function showPreview(files) {
   totalFiles += files.length  // ← увеличиваем общее количество
+  // Показываем прогресс-бар
+  $('#upload-progress-container').removeClass('hidden')
   updateProgress()
   Array.from(files).forEach((file) => {
+    const isZip = file.name.toLowerCase().endsWith('.zip');
     const isVideo = file.type.startsWith('video/');
-    if (isVideo) {
+    if (isZip) {
+      createZipPreview(file)
+    }
+    else if (isVideo) {
       createVideoPreview(file)
     }
     else {
       createImagePreview(file)
     }
   });
+}
+
+function createZipPreview(file) {
+  const previewContainer = $("#preview-container")
+  const previewWrapper = document.createElement('div');
+  previewWrapper.style.position = 'relative';
+  previewWrapper.className = 'preview-item'
+  
+  // Иконка ZIP
+  const zipDiv = document.createElement('div');
+  zipDiv.className = 'w-full aspect-square bg-purple-50 rounded-lg border-2 border-purple-300 flex flex-col items-center justify-center';
+  zipDiv.innerHTML = `
+    <span class="text-xs text-[#4e4e4e] mt-2">ZIP архив</span>
+    <span class="text-xs text-slate-500">${(file.size / 1024 / 1024).toFixed(2)} МБ</span>
+  `;
+  
+  const readyMark = document.createElement('div');
+  readyMark.className = 'absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center';
+  readyMark.innerHTML = '✓';
+
+  // Кнопка удаления
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white';
+  removeBtn.innerHTML = '&times;';
+  
+  removeBtn.addEventListener('click', async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Удаляем из uploadedBlobs
+    const index = uploadedBlobs.findIndex(item => item.filename === file.name);
+    if (index !== -1) {
+        uploadedBlobs.splice(index, 1);
+    }
+    previewWrapper.remove();
+    
+    const fileInput = document.getElementById("fileInput");
+    const existingFiles = Array.from(fileInput.files);
+    const dataTransfer = new DataTransfer();
+    existingFiles.forEach(f => {
+      if (f.name !== file.name) {
+        dataTransfer.items.add(f);
+      }
+    });
+    fileInput.files = dataTransfer.files;
+    
+    totalFiles--;
+    updateProgress();
+    
+    if (previewContainer.children().length === 0) {
+      previewContainer.removeClass("mt-3")
+    }
+  });
+  
+  previewWrapper.appendChild(zipDiv);
+  previewWrapper.appendChild(removeBtn);
+  previewWrapper.appendChild(readyMark);
+
+  uploadedBlobs.push({
+    signed_id: null,
+    filename: file.name
+  });
+  
+  if (previewContainer.css("margin-top") == "0px") {
+    previewContainer.addClass("mt-3")
+  }
+  previewContainer.append(previewWrapper);
+
+  updateProgress()
 }
 
 function createImagePreview(file) {
@@ -406,8 +489,7 @@ function createPreviewWrapper(url, file) {
         }
       }
       fileInput.files = dataTransfer.files;
-      const index = uploadedBlobs.findIndex(b => b.filename === file.name);
-      if (index !== -1) uploadedBlobs.splice(index, 1);
+
       if (previewContainer.children().length == 0) {
         previewContainer.removeClass("mt-3")
       }
@@ -435,9 +517,6 @@ function createPreviewWrapper(url, file) {
 
 function startDirectUpload(file, previewWrapper) {
   pendingUploads++
-  
-  // Показываем прогресс-бар
-  $('#upload-progress-container').removeClass('hidden')
   
   const $submitBtn = $('#submit-btn')
   $submitBtn.prop('disabled', true).val(`Загрузка (${uploadedBlobs.length}/${totalFiles})...`)
@@ -475,7 +554,6 @@ function updateProgress() {
   $('#upload-progress-percent').text(`${percent}%`)
   $('#upload-progress-bar').css('width', `${percent}%`)
   $('#upload-progress-status').text(`Загружено ${completed} из ${totalFiles} файлов`)
-  
   const $submitBtn = $('#submit-btn')
   if (pendingUploads > 0) {
     $submitBtn.prop('disabled', true).val(`Загрузка (${completed}/${totalFiles})...`)

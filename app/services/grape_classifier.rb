@@ -44,13 +44,6 @@ class GrapeClassifier
     end
 
     @session = OnnxRuntime::InferenceSession.new(model_path.to_s)
-
-    # Выводим информацию о модели
-    puts "=" * 80
-    puts "Model loaded successfully"
-    puts "Inputs: #{@session.inputs}"
-    puts "Outputs: #{@session.outputs}"
-    puts "=" * 80
   end
 
   def predict_from_active_storage(attachment)
@@ -65,9 +58,6 @@ class GrapeClassifier
     # Используем жёстко заданные имена, как в ваших логах
     input_name   = "input"
     output_names = [ "output" ]
-
-    # Лог для проверки
-    Rails.logger.info "Using input: #{input_name}, outputs: #{output_names}"
 
     # Правильный вызов ONNX
     result = @session.run(output_names, { input_name => tensor })
@@ -92,10 +82,7 @@ class GrapeClassifier
   private
 
   def preprocess_image_from_path(image_path)
-    Rails.logger.info "Loading image: #{image_path}"
-
     image = Vips::Image.new_from_file(image_path)
-    Rails.logger.info "Original image: #{image.width}x#{image.height}"
 
     # Ресайз и центрирование
     scale = IMAGE_SIZE.to_f / [ image.width, image.height ].min
@@ -124,7 +111,6 @@ class GrapeClassifier
       IMAGE_SIZE.times do |h|
         IMAGE_SIZE.times do |w|
           if pixels[h][w].nil? || pixels[h][w][c].nil?
-            Rails.logger.info "h=#{h}, w=#{w}, value=#{pixels[h][w]}"
             normalized = (128.0 / 255.0 - MEAN[c]) / STD[c]
           else
             normalized = (pixels[h][w][c].to_f / 255.0 - MEAN[c]) / STD[c]
@@ -138,8 +124,6 @@ class GrapeClassifier
 
     # Создаем тензор
     tensor = Numo::SFloat.cast(tensor_data).reshape(1, 3, IMAGE_SIZE, IMAGE_SIZE)
-
-    Rails.logger.info "Tensor created: shape=#{tensor.shape}, min=#{tensor.min}, max=#{tensor.max}"
 
     tensor
   end
