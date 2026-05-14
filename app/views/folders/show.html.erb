@@ -116,15 +116,69 @@
     </div>
 </main>
 <% if @page_limit > 1 %>
-    <div class = "flex justify-center px-5 bg-white">
-        <% @page_limit.times do |i| %>
-            <%if i + 1 == @page%>
-                <button class = "bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c] border-b-[3px] border-solid border-[#69377c]">
-                    <span class = "block mt-[3px]"><%=i + 1%></span>
-                </button>
-            <%else%>
-                <%= link_to i + 1, @search_query.present? ? folders_path(folders: { title: @search_query }, page: i + 1) : folder_path(@folder.id, page: i + 1), class: "flex justify-center items-center bg-white w-15 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
-            <%end%>
-        <%end%>
-    </div>
-<%end%>
+  <div class="flex justify-center px-5 bg-white gap-1">
+    
+    <!-- Кнопка "Назад" (всегда есть) -->
+    <% prev_page = @page == 1 ? @page_limit : @page - 1 %>
+    <%= link_to "←", @search_query.present? ? folders_path(folders: { title: @search_query }, page: prev_page) : folder_path(@folder.id, page: prev_page), 
+        class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+
+    <!-- Всегда показываем 5 страниц: текущая + 2 слева + 2 справа -->
+    <% 
+      # Всегда отображаем 5 страниц
+      start_page = @page - 2
+      end_page = @page + 2
+      
+      # Корректируем если вышли за границы
+      if start_page < 3
+        end_page = end_page + (3 - start_page)
+        start_page = 1
+      end
+      
+      if end_page > @page_limit - 2
+        start_page = start_page - (end_page + 2 - @page_limit)
+        end_page = @page_limit
+      end
+      
+      # Обрезаем до допустимых значений
+      start_page = [start_page, 1].max
+      end_page = [end_page, @page_limit].min
+    %>
+    
+    <!-- Первая страница и многоточие -->
+    <% if start_page > 1 %>
+      <%= link_to 1, @search_query.present? ? folders_path(folders: { title: @search_query }, page: 1) : folder_path(@folder.id, page: 1), 
+          class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+      <% if start_page > 2 %>
+        <span class="flex justify-center items-center w-12 h-12 text-[#4e4e4e]">...</span>
+      <% end %>
+    <% end %>
+    
+    <!-- Страницы -->
+    <% (start_page..end_page).each do |i| %>
+      <% if i == @page %>
+        <button class="bg-white w-12 h-12 rounded-none text-[#69377c] font-bold border-b-[3px] border-solid border-[#69377c]">
+          <span class="block mt-[3px]"><%= i %></span>
+        </button>
+      <% else %>
+        <%= link_to i, @search_query.present? ? folders_path(folders: { title: @search_query }, page: i) : folder_path(@folder.id, page: i), 
+            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+      <% end %>
+    <% end %>
+    
+    <!-- Последняя страница и многоточие -->
+    <% if end_page < @page_limit %>
+      <% if end_page < @page_limit - 1 %>
+        <span class="flex justify-center items-center w-12 h-12 text-[#4e4e4e]">...</span>
+      <% end %>
+      <%= link_to @page_limit, @search_query.present? ? folders_path(folders: { title: @search_query }, page: @page_limit) : folder_path(@folder.id, page: @page_limit), 
+          class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+    <% end %>
+    
+    <!-- Кнопка "Вперёд" (всегда есть) -->
+    <% next_page = @page == @page_limit ? 1 : @page + 1 %>
+    <%= link_to "→", @search_query.present? ? folders_path(folders: { title: @search_query }, page: next_page) : folder_path(@folder.id, page: next_page), 
+        class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+    
+  </div>
+<% end %>
