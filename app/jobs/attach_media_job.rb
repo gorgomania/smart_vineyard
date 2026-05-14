@@ -10,6 +10,7 @@ class AttachMediaJob < ApplicationJob
 
       media_item = MediaItem.new(folder_id: folder_id)
       media_item.media.attach(blob)
+      media_item.normalize_filename!
 
       if media_item.save
         if blob.content_type.start_with?("image/")

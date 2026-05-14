@@ -31,11 +31,13 @@ class ProcessZipJob < ApplicationJob
       end
     end
 
+    # 🟢 Заранее узнаём, какие кусты уже имеют медиа
+    existing_bush_ids = MediaItem.where.not(bush_id: nil).pluck(:bush_id).to_set
+
     # Сбор данных
     media_items_data = []
     blobs_data = []
     attachments_data = []
-    bush_updates = []
 
     Zip::File.open(zip_path) do |zip_file|
       entries = zip_file.select { |e| e.file? && [ ".jpg", ".jpeg", ".png", ".webp", ".mp4" ].include?(File.extname(e.name).downcase) }
@@ -56,6 +58,12 @@ class ProcessZipJob < ApplicationJob
             row_num = match[1].to_i
             bush_num = match[2].to_i
             bush_id = bush_cache["#{row_num}_#{bush_num}"]
+            # 🟢 ПРОВЕРКА НА ДУБЛИКАТ
+            if existing_bush_ids.include?(bush_id)
+              bush_id = nil
+            else
+              existing_bush_ids.add(bush_id)
+            end
           end
         end
 
@@ -67,9 +75,6 @@ class ProcessZipJob < ApplicationJob
           created_at: Time.current,
           updated_at: Time.current
         }
-
-        # Сохраняем информацию для последующей привязки Blob
-        bush_updates << { index: index, bush_id: bush_id } if bush_id
 
         # Пока что сохраняем файл во временное место для batch upload
         temp_path = File.join(temp_extract_dir.to_s, filename.force_encoding("UTF-8"))
@@ -129,6 +134,8 @@ class ProcessZipJob < ApplicationJob
     end
 
     ActiveStorage::Attachment.insert_all!(attachments_data)
+
+    NormalizeMediaFilenamesJob.perform_later(media_item_ids)
 
     total_time = (Time.current - start_time).round(1)
     puts "ZIP архив обработан: папка #{folder_id}, файлов: #{media_items_data.size}"

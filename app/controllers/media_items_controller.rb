@@ -22,20 +22,6 @@ class MediaItemsController < ApplicationController
     # Находим все ZIP среди загруженных файлов
     zip_files = uploaded_files.select { |f| f.original_filename.to_s.end_with?(".zip") }
 
-    # Обрабатываем все ZIP
-    zip_files.each do |zip_file|
-      zip_filename = "#{SecureRandom.hex(8)}_#{zip_file.original_filename}"
-      temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
-      FileUtils.mkdir_p(File.dirname(temp_path))
-      File.binwrite(temp_path, zip_file.read)
-      ProcessZipJob.perform_later(folder_id, temp_path.to_s)
-    end
-
-    # Обрабатываем обычные файлы если есть
-    if blob_ids.present?
-      AttachMediaJob.perform_later(folder_id, blob_ids)
-    end
-
     # Проверяем, было ли что-то загружено
     if zip_files.blank? && blob_ids.blank?
       flash[:alert] = [ "Сначала выберите файл" ]
@@ -43,10 +29,24 @@ class MediaItemsController < ApplicationController
       return
     end
 
+    # Обрабатываем все ZIP
+    zip_files.each do |zip_file|
+      zip_filename = "#{SecureRandom.hex(8)}_#{zip_file.original_filename}"
+      temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
+      FileUtils.mkdir_p(File.dirname(temp_path))
+      File.binwrite(temp_path, zip_file.read)
+      ProcessZipJob.perform_now(folder_id, temp_path.to_s)
+    end
+
+    # Обрабатываем обычные файлы если есть
+    if blob_ids.present?
+      AttachMediaJob.perform_later(folder_id, blob_ids)
+    end
+
     # Формируем сообщение
     messages = []
-    messages << "#{blob_ids.count} файлов" if blob_ids.present?
-    messages << "#{zip_files.count} ZIP архив#{'а' if zip_files.count.between?(2, 4)}#{'ов' if zip_files.count > 4}" if zip_files.present?
+    messages << "#{zip_files.count} ZIP #{Russian.p(zip_files.count, 'архив', 'архива', 'архивов')}" if zip_files.present?
+    messages << "#{blob_ids.count} #{Russian.p(blob_ids.count, 'файл', 'файла', 'файлов')}" if blob_ids.present?
 
     redirect_to folder_path(folder_id, page: "-1"), notice: "#{messages.join(' и ')} загружаются в фоне"
   end
@@ -61,11 +61,24 @@ class MediaItemsController < ApplicationController
   def update
     @media_item = MediaItem.find(params[:id])
     authorize @media_item
-    @media_item.media.blob.filename = "#{media_item_params[:filename]}"
-    search_query = params[:media_item][:search_query]
-    page = params[:media_item][:page]
-    if @media_item.valid?
-      @media_item.media.blob.save
+
+    search_query = params[:search_query]
+    page = params[:page]
+
+    blob = @media_item.media.blob
+    new_base_name = media_item_params[:filename]
+
+    if new_base_name.blank?
+      flash.now[:alert] = "Имя файла не может быть пустым"
+      render "edit", status: :unprocessable_entity
+      return
+    end
+
+    new_filename = "#{new_base_name}#{blob.filename.extension_with_delimiter}"
+    blob.filename = new_filename
+    @media_item.normalize_filename!
+
+    if blob.save
       if search_query.empty?
         redirect_to folder_path(@media_item.folder_id, page: page), notice: "Имя файла успешно изменено"
       else

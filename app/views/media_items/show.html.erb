@@ -72,14 +72,15 @@
                 class: "max-w-[70%]",
                 data: { video_id: @media_item.id } %>
         <% end %>
-        
 
         <div class = "w-[20%] text-xl">
             <h1 class = "text-2xl text-[#333] text-center mb-4">Сведения о файле</h1>
-            <h2 class = "text-[#69377c]">Размер</h2>
-            <span><%= number_to_human_size(@media_item.media.byte_size)%> </span>
+            <h2 class = "text-[#69377c]">Имя</h2>
+            <span><%= @media_item.media.blob.filename.base%> </span>
             <h2 class = "text-[#69377c]">Расширение</h2>
             <span><%= @media_item.media.blob.filename.extension%> </span>
+            <h2 class = "text-[#69377c]">Размер</h2>
+            <span><%= number_to_human_size(@media_item.media.byte_size)%> </span>
         </div>
     </div>
 </main>

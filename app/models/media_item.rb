@@ -8,7 +8,6 @@ class MediaItem < ApplicationRecord
   after_commit :generate_preview, on: :create, dependent: :purge_later
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?
-  before_validation :normalize_filename!, if: :media_changed?
 
 public
 
@@ -34,47 +33,49 @@ public
     )
   end
 
-private
+  def normalize_filename!
+    return unless media.attached?
 
-  def media_changed?
-    # Проверяем: новый файл при создании ИЛИ изменился существующий
-    new_record? || media.attached? && media.blob.new_record?
+    blob = media.blob
+    current_filename = blob.filename.to_s
+    base_name = current_filename.gsub(/\.[^.]+\z/, "").strip
+    extension = blob.filename.extension_with_delimiter
+
+    # 🚀 Загружаем все имена файлов в папке одним запросом
+    existing_names = MediaItem
+      .where(folder_id: folder_id)
+      .where.not(id: id)
+      .joins(media_attachment: :blob)
+      .where(active_storage_attachments: { name: "media" })
+      .pluck("active_storage_blobs.filename")  # ← pluck вместо загрузки объектов
+      .map(&:to_s)
+
+    final_name = "#{base_name}#{extension}"
+
+    if existing_names.include?(final_name)
+      index = 2
+      loop do
+        candidate = "#{base_name}(#{index})#{extension}"
+        unless existing_names.include?(candidate)
+          final_name = candidate
+          break
+        end
+        index += 1
+      end
+    end
+
+    if final_name != current_filename
+      blob.filename = final_name
+      true
+    else
+      false
+    end
   end
+
+private
 
   def bush_id_present?
     bush_id.present?  # проверяем только если не nil
-  end
-
-  def normalize_filename!
-    filename = media.filename.to_s
-    if filename.length == 0
-      errors.add(:media, "Имя не может быть пустым.")
-    else
-      files_in_same_folder = MediaItem.where(folder_id: folder_id).where.not(id: id).joins(media_attachment: :blob).where(active_storage_attachments: { name: "media" })
-      index = 0
-      filename_is_not_valid = true
-      while filename_is_not_valid
-        filename_is_not_valid = false
-        files_in_same_folder.each do |file|
-          if index == 0
-            if file.media.filename == filename
-              index += 1
-              filename_is_not_valid = true
-              break
-            end
-          else
-            if file.media.filename == filename + " (" + index.to_s() + ")"
-              index += 1
-              filename_is_not_valid = true
-              break
-            end
-          end
-        end
-      end
-      if index.nonzero?
-        media.blob.update!(filename: filename + " (" + index.to_s() + ")")
-      end
-    end
   end
 
   def generate_preview

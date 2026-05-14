@@ -81,6 +81,7 @@
                 <% end %>
             </div>
         <% end %>
+
         <% @media.each do |file| %>
             <% if file.media.attached? %>
                 <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
@@ -107,7 +108,7 @@
                                 </div>
                             </div>
                         <% end %>
-                        <span> <%= file.media.filename.to_s[0, 15]%> </span>
+                        <span> <%= file.media.filename.base.to_s[0, 15]%> </span>
                     <% end %>   
                 </div>
             <% end %>
