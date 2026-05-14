@@ -1,5 +1,5 @@
 # app/jobs/distribute_media_job.rb
-class DistributeMediaJob < ApplicationJob
+class DistributeFolderToBushesJob < ApplicationJob
   queue_as :default
 
   def perform(folder_id)

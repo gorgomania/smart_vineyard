@@ -158,7 +158,7 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
     if @folder.update(vineyard: @vineyard)
-      DistributeMediaJob.perform_later(@folder.id)
+      DistributeFolderToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно прикреплена к винограднику"
     else
       flash[:alert] = "Выбранный виноградник уже занят другой папкой"
@@ -176,7 +176,7 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
     if @folder.update(vineyard: @vineyard)
-       DistributeMediaJob.perform_later(@folder.id)
+       DistributeFolderToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно перекреплена к винограднику"
     else
       flash[:alert] = "Выбранный виноградник уже занят другой папкой"
@@ -187,7 +187,7 @@ class FoldersController < ApplicationController
   def detach_from_vineyard
     @folder = Folder.find(params[:id])
     @folder.update(vineyard: nil)
-    DistributeMediaJob.perform_later(@folder.id)
+    DistributeFolderToBushesJob.perform_later(@folder.id)
     redirect_to @folder, notice: "Папка успешно откреплена от виноградника"
   end
 

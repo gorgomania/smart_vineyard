@@ -35,7 +35,7 @@ class MediaItemsController < ApplicationController
       temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
       FileUtils.mkdir_p(File.dirname(temp_path))
       File.binwrite(temp_path, zip_file.read)
-      ProcessZipJob.perform_now(folder_id, temp_path.to_s)
+      ProcessZipJob.perform_later(folder_id, temp_path.to_s)
     end
 
     # Обрабатываем обычные файлы если есть
