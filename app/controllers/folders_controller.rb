@@ -149,6 +149,24 @@ class FoldersController < ApplicationController
     end
   end
 
+  def select_page
+    @folder = Folder.find_by(id: params[:id]) if params[:id].present?
+    @search_query = params[:search_query]
+
+    # Диапазон для выбора
+    @range_start = params[:range_start].to_i
+    @range_end = params[:range_end].to_i
+
+    if request.post?
+      page = params[:page].to_i
+      if @search_query.present?
+        redirect_to folders_path(folders: { title: @search_query }, page: page)
+      else
+        redirect_to folder_path(@folder, page: page)
+      end
+    end
+  end
+
   def attach
     @folder = Folder.find(params[:id])
     @vineyards = current_user.vineyards.order(:name)

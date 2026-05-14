@@ -42,6 +42,8 @@ Rails.application.routes.draw do
 
   resources :active_storage_blobs, only: [ :destroy ], path: "/active_storage/blobs"
 
+  get "select_page", to: "folders#select_page"
+  post "select_page", to: "folders#select_page"
   root "vineyards#index"
 
   get "*unmatched", to: "application#not_found", via: :all, constraints: ->(req) {
