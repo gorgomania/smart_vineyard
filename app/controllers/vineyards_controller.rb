@@ -110,6 +110,21 @@ class VineyardsController < ApplicationController
     redirect_to vineyards_path, notice: "Виноградник успешно удалён"
   end
 
+  def statistics
+    # Если нужны данные для JSON (для AJAX)
+    if request.headers["Accept"] == "application/json"
+      render json: current_user.vineyards.map { |v| disease_statistics_for_vineyard(v) }
+    else
+      # Просто рендерим вьюху
+      render :statistics
+    end
+  end
+
+  def disease_stats
+    vineyard = Vineyard.find(params[:id])
+    render json: disease_statistics_for_vineyard(vineyard)
+  end
+
   def rows
     vineyard = Vineyard.find(params[:id])
     rows = vineyard.rows.order(:row_number).map do |row|
@@ -182,5 +197,34 @@ class VineyardsController < ApplicationController
     map_center = [ center_lat.to_f, center_lng.to_f ]
 
     [ map_center.to_json, zoom.to_i ]
+  end
+
+  def disease_statistics_for_vineyard(vineyard)
+    total = vineyard.bushes.count
+    analyzed = vineyard.bushes.joins(:media_item).count
+
+    stats = vineyard.bushes
+      .joins(:media_item)
+      .where.not(media_items: { ai_classification: nil })
+      .group("media_items.ai_class_id", "media_items.ai_classification")
+      .count
+    {
+      labels: stats.keys.map { |k| k[1] || "Не определено" },
+      data: stats.values,
+      colors: stats.keys.map { |k| disease_color(k[0]) },
+      total: total,
+      healthy: stats.find { |k, v| k[0] == 2 }&.last || 0,
+      sick: stats.sum { |k, v| k[0] != 2 ? v : 0 },
+      no_data: total - analyzed
+    }
+  end
+
+  def disease_color(class_id)
+    {
+      0 => "#800000",  # Чёрная гниль
+      1 => "#FF8C00",  # Эска
+      2 => "#22C55E",  # Здоровый
+      3 => "#8B4513"   # Антракноз
+    } [class_id] || "#9CA3AF"
   end
 end

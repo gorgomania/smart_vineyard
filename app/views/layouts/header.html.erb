@@ -19,7 +19,7 @@
             <%= image_tag "/map.png", alt: "Map", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
-        <%= link_to stats_path, title: "Статистика", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
+        <%= link_to statistics_vineyards_path, title: "Статистика", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <%= image_tag "/stats.png", alt: "Stats", class: "min-w-[26px] h-[26px]" %>    
         <%end%>
 
@@ -45,7 +45,7 @@
                 <span>Виноградники</span>
             <% end %>
             
-            <%= link_to stats_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
+            <%= link_to statistics_vineyards_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
                 <%= image_tag "/stats.png", alt: "Stats", class: "w-5 h-5" %> 
                 <span>Статистика</span>
             <% end %>

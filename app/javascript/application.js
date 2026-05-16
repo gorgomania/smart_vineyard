@@ -348,7 +348,7 @@ function createZipPreview(file) {
 
   // Кнопка удаления
   const removeBtn = document.createElement('button');
-  removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white';
+  removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white hover:bg-[#69377c]';
   removeBtn.innerHTML = '&times;';
   
   removeBtn.addEventListener('click', async function(e) {
@@ -446,7 +446,7 @@ function createPreviewWrapper(url, file) {
     img.src = url;
     // Создаем объект кнопки удаления изображения
     const removeBtn = document.createElement('button');
-    removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white';
+    removeBtn.className = 'absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white hover:bg-[#69377c]';
     removeBtn.innerHTML = '&times;'; // крестик
     //Обработчик нажатия на кнопку удаления
     removeBtn.addEventListener('click', async function(e) {
@@ -554,7 +554,7 @@ function updateProgress() {
   $('#upload-progress-percent').text(`${percent}%`)
   $('#upload-progress-bar').css('width', `${percent}%`)
   $('#upload-progress-status').text(`Загружено ${completed} из ${totalFiles} файлов`)
-  const $submitBtn = $('#submit-btn')
+  const $submitBtn = $('#newfile-submit-btn')
   if (pendingUploads > 0) {
     $submitBtn.prop('disabled', true).val(`Загрузка (${completed}/${totalFiles})...`)
   } else if (completed === totalFiles && totalFiles > 0) {

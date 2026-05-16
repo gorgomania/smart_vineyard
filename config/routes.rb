@@ -9,6 +9,9 @@ Rails.application.routes.draw do
     member do
       get :rows
     end
+    collection do
+      get :statistics
+    end
   end
 
   resources :rows do
@@ -16,8 +19,6 @@ Rails.application.routes.draw do
       get :bushes  # GET /rows/:id/bushes.json
     end
   end
-
-  resources :stats
 
   resources :folders do
     member do

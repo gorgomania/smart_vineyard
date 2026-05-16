@@ -37,7 +37,7 @@
                 </div>
                 <p id="upload-progress-status" class="text-xs text-gray-500 mt-1"></p>
             </div>
-            <%= form.submit 'Загрузить', class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+            <%= form.submit 'Загрузить', id: "newfile-submit-btn",class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
         <% end %>
         <%= link_to "Назад", "javascript:history.back()", class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
     </div>
