@@ -8,9 +8,12 @@ Rails.application.routes.draw do
   resources :vineyards do
     member do
       get :rows
+      get :stats
     end
     collection do
-      get :statistics
+      get :total_stats
+      get :select_stats
+      post :select_stats
     end
   end
 
@@ -30,6 +33,9 @@ Rails.application.routes.draw do
     end
   end
 
+  get "select_page", to: "folders#select_page"
+  post "select_page", to: "folders#select_page"
+
   resources :media_items do
     member do
       get :attach              # страница выбора куста для ЭТОГО медиа
@@ -43,8 +49,6 @@ Rails.application.routes.draw do
 
   resources :active_storage_blobs, only: [ :destroy ], path: "/active_storage/blobs"
 
-  get "select_page", to: "folders#select_page"
-  post "select_page", to: "folders#select_page"
   root "vineyards#index"
 
   get "*unmatched", to: "application#not_found", via: :all, constraints: ->(req) {

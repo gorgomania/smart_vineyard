@@ -12,12 +12,16 @@ class VineyardPolicy < ApplicationPolicy
   def edit?
     show?
   end
-  
+
   def update?
     show?
   end
-  
+
   def destroy?
+    show?
+  end
+
+  def stats?
     show?
   end
 

@@ -75,15 +75,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
   create_table "media_items", force: :cascade do |t|
     t.bigint "folder_id"
     t.bigint "bush_id"
-    t.string "ai_classification"
-    t.float "ai_confidence"
     t.integer "ai_class_id"
+    t.float "ai_confidence"
     t.datetime "ai_classified_at"
     t.jsonb "ai_full_results", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["ai_classification"], name: "index_media_items_on_ai_classification"
-    t.index ["ai_classified_at"], name: "index_media_items_on_ai_classified_at"
+    t.index ["ai_class_id"], name: "index_media_items_on_ai_class_id"
     t.index ["bush_id"], name: "index_media_items_on_bush_id"
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end

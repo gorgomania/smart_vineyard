@@ -110,19 +110,35 @@ class VineyardsController < ApplicationController
     redirect_to vineyards_path, notice: "Виноградник успешно удалён"
   end
 
-  def statistics
-    # Если нужны данные для JSON (для AJAX)
-    if request.headers["Accept"] == "application/json"
-      render json: current_user.vineyards.map { |v| disease_statistics_for_vineyard(v) }
-    else
-      # Просто рендерим вьюху
-      render :statistics
-    end
+  def stats
+    @vineyard = Vineyard.find(params[:id])
+    authorize @vineyard
+    @total_bushes = @vineyard.bushes.count
+    @analyzed_bushes = @vineyard.bushes.joins(:media_item).count
+    @stats_data = get_statistics(@vineyard, @total_bushes - @analyzed_bushes)
   end
 
-  def disease_stats
-    vineyard = Vineyard.find(params[:id])
-    render json: disease_statistics_for_vineyard(vineyard)
+  def total_stats
+    @vineyards = policy_scope(Vineyard)
+    @total_bushes = @vineyards.joins(:bushes).count
+    @analyzed_bushes = @vineyards.joins(bushes: :media_item).count
+    @stats_data = get_statistics(@vineyards, @total_bushes - @analyzed_bushes)
+  end
+
+  def select_stats
+    if request.get?
+      vineyards = policy_scope(Vineyard).order(:name)
+      @options = [ [ "Все виноградники", "all" ] ]
+      vineyards.each do |v|
+        @options << [ v.name, v.id ]
+      end
+    else
+      if params[:vineyard_id] == "all"
+        redirect_to total_stats_vineyards_path
+      else
+        redirect_to stats_vineyard_path(params[:vineyard_id])
+      end
+    end
   end
 
   def rows
@@ -199,32 +215,31 @@ class VineyardsController < ApplicationController
     [ map_center.to_json, zoom.to_i ]
   end
 
-  def disease_statistics_for_vineyard(vineyard)
-    total = vineyard.bushes.count
-    analyzed = vineyard.bushes.joins(:media_item).count
-
-    stats = vineyard.bushes
+  def get_statistics(vineyard, no_data_count)
+    if vineyard.is_a?(ActiveRecord::Relation)
+      disease_stats = vineyard
+        .joins(bushes: :media_item)
+        .where.not(media_items: { ai_class_id: nil })
+        .group("media_items.ai_class_id")
+        .count
+    else
+      disease_stats = vineyard.bushes
       .joins(:media_item)
-      .where.not(media_items: { ai_classification: nil })
-      .group("media_items.ai_class_id", "media_items.ai_classification")
+      .where.not(media_items: { ai_class_id: nil })
+      .group("media_items.ai_class_id")
       .count
-    {
-      labels: stats.keys.map { |k| k[1] || "Не определено" },
-      data: stats.values,
-      colors: stats.keys.map { |k| disease_color(k[0]) },
-      total: total,
-      healthy: stats.find { |k, v| k[0] == 2 }&.last || 0,
-      sick: stats.sum { |k, v| k[0] != 2 ? v : 0 },
-      no_data: total - analyzed
-    }
-  end
+    end
 
-  def disease_color(class_id)
+    disease_names = {
+      0 => "Чёрная гниль",
+      1 => "Эска",
+      2 => "Здоровый",
+      3 => "Антракноз"
+    }
     {
-      0 => "#800000",  # Чёрная гниль
-      1 => "#FF8C00",  # Эска
-      2 => "#22C55E",  # Здоровый
-      3 => "#8B4513"   # Антракноз
-    } [class_id] || "#9CA3AF"
+    labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
+    data: disease_stats.values + [ no_data_count ],
+    colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#9CA3AF" ]
+    }
   end
 end

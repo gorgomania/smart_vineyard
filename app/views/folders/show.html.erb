@@ -31,6 +31,7 @@
                         <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
                         <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
                     <% end %>
+
                     <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
                 </div>
             <% end %>
@@ -71,12 +72,14 @@
                     <%= link_to edit_folder_path(children.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                         <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
+
                     <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
                         <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                     <%end%>
                 </div>
                 <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
                     <%= image_tag "/folder.png", alt: "Folder", class: "min-w-33 h-22" %>
+
                     <span><%= children.title %></span>
                 <% end %>
             </div>
@@ -89,6 +92,7 @@
                         <%= link_to edit_media_item_path(file.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                             <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>
+
                         <%= button_to media_item_path(file.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
                             <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
@@ -99,10 +103,11 @@
                         <% else %>
                             <div class = "relative flex flex-col items-center">
                                 <div class = "w-33 h-22">
-                                <% if file.video_preview.attached? %>
-                                    <%= image_tag file.video_preview, class: "h-full" %>
-                                <% end %>
+                                    <% if file.video_preview.attached? %>
+                                        <%= image_tag file.video_preview, class: "h-full" %>
+                                    <% end %>
                                 </div>
+                                
                                 <div class="absolute inset-0 flex items-center justify-center">
                                     <%= image_tag "/video_play.png", class: "w-6 h-6" %>
                                 </div>
