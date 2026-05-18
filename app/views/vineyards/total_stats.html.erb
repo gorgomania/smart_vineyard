@@ -19,7 +19,7 @@
       
       <div class="bg-white rounded-xl shadow-sm p-6">
         <h2 class="text-xl font-bold text-[#69377c] mb-4">Сводка</h2>
-        <div class="space-y-3">
+        <div class="space-y-3 text-[#333]">
           <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
             <span>Виноградников:</span>
             <span class="font-bold text-[#69377c]"><%= @vineyards.count %></span>
@@ -28,6 +28,16 @@
           <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
             <span>Всего кустов:</span>
             <span class="font-bold text-[#69377c]"> <%= @total_bushes %> </span>
+          </div>
+
+          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <span>Здоровых кустов:</span>
+            <span class="font-bold text-[#69377c]"> <%= @stats_data[:healthy_count] %> </span>
+          </div>
+
+          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <span>Процент здоровых:</span>
+            <span class="font-bold text-[#69377c]"> <%= number_to_percentage(@total_bushes.nonzero? ? (@stats_data[:healthy_count].to_f / @total_bushes) * 100 : 0, precision: 1, format: "%n %", separator: ".") %> </span>
           </div>
 
           <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">

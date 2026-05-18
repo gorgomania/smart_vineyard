@@ -25,11 +25,10 @@ public
     result = GrapeClassifier.predict_from_media_item(self)
 
     update!(
-      ai_classification: result[:top_class],
-      ai_confidence: result[:confidence],
       ai_class_id: result[:class_id],
-      ai_classified_at: Time.current,
-      ai_full_results: result[:predictions]
+      ai_confidence: result[:confidence],
+      ai_full_results: result[:predictions],
+      ai_classified_at: Time.current
     )
   end
 

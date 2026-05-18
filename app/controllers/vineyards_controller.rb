@@ -230,16 +230,20 @@ class VineyardsController < ApplicationController
       .count
     end
 
+    healthy_count = disease_stats[2] || 0
+
     disease_names = {
       0 => "Чёрная гниль",
       1 => "Эска",
       2 => "Здоровый",
       3 => "Антракноз"
     }
+
     {
-    labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
-    data: disease_stats.values + [ no_data_count ],
-    colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#9CA3AF" ]
+      labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
+      data: disease_stats.values + [ no_data_count ],
+      colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#9CA3AF" ],
+      healthy_count: healthy_count
     }
   end
 end

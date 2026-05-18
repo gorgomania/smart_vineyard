@@ -3,6 +3,7 @@ class MediaItemsController < ApplicationController
   def show
     @media_item = MediaItem.find(params[:id])
     authorize @media_item
+    @class_names = JSON.parse(File.read(Rails.root.join("app", "models", "onnx", "class_names.json")))
     @parent_id = @media_item.folder_id
     @folder = Folder.find_by(id: @parent_id)
     @title_path = @folder.title_path + [ @media_item.media.filename ]
