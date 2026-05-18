@@ -31,10 +31,11 @@ Rails.application.routes.draw do
       patch :update_attach_to_vineyard  # перекрепление ЭТОГО медиа к кусту
       delete :detach_from_vineyard
     end
+    collection do
+      get :select_page
+      post :select_page
+    end
   end
-
-  get "select_page", to: "folders#select_page"
-  post "select_page", to: "folders#select_page"
 
   resources :media_items do
     member do

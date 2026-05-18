@@ -8,7 +8,7 @@
                 <%= msg %>
             </div>
         <% end %>
-        <%= form_tag select_page_path, method: :post, class: "mt-5 w-70" do %>
+        <%= form_tag select_page_folders_path, method: :post, class: "mt-5 w-70" do %>
             <%= hidden_field_tag :id, @folder.id if @folder %>
             <%= hidden_field_tag :search_query, @search_query if @search_query.present? %>
 

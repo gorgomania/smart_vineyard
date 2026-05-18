@@ -242,8 +242,17 @@ class VineyardsController < ApplicationController
     {
       labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
       data: disease_stats.values + [ no_data_count ],
-      colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#9CA3AF" ],
+      colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#AAAAAA" ],
       healthy_count: healthy_count
     }
+  end
+
+  def disease_color(class_id)
+    {
+      0 => "#800000",  # Чёрная гниль
+      1 => "#FF8C00",  # Эска
+      2 => "#2ECC40",  # Здоровый
+      3 => "#D63384"   # Антракноз
+    } [class_id] || "#AAAAAA"
   end
 end

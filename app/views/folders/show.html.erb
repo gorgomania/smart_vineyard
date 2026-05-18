@@ -158,7 +158,7 @@
             <%= link_to 1, @search_query.present? ? folders_path(folders: { title: @search_query }, page: 1) : folder_path(@folder.id, page: 1), 
                 class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
             <% if start_page > 2 %>
-                <%= link_to "...", select_page_path(
+                <%= link_to "...", select_page_folders_path(
                     id: @folder,
                     search_query: @search_query,
                     range_start: 2,                 
@@ -183,7 +183,7 @@
         <!-- Последняя страница и многоточие -->
         <% if end_page < @page_limit %>
         <% if end_page < @page_limit - 1 %>
-            <%= link_to "...", select_page_path(
+            <%= link_to "...", select_page_folders_path(
                 id: @folder, 
                 search_query: @search_query,
                 range_start: end_page + 1,
