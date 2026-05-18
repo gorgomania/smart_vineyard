@@ -123,6 +123,8 @@ class VineyardsController < ApplicationController
     @total_bushes = @vineyards.joins(:bushes).count
     @analyzed_bushes = @vineyards.joins(bushes: :media_item).count
     @stats_data = get_statistics(@vineyards, @total_bushes - @analyzed_bushes)
+    @total = true
+    render "stats"
   end
 
   def select_stats
