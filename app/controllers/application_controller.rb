@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
   before_action :authenticate_user!
   allow_browser versions: :modern
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
-  
+
   def not_found
     render "/errors/404", status: :not_found, formats: [ :html ]
   end

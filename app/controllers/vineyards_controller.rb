@@ -20,6 +20,7 @@ class VineyardsController < ApplicationController
     @map_center, @map_zoom = initialize_map
     @mode = "show"
     @vineyard = Vineyard.find_by(id: params[:id])
+    return not_found if @vineyard.nil?
     authorize @vineyard
     if params[:bushes_vision].present? && params[:bushes_vision] == "true"
       @bushes_vision = @vineyard.bushes_diagnoses
@@ -238,7 +239,7 @@ class VineyardsController < ApplicationController
       0 => "Чёрная гниль",
       1 => "Эска",
       2 => "Здоровый",
-      3 => "Антракноз"
+      3 => "Листовой ожог"
     }
 
     {

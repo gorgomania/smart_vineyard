@@ -55,11 +55,11 @@ class GrapeClassifier
   def predict_from_path(image_path)
     tensor = preprocess_image_from_path(image_path)
 
-    # Используем жёстко заданные имена, как в ваших логах
+    # Используем жёстко заданные имена
     input_name   = "input"
     output_names = [ "output" ]
 
-    # Правильный вызов ONNX
+    # Вызов ONNX
     result = @session.run(output_names, { input_name => tensor })
 
     # Берём первый выход
@@ -69,7 +69,6 @@ class GrapeClassifier
     top_predictions = probabilities
       .each_with_index
       .sort_by { |prob, _| -prob }
-      .first(3)
       .map { |prob, idx| { class: self.class.class_names[idx], probability: prob, class_id: idx } }
 
     {
