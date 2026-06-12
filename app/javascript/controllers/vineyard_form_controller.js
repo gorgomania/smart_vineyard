@@ -49,13 +49,13 @@ export default class extends Controller {
           <div class="flex justify-between gap-2 -mt-6">
             <div class="field flex-1 min-w-0">
               <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Широта</label>
-              <input type="text" name="vineyard[vertex_${index}_lat]" value="${vertex[0].toFixed(7)}" 
+              <input type="text" name="vineyard[vertex_${index}_lat]" value="${vertex[0]}" 
                     class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
                     data-vertex-lat="${index}">
             </div>
             <div class="field flex-1 min-w-0">
               <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Долгота</label>
-              <input type="text" name="vineyard[vertex_${index}_lng]" value="${vertex[1].toFixed(7)}" 
+              <input type="text" name="vineyard[vertex_${index}_lng]" value="${vertex[1]}" 
                     class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
                     data-vertex-lng="${index}">
             </div>

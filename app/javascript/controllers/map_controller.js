@@ -46,6 +46,11 @@ export default class extends Controller {
     document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
     document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+    // Уничтожаем карту
+    if (this.map) {
+      this.map.destroy()
+      this.map = null
+    }
   }
   
   parseCenter(centerStr) {
@@ -90,9 +95,6 @@ export default class extends Controller {
           controls: ['zoomControl', 'fullscreenControl'] 
         });
       }
-      
-
-      this.element.__mapInstance = this.map
 
       if (this.mode == "new" || this.mode == "edit") {
         // Создаем объект прямоугольника
