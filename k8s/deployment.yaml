@@ -30,11 +30,6 @@ spec:
               value: "production"
             - name: RAILS_LOG_TO_STDOUT
               value: "true"
-            - name: RAILS_MASTER_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: smart-vineyard-secrets
-                  key: rails-master-key
             - name: DB_HOST
               valueFrom:
                 secretKeyRef:
@@ -55,6 +50,11 @@ spec:
                 secretKeyRef:
                   name: smart-vineyard-secrets
                   key: db-password
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: secret-key-base
           resources:
             requests:
               cpu: 100m
@@ -63,16 +63,14 @@ spec:
               cpu: 500m
               memory: 512Mi
           readinessProbe:
-            httpGet:
-              path: /up
+            tcpSocket:
               port: http
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           livenessProbe:
-            httpGet:
-              path: /up
+            tcpSocket:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 30
