@@ -1,0 +1,77 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  APP_NAMESPACE: "smart-vineyard"
+  APP_NAME: "smart-vineyard"
+  IMAGE_TAG: "${CI_REGISTRY_IMAGE}/smart-vineyard:${CI_COMMIT_SHA}"
+  KUBERNETES_SERVICE_ACCOUNT_OVERWRITE: "ci-deployer"
+
+test:
+  stage: test
+  image: ruby:3.3.5-slim
+  services:
+    - name: postgis/postgis:16-3.4-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: smart_vineyard_test
+    POSTGRES_USER: rails
+    POSTGRES_PASSWORD: rails
+    DB_HOST: postgres
+    DB_NAME: smart_vineyard_test
+    DB_USER: rails
+    DB_PASSWORD: rails
+    RAILS_ENV: test
+    SECRET_KEY_BASE: "dummy-secret-for-ci"
+  before_script:
+    - apt-get update -qq && apt-get install --no-install-recommends -y build-essential libpq-dev libyaml-dev pkg-config
+    - bundle install
+    - bundle exec rails db:prepare
+  script:
+    - bundle exec rails test
+
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  needs:
+    - test
+  script:
+    - mkdir -p /kaniko/.docker
+    - printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}' "${CI_REGISTRY}" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "${CI_PROJECT_DIR}" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${IMAGE_TAG}" --destination "${CI_REGISTRY_IMAGE}/smart-vineyard:latest"
+
+deploy:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  needs:
+    - build
+  script:
+    - kubectl apply -f k8s/namespaces.yaml
+    - |
+      export DEPLOY_REGISTRY_USER="${REGISTRY_PULL_USER:-${CI_REGISTRY_USER}}"
+      export DEPLOY_REGISTRY_PASSWORD="${REGISTRY_PULL_PASSWORD:-${CI_REGISTRY_PASSWORD}}"
+      test -n "${DEPLOY_REGISTRY_USER}" && test -n "${DEPLOY_REGISTRY_PASSWORD}"
+      kubectl -n "${APP_NAMESPACE}" create secret docker-registry gitlab-registry-pull --docker-server="${CI_REGISTRY}" --docker-username="${DEPLOY_REGISTRY_USER}" --docker-password="${DEPLOY_REGISTRY_PASSWORD}" --dry-run=client -o yaml | kubectl apply -f -
+    - sed "s|__IMAGE__|${IMAGE_TAG}|g" k8s/deployment.yaml | kubectl apply -f -
+    - kubectl apply -f k8s/service.yaml
+    - kubectl apply -f k8s/ingress.yaml
+    - |
+      dump_diagnostics() {
+        kubectl -n "${APP_NAMESPACE}" get deploy,rs,pods,svc,ingress || true
+        kubectl -n "${APP_NAMESPACE}" describe deployment "${APP_NAME}" || true
+        kubectl -n "${APP_NAMESPACE}" describe pods -l app.kubernetes.io/name="${APP_NAME}" || true
+        kubectl -n "${APP_NAMESPACE}" logs -l app.kubernetes.io/name="${APP_NAME}" -c smart-vineyard --tail=120 || true
+      }
+      if ! kubectl -n "${APP_NAMESPACE}" rollout status "deployment/${APP_NAME}" --timeout=300s; then
+        dump_diagnostics
+        exit 1
+      fi
+  environment:
+    name: smart-vineyard
+    url: "https://smartvineyard.ru"

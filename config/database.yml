@@ -16,4 +16,8 @@ test:
 
 production:
   <<: *default
-  database: smart_vineyard_production
+  database: <%= ENV.fetch("DB_NAME", "smart_vineyard_production") %>
+  username: <%= ENV.fetch("DB_USER", "rails") %>
+  password: <%= ENV["DB_PASSWORD"] %>
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", "5432") %>

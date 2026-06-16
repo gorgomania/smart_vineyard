@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smart-vineyard
+  namespace: smart-vineyard
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: smartvineyard.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smart-vineyard
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - smartvineyard.ru
+      secretName: smart-vineyard-tls
