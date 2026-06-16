@@ -62,20 +62,27 @@ Rails.application.configure do
     protocol: ENV.fetch("APP_PROTOCOL", "https")
   }
 
-  config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = {
-    address: ENV.fetch("SMTP_ADDRESS", "smtp.yandex.ru"),
-    port: ENV.fetch("SMTP_PORT", "465").to_i,
-    domain: ENV.fetch("SMTP_DOMAIN", "yandex.ru"),
-    user_name: ENV.fetch("SMTP_USER_NAME"),
-    password: ENV.fetch("SMTP_PASSWORD"),
-    authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
-    ssl: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_SSL", "true")),
-    tls: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_TLS", "false")),
-    enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "false")),
-    open_timeout: ENV.fetch("SMTP_OPEN_TIMEOUT", "10").to_i,
-    read_timeout: ENV.fetch("SMTP_READ_TIMEOUT", "10").to_i
-  }
+  smtp_user_name = ENV["SMTP_USER_NAME"]
+  smtp_password = ENV["SMTP_PASSWORD"]
+
+  if smtp_user_name && !smtp_user_name.empty? && smtp_password && !smtp_password.empty?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS", "smtp.yandex.ru"),
+      port: ENV.fetch("SMTP_PORT", "465").to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", "yandex.ru"),
+      user_name: smtp_user_name,
+      password: smtp_password,
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
+      ssl: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_SSL", "true")),
+      tls: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_TLS", "false")),
+      enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "false")),
+      open_timeout: ENV.fetch("SMTP_OPEN_TIMEOUT", "10").to_i,
+      read_timeout: ENV.fetch("SMTP_READ_TIMEOUT", "10").to_i
+    }
+  elsif ENV["SECRET_KEY_BASE_DUMMY"].nil? || ENV["SECRET_KEY_BASE_DUMMY"].empty?
+    raise KeyError, "SMTP_USER_NAME and SMTP_PASSWORD must be set"
+  end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
