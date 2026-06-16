@@ -39,6 +39,7 @@ class VineyardsController < ApplicationController
   def new
     @map_center, @map_zoom = initialize_map
     @mode = "new"
+
     @vineyard = current_user.vineyards.new(session.delete(:vineyard_params) || {})
     if @vineyard.polygon.present?
     @vineyard_data = {
@@ -51,6 +52,20 @@ class VineyardsController < ApplicationController
     else
       @vineyard_data = nil
     end
+
+    @vineyards = policy_scope(Vineyard).for_index
+    @vineyards_data = @vineyards.map do |v|
+      {
+        id: v.id,
+        name: v.name,
+        polygon: v.polygon.to_s,
+        total_rows: v.total_rows,
+        total_bushes: v.total_bushes,
+        area: v.area_hectares.to_f,
+        grape_variety: v.grape_variety
+      }
+    end
+
     @errors = session.delete(:vineyard_errors)
   end
 
@@ -72,6 +87,7 @@ class VineyardsController < ApplicationController
   def edit
     @map_center, @map_zoom = initialize_map
     @mode = "edit"
+
     @vineyard = Vineyard.find_by(id: params[:id])
     # Если есть параметры в сессии (после ошибки валидации), используем их
     if session[:vineyard_params].present?
@@ -87,6 +103,19 @@ class VineyardsController < ApplicationController
       reference_side_index: @vineyard.reference_side_index,
       reference_vertex_is_first: @vineyard.reference_vertex_is_first
     }
+
+    @vineyards = policy_scope(Vineyard).for_index.where.not(id: params[:id])
+    @vineyards_data = @vineyards.map do |v|
+      {
+        id: v.id,
+        name: v.name,
+        polygon: v.polygon.to_s,
+        total_rows: v.total_rows,
+        total_bushes: v.total_bushes,
+        area: v.area_hectares.to_f,
+        grape_variety: v.grape_variety
+      }
+    end
   end
 
   def update

@@ -139,7 +139,8 @@ export default class extends Controller {
           }
         )
       }
-      else {
+
+      if (this.multiplePolygons) {
         this.loadMultiplePolygons()
       }
 
@@ -299,7 +300,7 @@ export default class extends Controller {
       })
       
       // Центрируем карту на всех полигонах
-      if (polygonsData.length > 0) {
+      if (this.mode == "index" && polygonsData.length > 0) {
         this.map.setBounds(this.map.geoObjects.getBounds(), {
           checkZoomRange: true,
           zoomMargin: 50
@@ -406,7 +407,7 @@ export default class extends Controller {
     const perpUnit = [perpVector[0] / perpLength, perpVector[1] / perpLength]
     
     // Шаг смещения в градусах
-    const stepDeg = this.metersToDegrees(this.rowSpacing)
+    const stepDeg = GeometryHelpers.metersToDegrees(this.rowSpacing, polygonPoints[0][0])
     
     // 4. Генерируем ряды в обе стороны
     let offset = stepDeg
@@ -602,22 +603,6 @@ export default class extends Controller {
     })
     
     return coordinates
-  }
-
-  metersToDegrees(meters) {
-    // Берем широту из центра карты
-    let lat = this.map.getCenter()[0]
-    
-    // 1 градус широты ≈ 111320 метров (всегда)
-    const metersPerDegreeLat = 111320
-    
-    // 1 градус долготы зависит от широты
-    const metersPerDegreeLon = 111320 * Math.cos(lat * Math.PI / 180)
-    
-    // Для рядов используем среднее (ряды могут идти в любом направлении)
-    const avgMetersPerDegree = (metersPerDegreeLat + metersPerDegreeLon) / 2
-    
-    return meters / avgMetersPerDegree
   }
 
   getRectangleSize() {
