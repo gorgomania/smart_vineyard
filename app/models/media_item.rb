@@ -6,6 +6,7 @@ class MediaItem < ApplicationRecord
   has_one_attached :video_preview, dependent: :purge_later
 
   after_commit :generate_preview, on: :create, dependent: :purge_later
+  after_create_commit :generate_variants
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?
 
@@ -75,6 +76,11 @@ private
 
   def bush_id_present?
     bush_id.present?  # проверяем только если не nil
+  end
+
+  def generate_variants
+    return unless media.attached? && media.image?
+    GenerateVariantJob.perform_later(id)
   end
 
   def generate_preview
