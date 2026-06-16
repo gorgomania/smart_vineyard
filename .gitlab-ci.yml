@@ -53,6 +53,7 @@ deploy:
     - build
   script:
     - kubectl apply -f k8s/namespaces.yaml
+    - kubectl apply -f k8s/rbac.yaml
     - |
       export DEPLOY_REGISTRY_USER="${REGISTRY_PULL_USER:-${CI_REGISTRY_USER}}"
       export DEPLOY_REGISTRY_PASSWORD="${REGISTRY_PULL_PASSWORD:-${CI_REGISTRY_PASSWORD}}"
