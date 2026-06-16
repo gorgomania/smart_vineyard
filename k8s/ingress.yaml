@@ -1,3 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: smart-vineyard-24hlp-tls
+  namespace: smart-vineyard
+spec:
+  secretName: smart-vineyard-24hlp-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  dnsNames:
+    - smartvineyard.24hlp.ru
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -6,9 +19,19 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
-  ingressClassName: nginx
+  ingressClassName: gitlab-nginx
   rules:
     - host: smartvineyard.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smart-vineyard
+                port:
+                  name: http
+    - host: smartvineyard.24hlp.ru
       http:
         paths:
           - path: /
@@ -22,3 +45,6 @@ spec:
     - hosts:
         - smartvineyard.ru
       secretName: smart-vineyard-tls
+    - hosts:
+        - smartvineyard.24hlp.ru
+      secretName: smart-vineyard-24hlp-tls
