@@ -87,6 +87,12 @@ spec:
                 secretKeyRef:
                   name: smart-vineyard-secrets
                   key: mailer-sender
+            - name: YANDEX_MAPS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: yandex-maps-api-key
+                  optional: true
           resources:
             requests:
               cpu: 100m

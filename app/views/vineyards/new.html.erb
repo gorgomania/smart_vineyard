@@ -116,7 +116,7 @@
     <div id="map" 
         data-controller="map"
         data-turbo="false"
-        data-map-api-key="<%= Rails.application.credentials.dig(:yandex, :api_key) %>"
+        data-map-api-key="<%= yandex_maps_api_key %>"
         data-map-center="<%= @map_center %>"
         data-map-zoom="<%= @map_zoom %>"
         data-map-mode="<%= @mode %>"

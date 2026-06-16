@@ -1,4 +1,10 @@
 module ApplicationHelper
+  def yandex_maps_api_key
+    ENV["YANDEX_MAPS_API_KEY"].presence || Rails.application.credentials.dig(:yandex, :api_key)
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage, ActiveSupport::EncryptedFile::MissingKeyError
+    nil
+  end
+
   def nav_buttons
     capture do
       concat(
