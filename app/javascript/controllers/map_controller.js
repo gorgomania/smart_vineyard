@@ -5,6 +5,9 @@ import { GeometryHelpers } from "utils/geometry_helpers"
 export default class extends Controller {
 
   connect() {
+
+    this.element.innerHTML = ''
+    
     // Получаем данные напрямую из атрибутов
     this.apiKey = this.element.dataset.mapApiKey
     this.center = this.parseCenter(this.element.dataset.mapCenter)
@@ -46,6 +49,7 @@ export default class extends Controller {
     document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
     document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+    
     // Уничтожаем карту
     if (this.map) {
       this.map.destroy()

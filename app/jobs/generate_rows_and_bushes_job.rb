@@ -28,5 +28,9 @@ class GenerateRowsAndBushesJob < ApplicationJob
         end
       end
     end
+
+    if vineyard.folder.present?
+      DistributeFolderToBushesJob.perform_later(vineyard.folder.id)
+    end
   end
 end

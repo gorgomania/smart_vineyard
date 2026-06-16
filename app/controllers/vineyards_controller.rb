@@ -96,6 +96,9 @@ class VineyardsController < ApplicationController
 
     @vineyard.update(vineyard_params)
     if @vineyard.save
+      @vineyard.rows.delete_all
+      bushes_per_row = params[:vineyard][:bushes_per_row]
+      GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
       session[:vineyard_params] = vineyard_params.to_h

@@ -13,7 +13,6 @@ export default class extends Controller {
     })
 
     document.addEventListener('map:statisticsUpdated', (event) => {
-      console.log(1)
       this.updateStatistics(event.detail)
     })
 

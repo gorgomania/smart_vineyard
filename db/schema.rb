@@ -141,13 +141,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "bushes", "rows"
-  add_foreign_key "bushes", "vineyards"
+  add_foreign_key "bushes", "rows", on_delete: :cascade
+  add_foreign_key "bushes", "vineyards", on_delete: :cascade
   add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
   add_foreign_key "folders", "users", on_delete: :cascade
   add_foreign_key "folders", "vineyards"
-  add_foreign_key "media_items", "bushes"
+  add_foreign_key "media_items", "bushes", on_delete: :nullify
   add_foreign_key "media_items", "folders", on_delete: :cascade
-  add_foreign_key "rows", "vineyards"
+  add_foreign_key "rows", "vineyards", on_delete: :cascade
   add_foreign_key "vineyards", "users", on_delete: :cascade
 end
