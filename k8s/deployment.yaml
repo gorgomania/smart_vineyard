@@ -55,6 +55,38 @@ spec:
                 secretKeyRef:
                   name: smart-vineyard-secrets
                   key: secret-key-base
+            - name: APP_HOST
+              value: "smartvineyard.24hlp.ru"
+            - name: SMTP_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-address
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-port
+            - name: SMTP_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-domain
+            - name: SMTP_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-user-name
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-password
+            - name: MAILER_SENDER
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: mailer-sender
           resources:
             requests:
               cpu: 100m
