@@ -17,7 +17,7 @@ metadata:
   name: smart-vineyard
   namespace: smart-vineyard
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
 spec:
   ingressClassName: gitlab-nginx
   rules:

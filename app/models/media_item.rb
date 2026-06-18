@@ -104,14 +104,24 @@ private
       "-ss", time_formatted,
       "-vframes", "1",
       "-q:v", "2",
+      "-update", "1",
       preview_path.to_s
     )
+
     file = File.open(preview_path)
     video_preview.attach(
       io: file,
       filename: "preview_#{blob.filename.base}.jpg",
       content_type: "image/jpeg"
     )
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "media_item_#{id}",
+      target: "video-preview-#{id}",
+      partial: "folders/video_preview",
+      locals: { file: self }
+    )
+
     file.close
   ensure
     # Удаляем временный файл в любом случае

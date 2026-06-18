@@ -100,7 +100,7 @@
                     <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
                         <% if file.media.image? %>
                             <div class="relative w-33 h-22">
-                                <div class="absolute inset-0 bg-gray-200 animate-pulse rounded skeleton"></div>
+                                <div class="absolute inset-0 bg-gray-200 animate-pulse skeleton"></div>
                                 
                                 <%= image_tag file.media.variant(resize_to_limit: [132, 88]),
                                     class: "w-33 h-22",
@@ -108,17 +108,8 @@
                                     onload: "this.parentElement.querySelector('.skeleton').classList.add('hidden')" %>
                             </div>
                         <% else %>
-                            <div class = "relative flex flex-col items-center">
-                                <div class = "w-33 h-22">
-                                    <% if file.video_preview.attached? %>
-                                        <%= image_tag file.video_preview, class: "h-full" %>
-                                    <% end %>
-                                </div>
-                                
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <%= image_tag "/video_play.png", class: "w-6 h-6" %>
-                                </div>
-                            </div>
+                            <%= turbo_stream_from "media_item_#{file.id}" %>
+                            <%= render "video_preview", file: file %>
                         <% end %>
                         <span> <%= file.media.filename.base.to_s[0, 15]%> </span>
                     <% end %>   

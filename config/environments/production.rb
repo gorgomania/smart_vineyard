@@ -62,6 +62,11 @@ Rails.application.configure do
     protocol: ENV.fetch("APP_PROTOCOL", "https")
   }
 
+  config.action_controller.default_url_options = {
+    host: ENV.fetch("APP_HOST", "smartvineyard.24hlp.ru"),
+    protocol: ENV.fetch("APP_PROTOCOL", "https")
+  }
+
   smtp_user_name = ENV["SMTP_USER_NAME"]
   smtp_password = ENV["SMTP_PASSWORD"]
 
