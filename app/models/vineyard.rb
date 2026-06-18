@@ -35,7 +35,7 @@ class Vineyard < ApplicationRecord
   def bushes_diagnoses
     bushes.left_joins(:media_item)
           .order("rows.row_number ASC, bushes.bush_number ASC")
-          .pluck("media_items.ai_class_id")
+          .pluck("media_items.id", "media_items.ai_class_id")
   end
 
   def area_hectares=(value)

@@ -384,20 +384,33 @@ export default class extends Controller {
     if (!polygonPoints || polygonPoints.length < 3) return
     //Если нужно отображать кусты
     if (this.bushesDiagnoses) {
+      if (this.objectManager) {
+        this.map.geoObjects.remove(this.objectManager)
+      }
+
       this.objectManager = new ymaps.ObjectManager({
         clusterize: false
       });
-          
       this.map.geoObjects.add(this.objectManager)
+
+      this.objectManager.objects.events.add('click', (e) => {
+        const objectId = e.get('objectId')
+        const obj = this.objectManager.objects.getById(objectId)
+        const url = obj.properties.bushUrl
+        if (url) window.location.href = url
+      })
     }
+
     this.rowsCollection.removeAll()
     const bushesPerRow = []
+
     // 1. Находим самую длинную сторону (первый ряд)
     const firstRow = this.getPolygonSide(polygonPoints)
 
     // 2. Добавляем первый ряд
     let totalBushes = this.addRow(firstRow.p1, firstRow.p2, 1, true)
     bushesPerRow.push(totalBushes)
+
     // 3. Направление перпендикуляра (смещение рядов)
     const rowVector = [firstRow.p2[0] - firstRow.p1[0], firstRow.p2[1] - firstRow.p1[1]]
     const perpVector = [-rowVector[1], rowVector[0]] // Поворот на 90°
@@ -428,6 +441,7 @@ export default class extends Controller {
         hasNextRow = false
       }
     }
+    
     // В другую сторону
     offset = -stepDeg
     hasNextRow = true
@@ -535,7 +549,7 @@ export default class extends Controller {
 
       if (bushPoint) {
         const bushId = bushesStartIndex + i;
-        const classId = this.bushesDiagnoses[bushId];
+        const [mediaItemId, classId] = this.bushesDiagnoses[bushId] || [null, null];
   
         // Определяем цвет
         const colors = {
@@ -559,7 +573,8 @@ export default class extends Controller {
                 "coordinates": [bushPoint[0], bushPoint[1]]
               },
               "properties": {
-                "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`
+                "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`,
+                "bushUrl": mediaItemId ? `/media_items/${mediaItemId}` : null
               },
               "options": {
               iconLayout: 'default#image',
