@@ -2,15 +2,16 @@
   <% if file.video_preview.attached? %>
     <div class="w-33 h-22 relative">
       <div id="skeleton-<%= file.id %>" class="absolute inset-0 bg-gray-200 animate-pulse"></div>
-      
+
       <%= image_tag file.video_preview,
-          class: "w-33 h-22",
-          loading: "lazy",
-          onload: "document.getElementById('skeleton-#{file.id}').classList.add('hidden')" %>
+        class: "w-33 h-22",
+        loading: "lazy",
+        onload: "document.getElementById('skeleton-" + file.id.to_s + "').classList.add('hidden')" %>
     </div>
   <% else %>
     <div class="w-33 h-22 bg-gray-200 animate-pulse"></div>
   <% end %>
+  
   <div class="absolute inset-0 flex items-center justify-center">
     <%= image_tag "/video_play.png", class: "w-6 h-6" %>
   </div>

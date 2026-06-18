@@ -97,6 +97,7 @@
                             <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     </div>
+                    
                     <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
                         <% if file.media.image? %>
                             <div class="relative w-33 h-22">
@@ -108,7 +109,6 @@
                                     onload: "this.parentElement.querySelector('.skeleton').classList.add('hidden')" %>
                             </div>
                         <% else %>
-                            <%= turbo_stream_from "media_item_#{file.id}" %>
                             <%= render "video_preview", file: file %>
                         <% end %>
                         <span> <%= file.media.filename.base.to_s[0, 15]%> </span>
@@ -118,6 +118,13 @@
         <% end %>
     </div>
 </main>
+
+<% @media.each do |file| %>
+  <% unless file.media.image? %>
+    <%= turbo_stream_from "media_item_#{file.id}" %>
+  <% end %>
+<% end %>
+
 <% if @page_limit > 1 %>
     <div class="flex justify-center px-5 bg-white gap-1">
         <!-- Кнопка "Назад" (всегда есть) -->
