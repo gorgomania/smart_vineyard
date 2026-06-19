@@ -20,6 +20,7 @@ servers:
 proxy:
   ssl: true
   host: app.example.com
+  response_timeout: 600
 
 # Credentials for your image host.
 registry:
