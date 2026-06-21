@@ -18,6 +18,9 @@ metadata:
   namespace: smart-vineyard
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "1024m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/client-body-timeout: "600"
 spec:
   ingressClassName: gitlab-nginx
   rules:
