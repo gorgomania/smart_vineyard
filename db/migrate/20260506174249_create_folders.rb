@@ -4,7 +4,7 @@ class CreateFolders < ActiveRecord::Migration[8.0]
       t.string :title, null: false, limit: 15
       t.references :parent, foreign_key: { to_table: :folders, on_delete: :cascade }
       t.references :user, null: false, foreign_key: { on_delete: :cascade }
-      t.references :vineyard, foreign_key: true
+      t.references :vineyard, foreign_key: { on_delete: :nullify }
       t.timestamps
     end
     add_index :folders, :created_at

@@ -145,7 +145,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
   add_foreign_key "bushes", "vineyards", on_delete: :cascade
   add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
   add_foreign_key "folders", "users", on_delete: :cascade
-  add_foreign_key "folders", "vineyards"
+  add_foreign_key "folders", "vineyards", on_delete: :nullify
   add_foreign_key "media_items", "bushes", on_delete: :nullify
   add_foreign_key "media_items", "folders", on_delete: :cascade
   add_foreign_key "rows", "vineyards", on_delete: :cascade
