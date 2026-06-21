@@ -11,95 +11,88 @@ let totalFiles = 0
 
 window.jQuery = window.$ = $
 
+var input_focus = 1, input_hover = 1;
+
+// Эффект focus для поля поиска
+$(document).on("focus.search", ".search_input", function() {
+  $(this).css({
+    "background": "white",
+    "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
+  });
+  input_focus = 0;
+});
+
+// Эффект blur для поля поиска
+$(document).on("blur.search", ".search_input", function() {
+  input_focus = 1;
+  if (input_hover) {
+    $(this).css({
+      "background": "#f2f2f2",
+      "box-shadow": "none"
+    });
+  }
+});
+
+// Эффект mouseenter для поля поиска
+$(document).on("mouseenter.search", ".search_input", function() {
+  $(this).css({
+    "background": "white",
+    "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
+  });
+  input_hover = 0;
+});
+
+// Эффект mouseleave для поля поиска
+$(document).on("mouseleave.search", ".search_input", function() {
+  input_hover = 1;
+  if (input_focus) {
+    $(this).css({
+      "background": "#f2f2f2",
+      "box-shadow": "none"
+    });
+  }
+});
+
+// Эффект mouseenter для иконки поиска
+$(document).on("mouseenter.searchimg", ".search_img", function() {
+  $(".search_input").css({
+    "background": "white",
+    "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
+  });
+});
+
+// Прыжок label при focus
+$(document).on("focus.auth", ".auth_input", function() {
+  moveLabel($(this), 1);
+});
+
+// Прыжок label при blur
+$(document).on("blur.auth", ".auth_input", function() {
+  if (!this.value) {
+    moveLabel($(this), 0);
+  }
+});
+
+// Событие input - при вводе
+$(document).on("input.auth", ".auth_input", function() {
+  const hasFocus = $(this).is(":focus");
+
+  if (!this.value && !hasFocus) {
+    moveLabel($(this), 0);
+  }
+  else if (this.value) {
+    moveLabel($(this), 1);
+  }
+});
+
 document.addEventListener("turbo:load", function() {
   // Сбрасываем глобальные переменные при загрузке страницы
   uploadedBlobs = []
   pendingUploads = 0
   totalFiles = 0
 
-  var input_focus = 1, input_hover = 1;
-  // Эффект focus для поля поиска
-  $(document).on("focus.search", ".search_input", function() {
-    $(this).css({
-      "background": "white",
-      "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
-    });
-    input_focus = 0;
-  });
-
-  // Эффект blur для поля поиска
-  $(document).on("blur.search", ".search_input", function() {
-    input_focus = 1;
-    if (input_hover) {
-      $(this).css({
-        "background": "#f2f2f2",
-        "box-shadow": "none"
-      });
-    }
-  });
-
-  // Эффект mouseenter для поля поиска
-  $(document).on("mouseenter.search", ".search_input", function() {
-    $(this).css({
-      "background": "white", 
-      "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
-    });
-    input_hover = 0;
-  });
-
-  // Эффект mouseleave для поля поиска
-  $(document).on("mouseleave.search", ".search_input", function() {
-    input_hover = 1;
-    if (input_focus) {
-      $(this).css({
-        "background": "#f2f2f2",
-        "box-shadow": "none"
-      });
-    }
-  });
-
-  // Эффект mouseenter для иконки поиска
-  $(document).on("mouseenter.searchimg", ".search_img", function() {
-    $(".search_input").css({
-      "background": "white",
-      "box-shadow": "0 0 0 1px #0000000a,0 4px 4px #0000000a,0 20px 40px #00000014"
-    });
-  });
-
-  // Прыжок label при focus
-  $(document).on("focus.auth", ".auth_input", function() {
-    moveLabel($(this), 1);
-  });
-
-  // Прыжок label при blur
-  $(document).on("blur.auth", ".auth_input", function() {
-    if (!this.value) {
-      moveLabel($(this), 0);
-    }
-  });
-
   $(".auth_input").each(function() {
     if ($(this).val()) {
-      moveLabel($(this), 1);
-    }
-  });
-
-  $(document).on("turbo:load", function() {
-    $(".auth_input").each(function() {
-      if ($(this).val()) {
-        moveLabel($(this), 1);
-      }
-    });
-  });
-
-  // Событие input - при вводе
-  $(document).on("input.auth", ".auth_input", function() {
-    const hasFocus = $(this).is(":focus");
-
-    if (!this.value && !hasFocus) {
-      moveLabel($(this), 0);
-    }
-    else if (this.value) {
       moveLabel($(this), 1);
     }
   });
