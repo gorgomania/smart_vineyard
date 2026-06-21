@@ -24,7 +24,7 @@ class Vineyard < ApplicationRecord
   default_scope { where(deleted_at: nil) }
 
   scope :for_index, -> {
-    select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes)
+    select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes).order(:name)
   }
 
   def destroy
