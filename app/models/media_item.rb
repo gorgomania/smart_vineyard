@@ -2,10 +2,10 @@ class MediaItem < ApplicationRecord
   belongs_to :folder
   belongs_to :bush, optional: true
 
-  has_one_attached :media
+  has_one_attached :media, dependent: :purge_later
   has_one_attached :video_preview, dependent: :purge_later
 
-  after_commit :generate_preview, on: :create, dependent: :purge_later
+  after_commit :generate_preview, on: :create
   after_create_commit :generate_variants
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?

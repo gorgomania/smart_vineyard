@@ -115,8 +115,8 @@ class FoldersController < ApplicationController
     authorize folder
     search_query = params[:folders][:search_query]
     page = params[:folders][:page]
-    folder.update(title: folder_params[:title])
-    if folder.save
+
+    if folder.update(title: folder_params[:title])
       if search_query.empty?
         redirect_to folder_path(folder.parent_id, page: page), notice: "Имя папки успешно изменено"
       else

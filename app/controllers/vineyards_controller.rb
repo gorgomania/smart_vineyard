@@ -123,8 +123,7 @@ class VineyardsController < ApplicationController
     authorize @vineyard
     vineyard_params = vineyard_params_permit
 
-    @vineyard.update(vineyard_params)
-    if @vineyard.save
+    if @vineyard.update(vineyard_params)
       RegenerateRowsAndBushesJob.perform_later(@vineyard.id, params[:vineyard][:bushes_per_row])
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
@@ -240,8 +239,6 @@ class VineyardsController < ApplicationController
     else
       zoom = 15
     end
-
-    map_center = [ center_lat.to_f, center_lng.to_f ]
 
     map_center = [ center_lat.to_f, center_lng.to_f ]
 
