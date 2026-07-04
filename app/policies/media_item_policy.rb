@@ -19,6 +19,26 @@ class MediaItemPolicy < ApplicationPolicy
     show?
   end
 
+  def attach?
+    show?
+  end
+
+  def attach_to_bush?
+    show?
+  end
+
+  def edit_attach?
+    show?
+  end
+
+  def update_attach_to_bush?
+    show?
+  end
+
+  def detach_from_bush?
+    show?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.joins(:folder).where(folders: { user_id: user.id })

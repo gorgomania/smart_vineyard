@@ -1,8 +1,7 @@
 class AttachMediaJob < ApplicationJob
   queue_as :default
 
-  def perform(folder_id, signed_blob_ids)
-    folder = Folder.find(folder_id)
+  def perform(folder, signed_blob_ids)
     vineyard = folder.vineyard
 
     signed_blob_ids.each do |signed_id|

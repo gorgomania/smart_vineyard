@@ -25,6 +25,18 @@ class VineyardPolicy < ApplicationPolicy
     show?
   end
 
+  def rows?
+    show?
+  end
+
+  def attach_to_vineyard?
+    show?
+  end
+
+  def update_attach_to_vineyard?
+    show?
+  end
+
   class Scope < ApplicationPolicy::Scope
     # NOTE: Be explicit about which records you allow access to!
     def resolve

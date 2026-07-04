@@ -175,14 +175,14 @@ class VineyardsController < ApplicationController
 
   def rows
     vineyard = Vineyard.find(params[:id])
-    rows = vineyard.rows.order(:row_number).map do |row|
-      {
-        id: row.id,
-        row_number: row.row_number,
-        bushes_count: row.bushes.count
-      }
-    end
-    render json: rows
+    authorize vineyard
+    rows = vineyard.rows
+                  .left_joins(:bushes)
+                  .group(:id, :row_number)
+                  .order(:row_number)
+                  .pluck(:id, :row_number, "COUNT(bushes.id)")
+
+    render json: rows.map { |id, row_number, count| { id:, row_number:, bushes_count: count } }
   end
 
   private

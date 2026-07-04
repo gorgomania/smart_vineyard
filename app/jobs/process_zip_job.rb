@@ -3,7 +3,7 @@ require "zip"
 class ProcessZipJob < ApplicationJob
   queue_as :default
 
-  def perform(folder_id, zip_path)
+  def perform(folder, zip_path)
     # Создаём уникальную папку для этого ZIP
     zip_basename = File.basename(zip_path, ".*")
     temp_extract_dir = Rails.root.join("tmp", "zip_extract", zip_basename)
@@ -32,7 +32,7 @@ class ProcessZipJob < ApplicationJob
 
         # Подготавливаем MediaItem
         media_items_data << {
-          folder_id: folder_id,
+          folder_id: folder.id,
           created_at: Time.current,
           updated_at: Time.current
         }
@@ -89,8 +89,9 @@ class ProcessZipJob < ApplicationJob
     DistributeMediaToBushesJob.perform_later(media_item_ids)
 
     # Запуск классификации для всех
-    media_item_ids.each do |media_id|
+    media_item_ids.each_with_index do |media_id, index|
       ClassifyMediaJob.perform_later(media_id)
+      GenerateVariantJob.perform_later(media_id) if blob_results[index].content_type.start_with?("image/")
     end
 
     NormalizeMediaFilenamesJob.perform_later(media_item_ids)

@@ -94,6 +94,8 @@ class FoldersController < ApplicationController
     title = folder_params[:title]
     parent_id = folder_params[:parent_id]
     folder = Folder.new(title: title, parent_id: parent_id, user_id: current_user.id)
+    authorize folder
+
     if folder.save
       redirect_to folder_path(parent_id, page: "-2"), notice: "Папка успешно создана"
     else
@@ -150,7 +152,11 @@ class FoldersController < ApplicationController
   end
 
   def select_page
-    @folder = Folder.find_by(id: params[:id]) if params[:id].present?
+    if params[:id].present?
+      @folder = Folder.find_by(id: params[:id])
+      authorize @folder
+    end
+
     @search_query = params[:search_query]
 
     # Диапазон для выбора
@@ -169,12 +175,18 @@ class FoldersController < ApplicationController
 
   def attach
     @folder = Folder.find(params[:id])
+    authorize @folder
+
     @vineyards = current_user.vineyards.order(:name)
   end
 
   def attach_to_vineyard
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
+
+    authorize @folder
+    authorize @vineyard
+
     if @folder.update(vineyard: @vineyard)
       DistributeFolderToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно прикреплена к винограднику"
@@ -186,6 +198,8 @@ class FoldersController < ApplicationController
 
   def edit_attach
     @folder = Folder.find(params[:id])
+    authorize @folder
+
     @vineyards = current_user.vineyards.order(:name)
     @selected_vineyard_id = @folder.vineyard.id
   end
@@ -193,6 +207,10 @@ class FoldersController < ApplicationController
   def update_attach_to_vineyard
     @folder = Folder.find(params[:id])
     @vineyard = Vineyard.find(params[:vineyard_id])
+
+    authorize @folder
+    authorize @vineyard
+
     if @folder.update(vineyard: @vineyard)
        DistributeFolderToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно перекреплена к винограднику"
@@ -204,6 +222,8 @@ class FoldersController < ApplicationController
 
   def detach_from_vineyard
     @folder = Folder.find(params[:id])
+    authorize @folder
+
     @folder.update(vineyard: nil)
     DistributeFolderToBushesJob.perform_later(@folder.id)
     redirect_to @folder, notice: "Папка успешно откреплена от виноградника"

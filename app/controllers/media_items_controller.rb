@@ -17,7 +17,9 @@ class MediaItemsController < ApplicationController
   end
 
   def create
-    folder_id = media_item_params[:folder_id]
+    @folder = Folder.find(media_item_params[:folder_id])
+    authorize @folder, :create_media_item?
+
     blob_ids = params[:signed_blob_ids]&.split(",")
     uploaded_files = params[:media_item][:media].select(&:present?)
 
@@ -27,7 +29,7 @@ class MediaItemsController < ApplicationController
     # Проверяем, было ли что-то загружено
     if zip_files.blank? && blob_ids.blank?
       flash[:alert] = [ "Сначала выберите файл" ]
-      redirect_to new_media_item_path(folder_id: folder_id)
+      redirect_to new_media_item_path(folder_id: @folder)
       return
     end
 
@@ -37,12 +39,12 @@ class MediaItemsController < ApplicationController
       temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
       FileUtils.mkdir_p(File.dirname(temp_path))
       File.binwrite(temp_path, zip_file.read)
-      ProcessZipJob.perform_later(folder_id, temp_path.to_s)
+      ProcessZipJob.perform_later(@folder, temp_path.to_s)
     end
 
     # Обрабатываем обычные файлы если есть
     if blob_ids.present?
-      AttachMediaJob.perform_later(folder_id, blob_ids)
+      AttachMediaJob.perform_later(@folder, blob_ids)
     end
 
     # Формируем сообщение
@@ -50,7 +52,7 @@ class MediaItemsController < ApplicationController
     messages << "#{zip_files.count} ZIP #{Russian.p(zip_files.count, 'архив', 'архива', 'архивов')}" if zip_files.present?
     messages << "#{blob_ids.count} #{Russian.p(blob_ids.count, 'файл', 'файла', 'файлов')}" if blob_ids.present?
 
-    redirect_to folder_path(folder_id, page: "-1"), notice: "#{messages.join(' и ')} загружаются в фоне"
+    redirect_to folder_path(@folder, page: "-1"), notice: "#{messages.join(' и ')} загружаются в фоне"
   end
 
   def edit
@@ -118,12 +120,18 @@ class MediaItemsController < ApplicationController
 
   def attach
     @media_item = MediaItem.find(params[:id])
+    authorize @media_item
+
     @vineyards = current_user.vineyards.order(:name)
   end
 
   def attach_to_bush
     @media_item = MediaItem.find(params[:id])
     @bush = Bush.find(params[:bush_id])
+
+    authorize @media_item
+    authorize @bush
+
     if @media_item.update(bush: @bush)
       redirect_to @media_item, notice: "Файл успешно прикреплен к кусту"
     else
@@ -134,6 +142,8 @@ class MediaItemsController < ApplicationController
 
   def edit_attach
     @media_item = MediaItem.find(params[:id])
+    authorize @media_item
+
     @vineyards = current_user.vineyards.order(:name)
     @selected_vineyard_id = @media_item.bush.vineyard_id
     @selected_row_id = @media_item.bush.row_id
@@ -156,6 +166,10 @@ class MediaItemsController < ApplicationController
   def update_attach_to_bush
     @media_item = MediaItem.find(params[:id])
     @bush = Bush.find(params[:bush_id])
+
+    authorize @media_item
+    authorize @bush
+
     if @media_item.update(bush: @bush)
       redirect_to @media_item, notice: "Файл успешно перекреплен к кусту"
     else
@@ -166,6 +180,8 @@ class MediaItemsController < ApplicationController
 
   def detach_from_bush
     @media_item = MediaItem.find(params[:id])
+    authorize @media_item
+
     @media_item.update(bush: nil)
     redirect_to @media_item, notice: "Файл успешно откреплен от куста"
   end

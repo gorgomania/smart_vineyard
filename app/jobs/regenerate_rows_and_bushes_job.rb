@@ -36,7 +36,7 @@ class RegenerateRowsAndBushesJob < ApplicationJob
           end
         else
           if bushes_count < 0
-            vineyard.rows.where(row_number: row_number).first.bushes.where("bush_number > ?", new_bushes_per_row[row_index]).delete_all
+            vineyard.rows.where(row_number: row_number).first.bushes.where("bush_number > ?", new_bushes_per_row[row_index]).destroy_all
           else
             row = vineyard.rows.find_by(row_number: row_number)
             # Создаём кусты
