@@ -58,15 +58,17 @@ class ProcessZipJob < ApplicationJob
     # Массовое создание Blob и Attachment
     blob_results = []
     blobs_data.each_with_index do |blob_data, i|
-      blob = ActiveStorage::Blob.create_and_upload!(
-        io: File.open(blob_data[:temp_path]),
-        filename: blob_data[:filename],
-        content_type: blob_data[:content_type]
-      )
-      blob_results << blob
+      File.open(blob_data[:temp_path]) do |file|
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io: file,
+          filename: blob_data[:filename],
+          content_type: blob_data[:content_type]
+        )
+        blob_results << blob
 
-      # Удаляем временный файл
-      File.delete(blob_data[:temp_path]) if File.exist?(blob_data[:temp_path])
+        # Удаляем временный файл
+        File.delete(blob_data[:temp_path]) if File.exist?(blob_data[:temp_path])
+      end
     end
 
     # Массовое создание Attachment
@@ -101,8 +103,8 @@ class ProcessZipJob < ApplicationJob
     NormalizeMediaFilenamesJob.perform_later(media_item_ids)
 
   rescue => e
-    puts "Ошибка обработки ZIP: #{e.message}"
-    puts e.backtrace.first(5)
+    Rails.logger.error "Ошибка обработки ZIP: #{e.message}"
+    Rails.logger.error e.backtrace.first(5)
     raise e
   end
 end

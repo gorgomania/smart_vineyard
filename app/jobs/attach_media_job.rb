@@ -7,7 +7,7 @@ class AttachMediaJob < ApplicationJob
     signed_blob_ids.each do |signed_id|
       blob = ActiveStorage::Blob.find_signed(signed_id)
 
-      media_item = MediaItem.new(folder_id: folder_id)
+      media_item = MediaItem.new(folder_id: folder.id)
       media_item.media.attach(blob)
       media_item.normalize_filename!
 

@@ -14,6 +14,7 @@ private
     orphaned_blobs = ActiveStorage::Blob
       .left_joins(:attachments)
       .where(active_storage_attachments: { id: nil })
+      .where("active_storage_blobs.created_at < ?", 1.hour.ago)
 
     count = orphaned_blobs.count
 
@@ -48,11 +49,11 @@ private
       attachments = ActiveStorage::Attachment.where(record_type: record_type)
       existing_ids = klass.unscoped.where(id: attachments.select(:record_id)).pluck(:id).to_set
 
-      orphaned = attachments.reject { |a| existing_ids.include?(a.record_id) }
+      orphaned = attachments.where.not(record_id: existing_ids)
 
       Rails.logger.info "#{record_type}: #{orphaned.size} attachments with missing record"
 
-      orphaned.each do |attachment|
+      orphaned.find_each do |attachment|
         Rails.logger.info "Deleted orphaned attachment: #{attachment.id} " \
                            "(record_type=#{record_type}, record_id=#{attachment.record_id}, " \
                            "blob=#{attachment.blob&.filename})"

@@ -3,7 +3,12 @@ class RegenerateRowsAndBushesJob < ApplicationJob
 
   def perform(vineyard_id, new_bushes_per_row)
     vineyard = Vineyard.find(vineyard_id)
-    bushes_per_row = vineyard.rows.order(:row_number).map { |row| row.bushes.count }
+    bushes_per_row = vineyard.rows
+                         .left_joins(:bushes)
+                         .group(:id, :row_number)
+                         .order(:row_number)
+                         .pluck(:row_number, "COUNT(bushes.id)")
+                         .map(&:last)
 
     # Если это строка - парсим JSON
     if new_bushes_per_row.is_a?(String)
