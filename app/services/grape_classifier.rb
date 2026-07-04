@@ -8,11 +8,17 @@ class GrapeClassifier
   IMAGE_SIZE = 224
   MEAN = [ 0.485, 0.456, 0.406 ]
   STD = [ 0.229, 0.224, 0.225 ]
+  MUTEX = Mutex.new
 
   class << self
-    def predict_from_media_item(media_item)
-      @instance ||= new
+    def instance
+      return @instance if @instance
+      MUTEX.synchronize do
+        @instance ||= new
+      end
+    end
 
+    def predict_from_media_item(media_item)
       unless media_item.media.attached?
         raise ArgumentError, "Media item has no attached file"
       end
@@ -21,12 +27,11 @@ class GrapeClassifier
         raise ArgumentError, "Attached file is not an image"
       end
 
-      @instance.predict_from_active_storage(media_item.media)
+      instance.predict_from_active_storage(media_item.media)
     end
 
     def predict_from_file(file_path)
-      @instance ||= new
-      @instance.predict_from_path(file_path)
+      instance.predict_from_path(file_path)
     end
 
     def class_names

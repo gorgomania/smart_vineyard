@@ -2,7 +2,7 @@ class VineyardsController < ApplicationController
   def index
     @map_center, @map_zoom = initialize_map
     @mode = "index"
-    @vineyards = policy_scope(Vineyard).for_index
+    @vineyards = policy_scope(Vineyard).active.for_index
     @vineyards_data = @vineyards.map do |v|
       {
         id: v.id,
@@ -19,7 +19,7 @@ class VineyardsController < ApplicationController
   def show
     @map_center, @map_zoom = initialize_map
     @mode = "show"
-    @vineyard = Vineyard.find_by(id: params[:id])
+    @vineyard = Vineyard.active.find_by(id: params[:id])
     return not_found if @vineyard.nil?
     authorize @vineyard
     if params[:bushes_vision].present? && params[:bushes_vision] == "true"
@@ -53,7 +53,7 @@ class VineyardsController < ApplicationController
       @vineyard_data = nil
     end
 
-    @vineyards = policy_scope(Vineyard).for_index
+    @vineyards = policy_scope(Vineyard).active.for_index
     @vineyards_data = @vineyards.map do |v|
       {
         id: v.id,
@@ -88,7 +88,7 @@ class VineyardsController < ApplicationController
     @map_center, @map_zoom = initialize_map
     @mode = "edit"
 
-    @vineyard = Vineyard.find_by(id: params[:id])
+    @vineyard = Vineyard.active.find_by(id: params[:id])
     # Если есть параметры в сессии (после ошибки валидации), используем их
     if session[:vineyard_params].present?
       @vineyard.assign_attributes(session[:vineyard_params])
@@ -104,7 +104,7 @@ class VineyardsController < ApplicationController
       reference_vertex_is_first: @vineyard.reference_vertex_is_first
     }
 
-    @vineyards = policy_scope(Vineyard).for_index.where.not(id: params[:id])
+    @vineyards = policy_scope(Vineyard).active.for_index.where.not(id: params[:id])
     @vineyards_data = @vineyards.map do |v|
       {
         id: v.id,
@@ -119,7 +119,7 @@ class VineyardsController < ApplicationController
   end
 
   def update
-    @vineyard = Vineyard.find_by(id: params[:id])
+    @vineyard = Vineyard.active.find_by(id: params[:id])
     authorize @vineyard
     vineyard_params = vineyard_params_permit
 
@@ -134,14 +134,14 @@ class VineyardsController < ApplicationController
   end
 
   def destroy
-    vineyard = Vineyard.find_by(id: params[:id])
+    vineyard = Vineyard.active.find_by(id: params[:id])
     authorize vineyard
     vineyard.destroy
     redirect_to vineyards_path, notice: "Виноградник успешно удалён"
   end
 
   def stats
-    @vineyard = Vineyard.find(params[:id])
+    @vineyard = Vineyard.active.find(params[:id])
     authorize @vineyard
     @total_bushes = @vineyard.bushes.count
     @analyzed_bushes = @vineyard.bushes.joins(:media_item).count
@@ -149,7 +149,7 @@ class VineyardsController < ApplicationController
   end
 
   def total_stats
-    @vineyards = policy_scope(Vineyard)
+    @vineyards = policy_scope(Vineyard).active
     @total_bushes = @vineyards.joins(:bushes).count
     @analyzed_bushes = @vineyards.joins(bushes: :media_item).count
     @stats_data = get_statistics(@vineyards, @total_bushes - @analyzed_bushes)
@@ -159,7 +159,7 @@ class VineyardsController < ApplicationController
 
   def select_stats
     if request.get?
-      vineyards = policy_scope(Vineyard).order(:name)
+      vineyards = policy_scope(Vineyard).active.order(:name)
       @options = [ [ "Все виноградники", "all" ] ]
       vineyards.each do |v|
         @options << [ v.name, v.id ]
@@ -174,7 +174,7 @@ class VineyardsController < ApplicationController
   end
 
   def rows
-    vineyard = Vineyard.find(params[:id])
+    vineyard = Vineyard.active.find(params[:id])
     authorize vineyard
     rows = vineyard.rows
                   .left_joins(:bushes)

@@ -182,7 +182,7 @@ class FoldersController < ApplicationController
 
   def attach_to_vineyard
     @folder = Folder.find(params[:id])
-    @vineyard = Vineyard.find(params[:vineyard_id])
+    @vineyard = Vineyard.active.find(params[:vineyard_id])
 
     authorize @folder
     authorize @vineyard
@@ -206,7 +206,7 @@ class FoldersController < ApplicationController
 
   def update_attach_to_vineyard
     @folder = Folder.find(params[:id])
-    @vineyard = Vineyard.find(params[:vineyard_id])
+    @vineyard = Vineyard.active.find(params[:vineyard_id])
 
     authorize @folder
     authorize @vineyard

@@ -150,7 +150,7 @@ class MediaItemsController < ApplicationController
     @selected_bush_id = @media_item.bush_id
     # Загружаем ряды для выбранного виноградника
     if @selected_vineyard_id.present?
-      @rows = Vineyard.find(@selected_vineyard_id).rows.order(:row_number)
+      @rows = Vineyard.active.find(@selected_vineyard_id).rows.includes(:bushes).order(:row_number)
     else
       @rows = []
     end

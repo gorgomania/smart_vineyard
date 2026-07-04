@@ -5,6 +5,6 @@ class Row < ApplicationRecord
   validates :row_number, presence: true, uniqueness: { scope: :vineyard_id }
 
   def display_name
-    "Ряд #{row_number} (#{bushes.count} #{Russian.p(bushes.count, 'куст', 'куста', 'кустов')})"
+    "Ряд #{row_number} (#{bushes.size} #{Russian.p(bushes.size, 'куст', 'куста', 'кустов')})"
   end
 end

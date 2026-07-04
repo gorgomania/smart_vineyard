@@ -3,8 +3,6 @@ Rails.application.routes.draw do
     registrations: "users/registrations"
   }
 
-  resources :users
-
   resources :vineyards do
     member do
       get :rows
@@ -48,7 +46,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :active_storage_blobs, only: [ :destroy ], path: "/active_storage/blobs"
+  namespace :active_storage do
+    resources :blobs, only: [ :destroy ]
+  end
+
+  post "/rails/active_storage/direct_uploads", to: "active_storage/direct_uploads#create"
 
   root "vineyards#index"
 

@@ -90,8 +90,12 @@ class ProcessZipJob < ApplicationJob
 
     # Запуск классификации для всех
     media_item_ids.each_with_index do |media_id, index|
-      ClassifyMediaJob.perform_later(media_id)
-      GenerateVariantJob.perform_later(media_id) if blob_results[index].content_type.start_with?("image/")
+      if blob_results[index].content_type.start_with?("image/")
+        ClassifyMediaJob.perform_later(media_id)
+        GenerateImagePreviewJob.perform_later(media_id)
+      elsif blob_results[index].content_type.start_with?("video/")
+        GenerateVideoPreviewJob.perform_later(media_id)
+      end
     end
 
     NormalizeMediaFilenamesJob.perform_later(media_item_ids)
