@@ -41,6 +41,8 @@ class GenerateVideoPreviewJob < ApplicationJob
     File.delete(preview_path) if preview_path && File.exist?(preview_path)
   end
 
+private
+
   def get_video_duration(file_path)
     # Используем FFprobe для получения информации о видео
     cmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 #{Shellwords.escape(file_path.to_s)}"

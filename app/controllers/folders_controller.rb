@@ -201,7 +201,10 @@ class FoldersController < ApplicationController
     authorize @folder
 
     @vineyards = current_user.vineyards.order(:name)
-    @selected_vineyard_id = @folder.vineyard.id
+
+    if @folder.vineyard.present?
+      @selected_vineyard_id = @folder.vineyard.id
+    end
   end
 
   def update_attach_to_vineyard

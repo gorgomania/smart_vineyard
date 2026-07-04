@@ -145,9 +145,13 @@ class MediaItemsController < ApplicationController
     authorize @media_item
 
     @vineyards = current_user.vineyards.order(:name)
-    @selected_vineyard_id = @media_item.bush.vineyard_id
-    @selected_row_id = @media_item.bush.row_id
-    @selected_bush_id = @media_item.bush_id
+
+    if @media_item.bush.present?
+      @selected_vineyard_id = @media_item.bush.vineyard_id
+      @selected_row_id = @media_item.bush.row_id
+      @selected_bush_id = @media_item.bush_id
+    end
+
     # Загружаем ряды для выбранного виноградника
     if @selected_vineyard_id.present?
       @rows = Vineyard.active.find(@selected_vineyard_id).rows.includes(:bushes).order(:row_number)

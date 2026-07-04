@@ -9,7 +9,7 @@ class DistributeFolderToBushesJob < ApplicationJob
     vineyard = folder.vineyard
     media_items = folder.media_items
 
-    media_items.each do |media|
+    media_items.find_each do |media|
       filename = media.media.filename.to_s
 
       # Только формат: Ряд 1 Куст 1
@@ -27,7 +27,7 @@ class DistributeFolderToBushesJob < ApplicationJob
 
         media.update(bush: bush) if bush
       else
-        media.update!(bush: nil)
+        media.update(bush: nil)
       end
     end
   end

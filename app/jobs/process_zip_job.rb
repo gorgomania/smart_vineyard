@@ -38,7 +38,7 @@ class ProcessZipJob < ApplicationJob
         }
 
         # Пока что сохраняем файл во временное место для batch upload
-        temp_path = File.join(temp_extract_dir.to_s, filename.force_encoding("UTF-8"))
+        temp_path = File.join(temp_extract_dir.to_s, "#{index}_#{filename.force_encoding("UTF-8")}")
         FileUtils.mkdir_p(File.dirname(temp_path))
         File.binwrite(temp_path, content)
 
