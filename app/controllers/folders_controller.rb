@@ -11,7 +11,7 @@ class FoldersController < ApplicationController
         end
 
         @childrens_length = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").count
-        @media_length = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").includes(media_attachment: :blob, video_preview_attachment: :blob).to_a.count
+        @media_length = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").count
         @page_limit = ((@childrens_length + @media_length) / per_page.to_f).ceil
         @page_limit = 1 if @page_limit.zero?
         if @page > @page_limit
@@ -119,7 +119,7 @@ class FoldersController < ApplicationController
     page = params[:folders][:page]
 
     if folder.update(title: folder_params[:title])
-      if search_query.empty?
+      if search_query.blank?
         redirect_to folder_path(folder.parent_id, page: page), notice: "Имя папки успешно изменено"
       else
         redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Имя папки успешно изменено"
@@ -140,7 +140,7 @@ class FoldersController < ApplicationController
     authorize folder
     parent_id = folder.parent_id
     folder.destroy
-    if search_query.empty?
+    if search_query.blank?
       if parent_id
         redirect_to folder_path(parent_id, page: page), notice: "Папка успешно удалена"
       else

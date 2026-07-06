@@ -43,9 +43,9 @@ gem "thruster", require: false
 
 # Gemfile
 gem "onnxruntime"  # основной гем для ONNX
-gem "mini_magick"  # для обработки изображений
 gem "image_processing"  # для удобной работы с изображениями
 gem "numo-narray"  # для эффективной работы с тензорами
+gem "ruby-vips"  # для обработки изображений через libvips
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
@@ -62,6 +62,7 @@ group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
 end
+
 gem "tailwindcss-rails", "~> 4.4"
 gem "ffmpeg"
 gem "russian"

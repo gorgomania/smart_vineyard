@@ -83,7 +83,7 @@ class MediaItemsController < ApplicationController
     @media_item.normalize_filename!
 
     if blob.save
-      if search_query.empty?
+      if search_query.blank?
         redirect_to folder_path(@media_item.folder_id, page: page), notice: "Имя файла успешно изменено"
       else
         redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Имя файла успешно изменено"
@@ -103,7 +103,7 @@ class MediaItemsController < ApplicationController
     authorize media_item
     folder_id = media_item.folder_id
     media_item.destroy
-    if search_query.empty?
+    if search_query.blank?
       redirect_to folder_path(folder_id, page: page), notice: "Файл успешно удален"
     else
       redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Файл успешно удален"

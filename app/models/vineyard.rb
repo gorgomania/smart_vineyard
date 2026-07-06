@@ -13,7 +13,7 @@ class Vineyard < ApplicationRecord
             numericality: {
               only_integer: true,
               greater_than_or_equal_to: 1900,
-              less_than_or_equal_to: Date.current.year,
+              less_than_or_equal_to: -> { Date.current.year },
               allow_nil: true
             }
   validates :total_rows, numericality: { greater_than: 0 }

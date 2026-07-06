@@ -84,9 +84,6 @@ class ProcessZipJob < ApplicationJob
 
     ActiveStorage::Attachment.insert_all!(attachments_data)
 
-    # Очистка временной папки
-    FileUtils.rm_rf(temp_extract_dir)
-
     # Запускаем распределение медиафайлов по кустам
     DistributeMediaToBushesJob.perform_later(media_item_ids)
 
@@ -106,5 +103,7 @@ class ProcessZipJob < ApplicationJob
     Rails.logger.error "Ошибка обработки ZIP: #{e.message}"
     Rails.logger.error e.backtrace.first(5)
     raise e
+  ensure
+    FileUtils.rm_rf(temp_extract_dir)
   end
 end

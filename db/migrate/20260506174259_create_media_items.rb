@@ -1,7 +1,7 @@
 class CreateMediaItems < ActiveRecord::Migration[8.0]
   def change
     create_table :media_items do |t|
-      t.references :folder, foreign_key: { on_delete: :cascade }
+      t.references :folder, foreign_key: { on_delete: :cascade }, null: false
       t.references :bush, foreign_key: { on_delete: :nullify }
 
       # AI classification fields

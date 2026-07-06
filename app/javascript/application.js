@@ -521,19 +521,21 @@ function startDirectUpload(file, previewWrapper) {
   
   const upload = new DirectUpload(file, "/rails/active_storage/direct_uploads")
   
-  upload.create((_, blob) => {
-    // Убираем индикатор загрузки
+  upload.create((error, blob) => {
     loadingIndicator.remove()
 
-    if (blob) {
-      uploadedBlobs.push({
-      signed_id: blob.signed_id,
-      filename: file.name
-    })
-      const successMark = document.createElement('div');
-      successMark.className = 'absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center';
-      successMark.innerHTML = '✓';
-      previewWrapper.appendChild(successMark);
+    if (error) {
+      showError(`Ошибка загрузки "${file.name}": ${error.message || error}`)
+      const errorMark = document.createElement('div')
+      errorMark.className = 'absolute top-0 left-0 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center'
+      errorMark.innerHTML = '✗'
+      previewWrapper.appendChild(errorMark)
+    } else {
+      uploadedBlobs.push({ signed_id: blob.signed_id, filename: file.name })
+      const successMark = document.createElement('div')
+      successMark.className = 'absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center'
+      successMark.innerHTML = '✓'
+      previewWrapper.appendChild(successMark)
     }
     pendingUploads--
     updateProgress()
@@ -550,9 +552,10 @@ function updateProgress() {
   const $submitBtn = $('#newfile-submit-btn')
   if (pendingUploads > 0) {
     $submitBtn.prop('disabled', true).val(`Загрузка (${completed}/${totalFiles})...`)
-  } else if (completed === totalFiles && totalFiles > 0) {
+  } else if (pendingUploads === 0 && totalFiles > 0) {
     $submitBtn.prop('disabled', false).val('Загрузить')
-    $('#upload-progress-status').text('✅ Все файлы загружены!')
+    const status = completed === totalFiles ? '✅ Все файлы загружены!' : `✅ Загружено ${completed} из ${totalFiles} (с ошибками)`
+    $('#upload-progress-status').text(status)
   } else if (totalFiles === 0) {
     $submitBtn.prop('disabled', true).val('Загрузить')
     $('#upload-progress-container').addClass('hidden')
@@ -580,19 +583,20 @@ window.addEventListener('popstate', function(event) {
 });
 
 function initializeNavigation () {
-  //Если можно перейти назад по истории
+  if (!window.navigation) {
+    $("#back-button, #forward-button").hide()
+    return
+  }
+
   if (window.navigation.canGoBack) {
     $("#back-button").show()
-  }
-  else {
+  } else {
     $("#back-button").hide()
   }
 
-  //Если можно перейти вперёд по истории
   if (window.navigation.canGoForward) {
     $("#forward-button").show()
-  }
-  else {
+  } else {
     $("#forward-button").hide()
   }
 }

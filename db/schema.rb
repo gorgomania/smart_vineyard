@@ -37,6 +37,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.bigint "byte_size", null: false
     t.string "checksum"
     t.datetime "created_at", null: false
+    t.index ["created_at"], name: "index_active_storage_blobs_on_created_at"
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
@@ -73,7 +74,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
   end
 
   create_table "media_items", force: :cascade do |t|
-    t.bigint "folder_id"
+    t.bigint "folder_id", null: false
     t.bigint "bush_id"
     t.integer "ai_class_id"
     t.float "ai_confidence"

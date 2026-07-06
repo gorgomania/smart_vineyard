@@ -434,7 +434,6 @@ DEPENDENCIES
   importmap-rails
   jbuilder
   kamal
-  mini_magick
   numo-narray
   onnxruntime
   pg (~> 1.1)
@@ -444,6 +443,7 @@ DEPENDENCIES
   rails (~> 8.0.2)
   redis
   rubocop-rails-omakase
+  ruby-vips
   rubyzip
   russian
   solid_cable

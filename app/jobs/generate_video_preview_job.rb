@@ -1,3 +1,5 @@
+require "open3"
+
 class GenerateVideoPreviewJob < ApplicationJob
   queue_as :default
 
@@ -22,12 +24,13 @@ class GenerateVideoPreviewJob < ApplicationJob
       return unless success
     end
 
-    file = File.open(preview_path)
-    media_item.video_preview.attach(
-      io: file,
-      filename: "preview_#{blob.filename.base}.jpg",
-      content_type: "image/jpeg"
-    )
+    File.open(preview_path) do |file|
+      media_item.video_preview.attach(
+        io: file,
+        filename: "preview_#{blob.filename.base}.jpg",
+        content_type: "image/jpeg"
+      )
+    end
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "media_item_#{id}",
@@ -35,8 +38,6 @@ class GenerateVideoPreviewJob < ApplicationJob
       partial: "folders/video_preview",
       locals: { file: media_item }
     )
-
-    file.close
   ensure
     File.delete(preview_path) if preview_path && File.exist?(preview_path)
   end
@@ -44,11 +45,13 @@ class GenerateVideoPreviewJob < ApplicationJob
 private
 
   def get_video_duration(file_path)
-    # Используем FFprobe для получения информации о видео
-    cmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 #{Shellwords.escape(file_path.to_s)}"
-    result = `#{cmd}`
-    duration = result.to_f
-    duration
+    result, = Open3.capture2(
+      "ffprobe", "-v", "error",
+      "-show_entries", "format=duration",
+      "-of", "default=noprint_wrappers=1:nokey=1",
+      file_path.to_s
+    )
+    result.to_f
   end
 
   def format_time(seconds)
