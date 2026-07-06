@@ -2,26 +2,49 @@ default: &default
   adapter: postgis
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  username: gorgomania      # ← поменяй с postgres на gorgomania
-  password: 4555008         # ← твой пароль
+  username: gorgomania
+  password: 4555008
   host: localhost
 
 development:
-  <<: *default
-  database: smart_vineyard_development
+  primary:
+    <<: *default
+    database: smart_vineyard_development
+  queue:
+    <<: *default
+    database: smart_vineyard_development_queue
+    migrations_paths: db/queue_migrate
 
 test:
-  <<: *default
-  database: <%= ENV.fetch("DB_NAME", "smart_vineyard_test") %>
-  username: <%= ENV.fetch("DB_USER", "gorgomania") %>
-  password: <%= ENV.fetch("DB_PASSWORD", "4555008") %>
-  host: <%= ENV.fetch("DB_HOST", "localhost") %>
-  port: <%= ENV.fetch("DB_PORT", "5432") %>
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "smart_vineyard_test") %>
+    username: <%= ENV.fetch("DB_USER", "gorgomania") %>
+    password: <%= ENV.fetch("DB_PASSWORD", "4555008") %>
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
+    port: <%= ENV.fetch("DB_PORT", "5432") %>
+  queue:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME_QUEUE", "smart_vineyard_test_queue") %>
+    username: <%= ENV.fetch("DB_USER", "gorgomania") %>
+    password: <%= ENV.fetch("DB_PASSWORD", "4555008") %>
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
+    port: <%= ENV.fetch("DB_PORT", "5432") %>
+    migrations_paths: db/queue_migrate
 
 production:
-  <<: *default
-  database: <%= ENV.fetch("DB_NAME", "smart_vineyard_production") %>
-  username: <%= ENV.fetch("DB_USER", "rails") %>
-  password: <%= ENV["DB_PASSWORD"] %>
-  host: <%= ENV.fetch("DB_HOST", "localhost") %>
-  port: <%= ENV.fetch("DB_PORT", "5432") %>
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME", "smart_vineyard_production") %>
+    username: <%= ENV.fetch("DB_USER", "rails") %>
+    password: <%= ENV["DB_PASSWORD"] %>
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
+    port: <%= ENV.fetch("DB_PORT", "5432") %>
+  queue:
+    <<: *default
+    database: <%= ENV.fetch("DB_NAME_QUEUE", "smart_vineyard_production_queue") %>
+    username: <%= ENV.fetch("DB_USER", "rails") %>
+    password: <%= ENV["DB_PASSWORD"] %>
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
+    port: <%= ENV.fetch("DB_PORT", "5432") %>
+    migrations_paths: db/queue_migrate

@@ -11,4 +11,9 @@ if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   ./bin/rails db:prepare
 fi
 
+# If running the job worker then ensure the queue database is ready
+if [ "${@: -1:1}" == "bin/jobs" ]; then
+  ./bin/rails db:prepare
+fi
+
 exec "${@}"

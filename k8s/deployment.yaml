@@ -179,3 +179,112 @@ spec:
   ports:
     - port: 6379
       targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smart-vineyard-worker
+  namespace: smart-vineyard
+  labels:
+    app.kubernetes.io/name: smart-vineyard-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smart-vineyard-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smart-vineyard-worker
+    spec:
+      terminationGracePeriodSeconds: 90
+      imagePullSecrets:
+        - name: gitlab-registry-pull
+      containers:
+        - name: worker
+          image: __IMAGE__
+          command: ["bin/jobs"]
+          env:
+            - name: RAILS_ENV
+              value: "production"
+            - name: RAILS_LOG_TO_STDOUT
+              value: "true"
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: db-host
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: db-name
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: db-user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: db-password
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: secret-key-base
+            - name: YANDEX_MAPS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: yandex-maps-api-key
+                  optional: true
+            - name: REDIS_URL
+              value: "redis://redis:6379/1"
+            - name: APP_HOST
+              value: "smartvineyard.24hlp.ru"
+            - name: SMTP_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-address
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-port
+            - name: SMTP_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-domain
+            - name: SMTP_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-user-name
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: smtp-password
+            - name: MAILER_SENDER
+              valueFrom:
+                secretKeyRef:
+                  name: smart-vineyard-secrets
+                  key: mailer-sender
+          volumeMounts:
+            - name: active-storage
+              mountPath: /rails/storage
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 2Gi
+      volumes:
+        - name: active-storage
+          persistentVolumeClaim:
+            claimName: smart-vineyard-storage
