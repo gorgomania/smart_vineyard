@@ -51,38 +51,37 @@ class ProcessZipJob < ApplicationJob
       end
     end
 
-    # Массовое создание MediaItem
-    media_items_result = MediaItem.insert_all!(media_items_data, returning: [ :id ])
-    media_item_ids = media_items_result.map { |r| r["id"] }
-
-    # Массовое создание Blob и Attachment
+    # Сначала загружаем все блобы — до создания DB-записей
     blob_results = []
-    blobs_data.each_with_index do |blob_data, i|
+    blobs_data.each do |blob_data|
       File.open(blob_data[:temp_path]) do |file|
-        blob = ActiveStorage::Blob.create_and_upload!(
+        blob_results << ActiveStorage::Blob.create_and_upload!(
           io: file,
           filename: blob_data[:filename],
           content_type: blob_data[:content_type]
         )
-        blob_results << blob
-
-        # Удаляем временный файл
-        File.delete(blob_data[:temp_path]) if File.exist?(blob_data[:temp_path])
       end
+      File.delete(blob_data[:temp_path]) if File.exist?(blob_data[:temp_path])
     end
 
-    # Массовое создание Attachment
-    attachments_data = blob_results.each_with_index.map do |blob, i|
-      {
-        name: "media",
-        record_type: "MediaItem",
-        record_id: media_item_ids[i],
-        blob_id: blob.id,
-        created_at: Time.current
-      }
-    end
+    # Создаём MediaItem + Attachment атомарно
+    media_item_ids = ActiveRecord::Base.transaction do
+      result = MediaItem.insert_all!(media_items_data, returning: [ :id ])
+      ids = result.map { |r| r["id"] }
 
-    ActiveStorage::Attachment.insert_all!(attachments_data)
+      attachments_data = blob_results.each_with_index.map do |blob, i|
+        {
+          name: "media",
+          record_type: "MediaItem",
+          record_id: ids[i],
+          blob_id: blob.id,
+          created_at: Time.current
+        }
+      end
+      ActiveStorage::Attachment.insert_all!(attachments_data)
+
+      ids
+    end
 
     # Запускаем распределение медиафайлов по кустам
     DistributeMediaToBushesJob.perform_later(media_item_ids)
@@ -102,6 +101,7 @@ class ProcessZipJob < ApplicationJob
   rescue => e
     Rails.logger.error "Ошибка обработки ZIP: #{e.message}"
     Rails.logger.error e.backtrace.first(5)
+    blob_results&.each { |b| b.purge rescue nil }
     raise e
   ensure
     File.delete(zip_path) if zip_path && File.exist?(zip_path)

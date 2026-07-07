@@ -150,7 +150,7 @@ class FoldersController < ApplicationController
 
   def select_page
     if params[:id].present?
-      @folder = Folder.find_by(id: params[:id])
+      @folder = Folder.find(params[:id])
       authorize @folder
     end
 
@@ -164,8 +164,10 @@ class FoldersController < ApplicationController
       page = params[:page].to_i
       if @search_query.present?
         redirect_to folders_path(folders: { title: @search_query }, page: page)
-      else
+      elsif @folder
         redirect_to folder_path(@folder, page: page)
+      else
+        redirect_to folders_path
       end
     end
   end

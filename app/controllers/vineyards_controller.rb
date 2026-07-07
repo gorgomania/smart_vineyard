@@ -88,7 +88,7 @@ class VineyardsController < ApplicationController
     @map_center, @map_zoom = initialize_map
     @mode = "edit"
 
-    @vineyard = Vineyard.active.find_by(id: params[:id])
+    @vineyard = Vineyard.active.find(params[:id])
     # Если есть параметры в сессии (после ошибки валидации), используем их
     if session[:vineyard_params].present?
       @vineyard.assign_attributes(session[:vineyard_params])
@@ -119,7 +119,7 @@ class VineyardsController < ApplicationController
   end
 
   def update
-    @vineyard = Vineyard.active.find_by(id: params[:id])
+    @vineyard = Vineyard.active.find(params[:id])
     authorize @vineyard
     vineyard_params = vineyard_params_permit
 

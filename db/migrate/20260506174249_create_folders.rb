@@ -9,5 +9,6 @@ class CreateFolders < ActiveRecord::Migration[8.0]
     end
     add_index :folders, :created_at
     add_index :folders, [ :user_id, :title, :parent_id ], unique: true
+    add_index :folders, [ :user_id, :title ],  unique: true,  where: "parent_id IS NULL"
   end
 end

@@ -9,6 +9,10 @@ class DistributeFolderToBushesJob < ApplicationJob
     vineyard = folder.vineyard
     media_items = folder.media_items
 
+    bushes_by_coords = vineyard&.bushes&.joins(:row)
+      &.select("bushes.*, rows.row_number AS row_number")
+      &.each_with_object({}) { |b, h| h[[ b.row_number.to_i, b.bush_number ]] = b }
+
     media_items.find_each do |media|
       filename = media.media.filename.to_s
 
@@ -17,14 +21,7 @@ class DistributeFolderToBushesJob < ApplicationJob
       next unless match
 
       if vineyard.present?
-        row_number = match[1].to_i
-        bush_number = match[2].to_i
-
-        bush = vineyard.bushes
-          .joins(:row)
-          .where(rows: { row_number: row_number })
-          .find_by(bush_number: bush_number)
-
+        bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
         media.update(bush: bush) if bush
       else
         media.update(bush: nil)

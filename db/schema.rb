@@ -69,6 +69,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["created_at"], name: "index_folders_on_created_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
     t.index ["user_id", "title", "parent_id"], name: "index_folders_on_user_id_and_title_and_parent_id", unique: true
+    t.index ["user_id", "title"], name: "index_folders_on_user_id_and_title", unique: true, where: "(parent_id IS NULL)"
     t.index ["user_id"], name: "index_folders_on_user_id"
     t.index ["vineyard_id"], name: "index_folders_on_vineyard_id"
   end

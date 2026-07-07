@@ -11,22 +11,17 @@ class DistributeMediaToBushesJob < ApplicationJob
 
     return unless vineyard
 
+    bushes_by_coords = vineyard.bushes.joins(:row)
+      .select("bushes.*, rows.row_number AS row_number")
+      .each_with_object({}) { |b, h| h[[ b.row_number.to_i, b.bush_number ]] = b }
+
     media_items.find_each do |media|
       filename = media.media.filename.to_s
       match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
       next unless match
 
-      row_number = match[1].to_i
-      bush_number = match[2].to_i
-
-      bush = vineyard.bushes
-        .joins(:row)
-        .where(rows: { row_number: row_number })
-        .find_by(bush_number: bush_number)
-
-      if bush
-        media.update(bush: bush)
-      end
+      bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
+      media.update(bush: bush) if bush
     end
   end
 end
