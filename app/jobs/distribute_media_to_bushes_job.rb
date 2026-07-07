@@ -2,7 +2,7 @@ class DistributeMediaToBushesJob < ApplicationJob
   queue_as :default
 
   def perform(media_item_ids)
-    media_items = MediaItem.where(id: media_item_ids)
+    media_items = MediaItem.where(id: media_item_ids).to_a
     return if media_items.empty?
 
     # Берём папку из первого медиа

@@ -1,5 +1,6 @@
 class GenerateRowsAndBushesJob < ApplicationJob
   queue_as :default
+  discard_on ActiveRecord::RecordNotFound
 
   def perform(vineyard_id, bushes_per_row_data)
     vineyard = Vineyard.find(vineyard_id)

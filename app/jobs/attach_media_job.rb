@@ -1,5 +1,6 @@
 class AttachMediaJob < ApplicationJob
   queue_as :default
+  discard_on ActiveRecord::RecordNotFound
 
   def perform(folder, signed_blob_ids)
     vineyard = folder.vineyard

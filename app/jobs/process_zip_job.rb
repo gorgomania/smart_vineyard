@@ -2,6 +2,7 @@ require "zip"
 
 class ProcessZipJob < ApplicationJob
   queue_as :default
+  discard_on ActiveRecord::RecordNotFound
 
   def perform(folder, zip_path)
     # Создаём уникальную папку для этого ZIP
