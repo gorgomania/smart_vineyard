@@ -4,68 +4,35 @@ class ProcessZipJob < ApplicationJob
   queue_as :default
   discard_on ActiveRecord::RecordNotFound
 
-  def perform(folder, zip_path)
-    # Создаём уникальную папку для этого ZIP
-    zip_basename = File.basename(zip_path, ".*")
-    temp_extract_dir = Rails.root.join("tmp", "zip_extract", zip_basename)
-    FileUtils.mkdir_p(temp_extract_dir)
-    # MIME типы
-    mime_types = {
-      ".jpg" => "image/jpeg",
-      ".jpeg" => "image/jpeg",
-      ".png" => "image/png",
-      ".webp" => "image/webp",
-      ".mp4" => "video/mp4"
-    }
+  MIME_TYPES = {
+    ".jpg"  => "image/jpeg",
+    ".jpeg" => "image/jpeg",
+    ".png"  => "image/png",
+    ".webp" => "image/webp",
+    ".mp4"  => "video/mp4"
+  }.freeze
 
-    # Сбор данных
+  def perform(folder, zip_path)
     media_items_data = []
-    blobs_data = []
-    attachments_data = []
+    blob_results = []
 
     Zip::File.open(zip_path) do |zip_file|
-      entries = zip_file.select { |e| e.file? && [ ".jpg", ".jpeg", ".png", ".webp", ".mp4" ].include?(File.extname(e.name).downcase) }
+      entries = zip_file.select { |e| e.file? && MIME_TYPES.key?(File.extname(e.name).downcase) }
 
-      entries.each_with_index do |entry, index|
+      entries.each do |entry|
         ext = File.extname(entry.name).downcase
-        content = entry.get_input_stream.read
-        filename = File.basename(entry.name)
 
-        # Подготавливаем MediaItem
-        media_items_data << {
-          folder_id: folder.id,
-          created_at: Time.current,
-          updated_at: Time.current
-        }
-
-        # Пока что сохраняем файл во временное место для batch upload
-        temp_path = File.join(temp_extract_dir.to_s, "#{index}_#{filename.force_encoding("UTF-8")}")
-        FileUtils.mkdir_p(File.dirname(temp_path))
-        File.binwrite(temp_path, content)
-
-        blobs_data << {
-          temp_path: temp_path,
-          filename: filename,
-          content_type: mime_types[ext],
-          index: index
-        }
-      end
-    end
-
-    # Сначала загружаем все блобы — до создания DB-записей
-    blob_results = []
-    blobs_data.each do |blob_data|
-      File.open(blob_data[:temp_path]) do |file|
-        blob_results << ActiveStorage::Blob.create_and_upload!(
-          io: file,
-          filename: blob_data[:filename],
-          content_type: blob_data[:content_type]
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io: entry.get_input_stream,
+          filename: File.basename(entry.name),
+          content_type: MIME_TYPES[ext],
+          identify: false
         )
+        blob_results << blob
+        media_items_data << { folder_id: folder.id, created_at: Time.current, updated_at: Time.current }
       end
-      File.delete(blob_data[:temp_path]) if File.exist?(blob_data[:temp_path])
     end
 
-    # Создаём MediaItem + Attachment атомарно
     media_item_ids = ActiveRecord::Base.transaction do
       result = MediaItem.insert_all!(media_items_data, returning: [ :id ])
       ids = result.map { |r| r["id"] }
@@ -84,18 +51,18 @@ class ProcessZipJob < ApplicationJob
       ids
     end
 
-    # Запускаем распределение медиафайлов по кустам
     DistributeMediaToBushesJob.perform_later(media_item_ids)
 
-    # Запуск классификации для всех
+    jobs = []
     media_item_ids.each_with_index do |media_id, index|
       if blob_results[index].content_type.start_with?("image/")
-        ClassifyMediaJob.perform_later(media_id)
-        GenerateImagePreviewJob.perform_later(media_id)
+        jobs << ClassifyMediaJob.new(media_id)
+        jobs << GenerateImagePreviewJob.new(media_id)
       elsif blob_results[index].content_type.start_with?("video/")
-        GenerateVideoPreviewJob.perform_later(media_id)
+        jobs << GenerateVideoPreviewJob.new(media_id)
       end
     end
+    ActiveJob.perform_all_later(jobs)
 
     NormalizeMediaFilenamesJob.perform_later(media_item_ids)
 
@@ -106,6 +73,5 @@ class ProcessZipJob < ApplicationJob
     raise e
   ensure
     File.delete(zip_path) if zip_path && File.exist?(zip_path)
-    FileUtils.rm_rf(temp_extract_dir)
   end
 end

@@ -1,7 +1,7 @@
 require "open3"
 
 class GenerateVideoPreviewJob < ApplicationJob
-  queue_as :default
+  queue_as :low_priority
   discard_on ActiveRecord::RecordNotFound
 
   def perform(id)

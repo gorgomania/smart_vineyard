@@ -13,7 +13,8 @@ Rails.application.configure do
     policy.script_src :self,
                       "https://api-maps.yandex.ru",
                       "https://yastatic.net",
-                      "https://core.maps.yandex.ru"
+                      "https://core.maps.yandex.ru",
+                      "https://core-renderer-tiles.maps.yandex.net"
 
     # Яндекс Карты внедряет inline-стили — без unsafe-inline карта не отображается
     policy.style_src :self, :unsafe_inline, "https://yastatic.net"
