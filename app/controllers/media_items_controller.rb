@@ -6,7 +6,7 @@ class MediaItemsController < ApplicationController
     authorize @media_item
     @class_names = GrapeClassifier.class_names
     @parent_id = @media_item.folder_id
-    @folder = Folder.find_by(id: @parent_id)
+    @folder = @media_item.folder
     @title_path = @folder.title_path + [ @media_item.media.filename ]
     @id_path = @folder.id_path
   end
@@ -21,7 +21,7 @@ class MediaItemsController < ApplicationController
     authorize @folder, :create_media_item?
 
     blob_ids = params[:signed_blob_ids]&.split(",")
-    uploaded_files = params[:media_item][:media].select(&:present?)
+    uploaded_files = Array(media_item_params[:media]).select(&:present?)
 
     # Находим все ZIP среди загруженных файлов
     zip_files = uploaded_files.select { |f| f.original_filename.to_s.end_with?(".zip") }

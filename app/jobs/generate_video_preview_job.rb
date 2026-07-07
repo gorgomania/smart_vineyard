@@ -2,6 +2,7 @@ require "open3"
 
 class GenerateVideoPreviewJob < ApplicationJob
   queue_as :default
+  discard_on ActiveRecord::RecordNotFound
 
   def perform(id)
     media_item = MediaItem.find(id)

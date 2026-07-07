@@ -10,6 +10,7 @@ class AttachMediaJob < ApplicationJob
 
     signed_blob_ids.each do |signed_id|
       blob = ActiveStorage::Blob.find_signed(signed_id)
+      next unless blob
 
       media_item = MediaItem.new(folder_id: folder.id)
       media_item.media.attach(blob)

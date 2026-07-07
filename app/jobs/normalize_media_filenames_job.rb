@@ -5,9 +5,7 @@ class NormalizeMediaFilenamesJob < ApplicationJob
     media_items = MediaItem.where(id: media_item_ids)
 
     media_items.find_each do |media_item|
-      if media_item.normalize_filename!
-        media_item.media.blob.save
-      end
+      media_item.media.blob.save if media_item.normalize_filename!
     end
   end
 end

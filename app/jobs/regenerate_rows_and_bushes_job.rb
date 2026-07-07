@@ -40,10 +40,12 @@ class RegenerateRowsAndBushesJob < ApplicationJob
             row.bushes.create!(bush_attrs)
           end
         else
+          row = vineyard.rows.find_by(row_number: row_number)
+          next unless row
+
           if bushes_count < 0
-            vineyard.rows.where(row_number: row_number).first.bushes.where("bush_number > ?", new_bushes_per_row[row_index]).destroy_all
+            row.bushes.where("bush_number > ?", new_bushes_per_row[row_index]).destroy_all
           else
-            row = vineyard.rows.find_by(row_number: row_number)
             # Создаём кусты
             bushes_count.to_i.times do |bush_index|
               bush_number = bush_index + bushes_per_row[row_index] + 1
