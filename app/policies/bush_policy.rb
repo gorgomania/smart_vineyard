@@ -1,6 +1,6 @@
 class BushPolicy < ApplicationPolicy
   def attach_to_bush?
-    record.row.vineyard.user_id == user.id
+    record.row&.vineyard&.user_id == user.id
   end
 
   def update_attach_to_bush?

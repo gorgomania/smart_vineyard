@@ -1,6 +1,6 @@
 class RowPolicy < ApplicationPolicy
   def bushes?
-    record.vineyard.user_id == user.id
+    record.vineyard&.user_id == user.id
   end
 
 

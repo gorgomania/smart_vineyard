@@ -15,7 +15,7 @@ class DistributeMediaToBushesJob < ApplicationJob
       .select("bushes.*, rows.row_number AS row_number")
       .each_with_object({}) { |b, h| h[[ b.row_number.to_i, b.bush_number ]] = b }
 
-    media_items.find_each do |media|
+    media_items.each do |media|
       filename = media.media.filename.to_s
       match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
       next unless match
