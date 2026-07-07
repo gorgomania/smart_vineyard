@@ -1,25 +1,36 @@
 # Be sure to restart your server when you modify this file.
 
-# Define an application-wide content security policy.
-# See the Securing Rails Applications Guide for more information:
-# https://guides.rubyonrails.org/security.html#content-security-policy-header
+Rails.application.configure do
+  config.content_security_policy do |policy|
+    policy.default_src :self
+    policy.font_src    :self, :data
+    policy.img_src     :self, :https, :data, :blob
+    policy.object_src  :none
+    policy.media_src   :self, :blob
+    policy.frame_src   :none
 
-# Rails.application.configure do
-#   config.content_security_policy do |policy|
-#     policy.default_src :self, :https
-#     policy.font_src    :self, :https, :data
-#     policy.img_src     :self, :https, :data
-#     policy.object_src  :none
-#     policy.script_src  :self, :https
-#     policy.style_src   :self, :https
-#     # Specify URI for violation reports
-#     # policy.report_uri "/csp-violation-report-endpoint"
-#   end
-#
-#   # Generate session nonces for permitted importmap, inline scripts, and inline styles.
-#   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
-#   config.content_security_policy_nonce_directives = %w(script-src style-src)
-#
-#   # Report violations without enforcing the policy.
-#   # config.content_security_policy_report_only = true
-# end
+    # Яндекс Карты 2.1 динамически подгружает скрипты с нескольких доменов
+    policy.script_src :self,
+                      "https://api-maps.yandex.ru",
+                      "https://yastatic.net",
+                      "https://core.maps.yandex.ru"
+
+    # Яндекс Карты внедряет inline-стили — без unsafe-inline карта не отображается
+    policy.style_src :self, :unsafe_inline, "https://yastatic.net"
+
+    # ActionCable (Solid Cable) + ActiveStorage direct uploads + Яндекс API
+    policy.connect_src :self, :https, :wss,
+                       "https://*.maps.yandex.ru",
+                       "https://*.maps.yandex.net"
+
+    policy.worker_src :self, :blob
+  end
+
+  # Nonce для importmap и inline-скриптов Rails
+  config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
+  config.content_security_policy_nonce_directives = %w(script-src)
+
+  # report_only: браузер присылает нарушения в консоль, но не блокирует.
+  # Снять этот флаг после проверки в production.
+  config.content_security_policy_report_only = true
+end

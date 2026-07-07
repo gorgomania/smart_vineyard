@@ -19,7 +19,7 @@ class VineyardsController < ApplicationController
   def show
     @map_center, @map_zoom = initialize_map
     @mode = "show"
-    @vineyard = Vineyard.active.find_by(id: params[:id])
+    @vineyard = policy_scope(Vineyard.active).find_by(id: params[:id])
     return not_found if @vineyard.nil?
     authorize @vineyard
     if params[:bushes_vision].present? && params[:bushes_vision] == "true"
@@ -134,7 +134,7 @@ class VineyardsController < ApplicationController
   end
 
   def destroy
-    vineyard = Vineyard.active.find_by(id: params[:id])
+    vineyard = Vineyard.active.find(params[:id])
     authorize vineyard
     vineyard.destroy
     redirect_to vineyards_path, notice: "Виноградник успешно удалён"

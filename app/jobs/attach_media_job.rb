@@ -4,6 +4,10 @@ class AttachMediaJob < ApplicationJob
   def perform(folder, signed_blob_ids)
     vineyard = folder.vineyard
 
+    bushes_by_coords = vineyard&.bushes&.joins(:row)
+      &.select("bushes.*, rows.row_number AS row_number")
+      &.each_with_object({}) { |b, h| h[[ b.row_number.to_i, b.bush_number ]] = b }
+
     signed_blob_ids.each do |signed_id|
       blob = ActiveStorage::Blob.find_signed(signed_id)
 
@@ -17,19 +21,11 @@ class AttachMediaJob < ApplicationJob
         end
 
         if vineyard.present?
-          # Пробуем определить куст по имени файла
           filename = blob.filename.to_s
           match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
 
           if match
-            row_number = match[1].to_i
-            bush_number = match[2].to_i
-
-            bush = vineyard.bushes
-              .joins(:row)
-              .where(rows: { row_number: row_number })
-              .find_by(bush_number: bush_number)
-
+            bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
             media_item.update(bush: bush) if bush
           end
         end

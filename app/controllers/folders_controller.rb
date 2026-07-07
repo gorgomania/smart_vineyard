@@ -38,16 +38,13 @@ class FoldersController < ApplicationController
         return
       end
     end
-    redirect_to folder_path(Folder.find_or_create_by(title: "Root", parent_id: nil, user_id: current_user.id).id)
+    redirect_to folder_path(root_folder.id)
   end
 
   def show
     per_page = 24
     id = params[:id]
-    @folder = Folder.find_by(id: id)
-    if @folder.nil?
-      @folder = Folder.find_or_create_by(title: "Root", parent_id: nil, user_id: current_user.id)
-    end
+    @folder = Folder.find_by(id: id) || root_folder
     authorize @folder
     if params[:page].blank?
       @page = 1
@@ -236,5 +233,11 @@ class FoldersController < ApplicationController
 
   def folder_params
     params.require(:folders).permit(:title, :parent_id)
+  end
+
+  def root_folder
+    Folder.find_or_create_by!(title: "Root", parent_id: nil, user_id: current_user.id)
+  rescue ActiveRecord::RecordNotUnique
+    Folder.find_by!(title: "Root", parent_id: nil, user_id: current_user.id)
   end
 end

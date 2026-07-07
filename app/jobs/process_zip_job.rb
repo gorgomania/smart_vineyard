@@ -104,6 +104,7 @@ class ProcessZipJob < ApplicationJob
     Rails.logger.error e.backtrace.first(5)
     raise e
   ensure
+    File.delete(zip_path) if zip_path && File.exist?(zip_path)
     FileUtils.rm_rf(temp_extract_dir)
   end
 end
