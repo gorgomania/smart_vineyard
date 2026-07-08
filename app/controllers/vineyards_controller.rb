@@ -280,7 +280,7 @@ class VineyardsController < ApplicationController
       0 => "#800000",  # Чёрная гниль
       1 => "#FF8C00",  # Эска
       2 => "#2ECC40",  # Здоровый
-      3 => "#D63384"  # Антракноз
+      3 => "#D63384"   # Антракноз
     } [class_id] || "#AAAAAA"
   end
 end
