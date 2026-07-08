@@ -26,22 +26,22 @@
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Всего кустов:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= @total_bushes %> </span>
+              <span class="font-bold text-[#69377c]"> <%= @stats_data[:total_bushes] %> </span>
             </div>
 
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Проанализировано:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= @analyzed_bushes %> </span>
+              <span class="font-bold text-[#69377c]"> <%= @stats_data[:analyzed_bushes] %> </span>
             </div>
 
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Процент анализа:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= number_to_percentage(@total_bushes.nonzero? ? (@analyzed_bushes.to_f / @total_bushes) * 100 : 0, precision: 1, format: "%n %", separator: ".") %> </span>
+              <span class="font-bold text-[#69377c]"> <%= number_to_percentage(@stats_data[:total_bushes].nonzero? ? (@stats_data[:analyzed_bushes].to_f / @stats_data[:total_bushes]) * 100 : 0, precision: 1, format: "%n %", separator: ".") %> </span>
             </div>
 
-            <% if @analyzed_bushes.nonzero? %>
+            <% if @stats_data[:analyzed_bushes].nonzero? %>
               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span>Здоровых кустов:</span>
 
@@ -51,7 +51,7 @@
               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span>Процент здоровых:</span>
 
-                <span class="font-bold text-[#69377c]"> <%= number_to_percentage((@stats_data[:healthy_count].to_f / @analyzed_bushes) * 100, precision: 1, format: "%n %", separator: ".") %> </span>
+                <span class="font-bold text-[#69377c]"> <%= number_to_percentage((@stats_data[:healthy_count].to_f / @stats_data[:analyzed_bushes]) * 100, precision: 1, format: "%n %", separator: ".") %> </span>
               </div>
             <% end %>
           <% end %>

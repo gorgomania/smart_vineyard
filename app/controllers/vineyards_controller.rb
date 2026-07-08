@@ -143,16 +143,12 @@ class VineyardsController < ApplicationController
   def stats
     @vineyard = Vineyard.active.find(params[:id])
     authorize @vineyard
-    @total_bushes = @vineyard.bushes.count
-    @analyzed_bushes = @vineyard.bushes.joins(:media_item).count
-    @stats_data = get_statistics(@vineyard, @total_bushes - @analyzed_bushes)
+    @stats_data = get_statistics(@vineyard)
   end
 
   def total_stats
     @vineyards = policy_scope(Vineyard).active
-    @total_bushes = @vineyards.joins(:bushes).count
-    @analyzed_bushes = @vineyards.joins(bushes: :media_item).count
-    @stats_data = get_statistics(@vineyards, @total_bushes - @analyzed_bushes)
+    @stats_data = get_statistics(@vineyards)
     @total = true
     render "stats"
   end
@@ -245,22 +241,22 @@ class VineyardsController < ApplicationController
     [ map_center.to_json, zoom.to_i ]
   end
 
-  def get_statistics(vineyard, no_data_count)
+  def get_statistics(vineyard)
     if vineyard.is_a?(ActiveRecord::Relation)
       disease_stats = vineyard
         .joins(bushes: :media_item)
         .where.not(media_items: { ai_class_id: nil })
         .group("media_items.ai_class_id")
         .count
+      total = vineyard.joins(:bushes).count
     else
       disease_stats = vineyard.bushes
-      .joins(:media_item)
-      .where.not(media_items: { ai_class_id: nil })
-      .group("media_items.ai_class_id")
-      .count
+        .joins(:media_item)
+        .where.not(media_items: { ai_class_id: nil })
+        .group("media_items.ai_class_id")
+        .count
+      total = vineyard.bushes.count
     end
-
-    healthy_count = disease_stats[2] || 0
 
     disease_names = {
       0 => "Чёрная гниль",
@@ -271,9 +267,11 @@ class VineyardsController < ApplicationController
 
     {
       labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
-      data: disease_stats.values + [ no_data_count ],
+      data: disease_stats.values + [ total - disease_stats.values.sum ],
       colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#AAAAAA" ],
-      healthy_count: healthy_count
+      total_bushes: total,
+      analyzed_bushes: disease_stats.values.sum,
+      healthy_count: disease_stats[2] || 0
     }
   end
 
@@ -282,7 +280,7 @@ class VineyardsController < ApplicationController
       0 => "#800000",  # Чёрная гниль
       1 => "#FF8C00",  # Эска
       2 => "#2ECC40",  # Здоровый
-      3 => "#D63384"   # Антракноз
+      3 => "#D63384"  # Антракноз
     } [class_id] || "#AAAAAA"
   end
 end
