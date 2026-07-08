@@ -75,7 +75,7 @@ RSpec.describe "Folders", type: :request do
 
     it "renders new with error on blank title" do
       post folders_path, params: { folders: { title: "", parent_id: root.id } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -92,7 +92,7 @@ RSpec.describe "Folders", type: :request do
 
     it "renders edit on blank title" do
       patch folder_path(child), params: { folders: { title: "" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
