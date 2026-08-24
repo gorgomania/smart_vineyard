@@ -87,7 +87,7 @@ Solid Queue starts automatically via `bin/dev`. Queues:
 
 ## AI Classification
 
-> Training, conversion, and testing scripts, dataset info, and trained models: **[grape-disease-classifier](https://gitverse.ru/gorgomania/grape-disease-classifier)**
+> Training, conversion, and testing scripts, dataset info, and trained models: **[grape_disease_classifier](https://github.com/gorgomania/grape_disease_classifier)**
 
 The model (`grape_model.onnx`) is based on the **EfficientNet-B0** architecture, trained on a grape leaf disease dataset. Runs locally via ONNX Runtime with no external API calls.
 
