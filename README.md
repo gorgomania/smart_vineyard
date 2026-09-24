@@ -2,6 +2,20 @@
 
 A web application for vineyard management with AI-based vine health classification.
 
+## Screenshots
+
+| Login | Vineyard Map |
+|-------|-------------|
+| ![Login](docs/screenshots/login.png) | ![Vineyard Map](docs/screenshots/vineyard_map.png) |
+
+| Media Explorer | Classification Result |
+|---------------|----------------------|
+| ![Media Explorer](docs/screenshots/media_explorer.png) | ![Classification Result](docs/screenshots/classification_result.png) |
+
+| Health Heatmap | Statistics |
+|---------------|------------|
+| ![Health Heatmap](docs/screenshots/heatmap.png) | ![Statistics](docs/screenshots/statistics.png) |
+
 ## Features
 
 - **Vineyard map** — add and edit vineyards via an interactive map (Yandex Maps)
