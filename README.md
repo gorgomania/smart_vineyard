@@ -4,21 +4,21 @@ A web application for vineyard management with AI-based vine health classificati
 
 ## Screenshots
 
-| Login | Vineyard Map |
-|-------|-------------|
-| ![Login](docs/screenshots/login.png) | ![Vineyard Map](docs/screenshots/vineyard_map.png) |
+| Login | Create Vineyard |
+|-------|----------------|
+| ![Login](docs/screenshots/login.png) | ![Create Vineyard](docs/screenshots/create_vineyard.png) |
 
-| Media Explorer | Classification Result |
-|---------------|----------------------|
-| ![Media Explorer](docs/screenshots/media_explorer.png) | ![Classification Result](docs/screenshots/classification_result.png) |
+| Vineyard Map | Health Heatmap |
+|-------------|---------------|
+| ![Vineyard Map](docs/screenshots/vineyard_map.png) | ![Health Heatmap](docs/screenshots/heatmap.png) |
 
-| Health Heatmap | Statistics |
-|---------------|------------|
-| ![Health Heatmap](docs/screenshots/heatmap.png) | ![Statistics](docs/screenshots/statistics.png) |
+| File Upload | Media Explorer |
+|------------|---------------|
+| ![File Upload](docs/screenshots/upload_file.png) | ![Media Explorer](docs/screenshots/media_explorer.png) |
 
-| Create Vineyard | File Upload |
-|----------------|-------------|
-| ![Create Vineyard](docs/screenshots/create_vineyard.png) | ![File Upload](docs/screenshots/upload_file.png) |
+| Classification Result | Statistics |
+|----------------------|------------|
+| ![Classification Result](docs/screenshots/classification_result.png) | ![Statistics](docs/screenshots/statistics.png) |
 
 ## Features
 
