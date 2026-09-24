@@ -16,6 +16,10 @@ A web application for vineyard management with AI-based vine health classificati
 |---------------|------------|
 | ![Health Heatmap](docs/screenshots/heatmap.png) | ![Statistics](docs/screenshots/statistics.png) |
 
+| Create Vineyard | File Upload |
+|----------------|-------------|
+| ![Create Vineyard](docs/screenshots/create_vineyard.png) | ![File Upload](docs/screenshots/upload_file.png) |
+
 ## Features
 
 - **Vineyard map** — add and edit vineyards via an interactive map (Yandex Maps)
