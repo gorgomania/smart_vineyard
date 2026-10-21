@@ -97,7 +97,7 @@ bin/dev
 bundle exec rspec
 ```
 
-Stack: RSpec + FactoryBot, 143 examples. Tests are split into three groups.
+Stack: RSpec + FactoryBot + Shoulda Matchers + Faker, 143 examples. Tests are split into three groups.
 
 **Models** (`spec/models/`) — validations, associations, scopes, instance methods:
 - `Vineyard` — area limits, soft-delete via `#destroy`, `area_hectares=` strips the "га" suffix
