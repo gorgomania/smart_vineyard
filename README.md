@@ -97,12 +97,13 @@ bin/dev
 bundle exec rspec
 ```
 
-Stack: RSpec + FactoryBot. Tests are split into three groups.
+Stack: RSpec + FactoryBot, 143 examples. Tests are split into three groups.
 
 **Models** (`spec/models/`) — validations, associations, scopes, instance methods:
 - `Vineyard` — area limits, soft-delete via `#destroy`, `area_hectares=` strips the "га" suffix
 - `Folder` — uniqueness per user/parent, `#title_path` / `#id_path` for nested folders
-- `Row`, `Bush`, `MediaItem` — associations and validations
+- `Row`, `Bush` — associations, validations, `#display_name`
+- `MediaItem` — associations, validations, `#row_number`, `#vineyard_name`, `#normalize_filename!`, `#classify!`
 
 **Jobs** (`spec/jobs/`) — unit tests for all background jobs:
 - `GenerateRowsAndBushesJob` — creates correct row/bush counts from array or JSON string input
