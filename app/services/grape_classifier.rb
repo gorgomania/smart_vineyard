@@ -2,8 +2,6 @@
 require "onnxruntime"
 require "vips"
 require "json"
-require "numo/narray"
-
 class GrapeClassifier
   IMAGE_SIZE = 224
   MEAN = [ 0.485, 0.456, 0.406 ]
@@ -106,30 +104,17 @@ class GrapeClassifier
     # Получаем пиксели
     pixels = cropped.to_a
 
-    # Нормализация
-    tensor_data = []
-
-    3.times do |c|
-      channel = []
-
-      IMAGE_SIZE.times do |h|
-        IMAGE_SIZE.times do |w|
-          if pixels[h][w].nil? || pixels[h][w][c].nil?
-            normalized = (128.0 / 255.0 - MEAN[c]) / STD[c]
-          else
-            normalized = (pixels[h][w][c].to_f / 255.0 - MEAN[c]) / STD[c]
-          end
-          channel << normalized
+    # Нормализация — строим вложенный массив формы [1, 3, H, W]
+    channels = 3.times.map do |c|
+      IMAGE_SIZE.times.map do |h|
+        IMAGE_SIZE.times.map do |w|
+          val = pixels[h]&.[](w)&.[](c)&.to_f || 128.0
+          (val / 255.0 - MEAN[c]) / STD[c]
         end
       end
-
-      tensor_data << channel
     end
 
-    # Создаем тензор
-    tensor = Numo::SFloat.cast(tensor_data).reshape(1, 3, IMAGE_SIZE, IMAGE_SIZE)
-
-    tensor
+    [channels]
   end
 
   def softmax(x)

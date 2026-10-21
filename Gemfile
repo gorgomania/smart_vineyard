@@ -44,7 +44,6 @@ gem "thruster", require: false
 # Gemfile
 gem "onnxruntime"  # основной гем для ONNX
 gem "image_processing"  # для удобной работы с изображениями
-gem "numo-narray"  # для эффективной работы с тензорами
 gem "ruby-vips"  # для обработки изображений через libvips
 
 group :development, :test do
