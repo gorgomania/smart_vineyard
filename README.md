@@ -117,7 +117,7 @@ Stack: RSpec + FactoryBot + Shoulda Matchers + Faker, 143 examples. Tests are sp
 **Requests** (`spec/requests/`) — HTTP-level integration tests covering auth, authorization, and happy paths:
 - `Vineyards` — index/show/create/delete; 404 for other users' vineyards
 - `Folders` — index with search, show, access denied for other users
-- `MediaItems` — show, upload (enqueues `AttachMediaJob`), delete
+- `MediaItems` — show, upload (enqueues `AttachMediaJob`), delete, classify, attach/detach bush
 - `Rows` — JSON endpoint
 - `Registrations` — Devise sign-up flow
 
