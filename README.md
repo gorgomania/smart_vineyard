@@ -45,7 +45,7 @@ A web application for vineyard management with AI-based vine health classificati
 - PostgreSQL with PostGIS extension
 - FFmpeg (for video previews)
 - libvips (for image processing)
-- Redis
+- Redis (production only — ActionCable adapter)
 
 ## Configuration
 
@@ -96,6 +96,29 @@ bin/dev
 ```bash
 bundle exec rspec
 ```
+
+Stack: RSpec + FactoryBot. Tests are split into three groups.
+
+**Models** (`spec/models/`) — validations, associations, scopes, instance methods:
+- `Vineyard` — area limits, soft-delete via `#destroy`, `area_hectares=` strips the "га" suffix
+- `Folder` — uniqueness per user/parent, `#title_path` / `#id_path` for nested folders
+- `Row`, `Bush`, `MediaItem` — associations and validations
+
+**Jobs** (`spec/jobs/`) — unit tests for all background jobs:
+- `GenerateRowsAndBushesJob` — creates correct row/bush counts from array or JSON string input
+- `RegenerateRowsAndBushesJob` — drops existing rows/bushes and recreates them
+- `ProcessZipJob` — extracts images from ZIP, skips unsupported formats, cleans up on error
+- `ClassifyMediaJob` — calls `classify!` on media item, handles missing record/attachment gracefully
+- `AttachMediaJob`, `DistributeMediaToBushesJob`, `DistributeFolderToBushesJob` — filename-based bush assignment
+- `GenerateImagePreviewJob`, `GenerateVideoPreviewJob`, `NormalizeMediaFilenamesJob`
+- `DestroyVineyardJob`, `CleanupOrphanedActiveStorageRecordsJob`
+
+**Requests** (`spec/requests/`) — HTTP-level integration tests covering auth, authorization, and happy paths:
+- `Vineyards` — index/show/create/delete; 404 for other users' vineyards
+- `Folders` — index with search, show, access denied for other users
+- `MediaItems` — show, upload (enqueues `AttachMediaJob`), delete
+- `Rows` — JSON endpoint
+- `Registrations` — Devise sign-up flow
 
 ## Background Jobs
 
