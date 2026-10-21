@@ -29,7 +29,7 @@ Rails.application.configure do
 
   # Nonce для importmap и inline-скриптов Rails
   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
-  config.content_security_policy_nonce_directives = %w(script-src)
+  config.content_security_policy_nonce_directives = %w[script-src]
 
   # report_only: браузер присылает нарушения в консоль, но не блокирует.
   # Снять этот флаг после проверки в production.

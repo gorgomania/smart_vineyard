@@ -22,7 +22,7 @@ RSpec.describe ProcessZipJob, type: :job do
           instance_double(ActiveStorage::Blob, id: 1, content_type: "image/jpeg")
         )
         allow(MediaItem).to receive(:insert_all!).and_return(
-          [{ "id" => 1 }]
+          [ { "id" => 1 } ]
         )
         allow(ActiveStorage::Attachment).to receive(:insert_all!)
 

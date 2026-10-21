@@ -114,7 +114,7 @@ class GrapeClassifier
       end
     end
 
-    [channels]
+    [ channels ]
   end
 
   def softmax(x)
