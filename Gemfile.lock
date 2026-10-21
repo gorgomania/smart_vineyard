@@ -214,15 +214,15 @@ GEM
       racc (~> 1.4)
     nokogiri (1.19.4-x86_64-linux-musl)
       racc (~> 1.4)
-    onnxruntime (0.11.1)
+    onnxruntime (0.11.8)
       ffi
-    onnxruntime (0.11.1-aarch64-linux)
+    onnxruntime (0.11.8-aarch64-linux)
       ffi
-    onnxruntime (0.11.1-arm64-darwin)
+    onnxruntime (0.11.8-arm64-darwin)
       ffi
-    onnxruntime (0.11.1-x86_64-darwin)
+    onnxruntime (0.11.8-x86_64-darwin)
       ffi
-    onnxruntime (0.11.1-x86_64-linux)
+    onnxruntime (0.11.8-x86_64-linux)
       ffi
     orm_adapter (0.5.0)
     ostruct (0.6.3)
@@ -564,11 +564,11 @@ CHECKSUMS
   nokogiri (1.19.4-x86_64-darwin) sha256=7fd17057d3e1f00e9954a74b3cd76595d3d4a5ef233b7ed9599047c204f70551
   nokogiri (1.19.4-x86_64-linux-gnu) sha256=379fae440b28915e3f19d752ce2dcf8465ed2b2fbefd2a7ca0dd497bc981a06a
   nokogiri (1.19.4-x86_64-linux-musl) sha256=17dfb7c1fa194ae02fbf7c51a7afc8d278045ab3fdacfd86f91d02d7b274470b
-  onnxruntime (0.11.1) sha256=0dcbee01fea677a1d6989f193974fbd9bff48850d2880ba52f1e4f0707367a31
-  onnxruntime (0.11.1-aarch64-linux) sha256=c4c6ac2b5758325bb9d51b941c06a36ab0d898347237b178181637c31350b4ed
-  onnxruntime (0.11.1-arm64-darwin) sha256=6d205e1adfcb77f0330b46ea9dcd3da9199034408dd5f58d56afca8e70fb686c
-  onnxruntime (0.11.1-x86_64-darwin) sha256=acdcbfbc937273fb27fd98587fde18199bb03dcd525f2da5324da42c97631eb9
-  onnxruntime (0.11.1-x86_64-linux) sha256=90a47c9ab70103cdd4dd2b99b5179dfed909b44ceb77a1cf076e9dcff925079c
+  onnxruntime (0.11.8) sha256=08ab54d37d396162eb0c1a20a41f18381d9b6fa182aa29d931b6e59626c22f56
+  onnxruntime (0.11.8-aarch64-linux) sha256=da8e7ee47eda576f7b873cda80ddeaadc340865a8916f6387f9be59a51b46e7d
+  onnxruntime (0.11.8-arm64-darwin) sha256=9d6425bc44b8263ce51783ccaafb2c6d7cd5d0dad52586807866e02dd3946c19
+  onnxruntime (0.11.8-x86_64-darwin) sha256=cee7ecdb065a7ddc6f5d87ff9d40cefcdb6ee5ba9d4d8500dd5ea88d84b843d8
+  onnxruntime (0.11.8-x86_64-linux) sha256=b75d5df9159babfa09c13b02bd0b46e775829f77fe2e6e68ca47cce4a0832363
   orm_adapter (0.5.0) sha256=aa5d0be5d540cbb46d3a93e88061f4ece6a25f6e97d6a47122beb84fe595e9b9
   ostruct (0.6.3) sha256=95a2ed4a4bd1d190784e666b47b2d3f078e4a9efda2fccf18f84ddc6538ed912
   parallel (1.27.0) sha256=4ac151e1806b755fb4e2dc2332cbf0e54f2e24ba821ff2d3dcf86bf6dc4ae130
