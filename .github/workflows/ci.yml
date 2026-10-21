@@ -53,3 +53,46 @@ jobs:
       - name: Lint code for consistent style
         run: bin/rubocop -f github
 
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: rails
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: smart_vineyard_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      RAILS_ENV: test
+      DB_USER: rails
+      DB_PASSWORD: password
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: smart_vineyard_test
+      DB_NAME_QUEUE: smart_vineyard_test_queue
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      - name: Set up database
+        run: bin/rails db:test:prepare
+
+      - name: Run tests
+        run: bundle exec rspec
+
