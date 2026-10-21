@@ -31,13 +31,13 @@ A web application for vineyard management with AI-based vine health classificati
 
 ## Stack
 
-- **Ruby on Rails 8** + PostgreSQL + PostGIS
+- **Ruby on Rails 8.1** + PostgreSQL + PostGIS
 - **Devise** — authentication
 - **Pundit** — authorization
 - **Solid Queue / Solid Cache** — queues, cache
 - **Action Cable** — WebSocket (Redis in production)
 - **ActiveStorage** — media file storage
-- **ONNX Runtime** + Numo::NArray — AI model inference
+- **ONNX Runtime** — AI model inference
 - **Hotwire** (Turbo + Stimulus) + TailwindCSS 4
 
 ## Requirements
