@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_06_174259) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -18,7 +18,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
   enable_extension "postgis"
   enable_extension "topology.postgis_topology"
 
-  create_table "active_storage_attachments", force: :cascade do |t|
+  create_table "public.active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
     t.bigint "record_id", null: false
@@ -28,7 +28,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
-  create_table "active_storage_blobs", force: :cascade do |t|
+  create_table "public.active_storage_blobs", force: :cascade do |t|
     t.string "key", null: false
     t.string "filename", null: false
     t.string "content_type"
@@ -41,13 +41,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
-  create_table "active_storage_variant_records", force: :cascade do |t|
+  create_table "public.active_storage_variant_records", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
-  create_table "bushes", force: :cascade do |t|
+  create_table "public.bushes", force: :cascade do |t|
     t.bigint "row_id", null: false
     t.bigint "vineyard_id", null: false
     t.integer "bush_number", null: false
@@ -59,7 +59,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["vineyard_id"], name: "index_bushes_on_vineyard_id"
   end
 
-  create_table "folders", force: :cascade do |t|
+  create_table "public.folders", force: :cascade do |t|
     t.string "title", limit: 15, null: false
     t.bigint "parent_id"
     t.bigint "user_id", null: false
@@ -74,7 +74,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["vineyard_id"], name: "index_folders_on_vineyard_id"
   end
 
-  create_table "media_items", force: :cascade do |t|
+  create_table "public.media_items", force: :cascade do |t|
     t.bigint "folder_id", null: false
     t.bigint "bush_id"
     t.integer "ai_class_id"
@@ -88,7 +88,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end
 
-  create_table "rows", force: :cascade do |t|
+  create_table "public.rows", force: :cascade do |t|
     t.bigint "vineyard_id", null: false
     t.integer "row_number", null: false
     t.datetime "created_at", null: false
@@ -97,7 +97,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["vineyard_id"], name: "index_rows_on_vineyard_id"
   end
 
-  create_table "users", force: :cascade do |t|
+  create_table "public.users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "reset_password_token"
@@ -114,7 +114,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  create_table "vineyards", force: :cascade do |t|
+  create_table "public.vineyards", force: :cascade do |t|
     t.string "name", null: false
     t.geography "polygon", limit: {:srid=>4326, :type=>"st_polygon", :geographic=>true}, null: false
     t.string "grape_variety"
@@ -141,15 +141,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_174259) do
     t.check_constraint "total_rows >= 0", name: "check_total_rows_positive"
   end
 
-  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
-  add_foreign_key "bushes", "rows", on_delete: :cascade
-  add_foreign_key "bushes", "vineyards", on_delete: :cascade
-  add_foreign_key "folders", "folders", column: "parent_id", on_delete: :cascade
-  add_foreign_key "folders", "users", on_delete: :cascade
-  add_foreign_key "folders", "vineyards", on_delete: :nullify
-  add_foreign_key "media_items", "bushes", on_delete: :nullify
-  add_foreign_key "media_items", "folders", on_delete: :cascade
-  add_foreign_key "rows", "vineyards", on_delete: :cascade
-  add_foreign_key "vineyards", "users", on_delete: :cascade
+  add_foreign_key "public.active_storage_attachments", "public.active_storage_blobs", column: "blob_id"
+  add_foreign_key "public.active_storage_variant_records", "public.active_storage_blobs", column: "blob_id"
+  add_foreign_key "public.bushes", "public.rows", on_delete: :cascade
+  add_foreign_key "public.bushes", "public.vineyards", on_delete: :cascade
+  add_foreign_key "public.folders", "public.folders", column: "parent_id", on_delete: :cascade
+  add_foreign_key "public.folders", "public.users", on_delete: :cascade
+  add_foreign_key "public.folders", "public.vineyards", on_delete: :nullify
+  add_foreign_key "public.media_items", "public.bushes", on_delete: :nullify
+  add_foreign_key "public.media_items", "public.folders", on_delete: :cascade
+  add_foreign_key "public.rows", "public.vineyards", on_delete: :cascade
+  add_foreign_key "public.vineyards", "public.users", on_delete: :cascade
+
 end
