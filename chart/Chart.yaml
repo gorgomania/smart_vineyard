@@ -1,0 +1,6 @@
+apiVersion: v2
+name: smart-vineyard
+description: Smart Vineyard (Rails 8) with PostGIS, Redis and Solid Queue worker
+type: application
+version: 0.1.0
+appVersion: "1.0"
