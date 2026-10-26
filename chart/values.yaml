@@ -1,0 +1,38 @@
+host: smartvineyard.duckdns.org
+
+image:
+  repository: ghcr.io/gorgomania/smart_vineyard
+  tag: latest            # CI passes --set image.tag=<commit sha>
+  pullPolicy: IfNotPresent
+imagePullSecrets: []     # e.g. [{name: ghcr-pull}] if the package is private
+
+# Created by hand once: kubectl -n smart-vineyard create secret generic smart-vineyard-secrets ...
+existingSecret: smart-vineyard-secrets
+
+ingress:
+  className: traefik
+  clusterIssuer: letsencrypt-prod
+  httpsRedirect: true
+
+web:
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { cpu: "2", memory: 4Gi }
+
+worker:
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { cpu: "2", memory: 3Gi }
+
+storage:
+  size: 50Gi             # ActiveStorage uploads (photos, videos)
+
+postgres:
+  image: imresamu/postgis:16-3.5   # postgis/postgis has no arm64 build
+  size: 20Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 2Gi }
+
+redis:
+  image: redis:7-alpine
