@@ -71,7 +71,6 @@ jobs:
         env:
           POSTGRES_USER: rails
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: smart_vineyard_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
