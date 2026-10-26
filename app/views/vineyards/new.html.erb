@@ -21,8 +21,8 @@
         <%= f.hidden_field :reference_vertex_is_first, data: { vineyard_form_target: "referenceVertexIsFirst" } %>
         <%= f.hidden_field :bushes_per_row, value: "[]" %>
 
-        <% if @errors.present? && @errors.any? %>
-          <% @errors.each do |msg| %>
+        <% if @vineyard.errors.any? %>
+          <% @vineyard.errors.full_messages.each do |msg| %>
             <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
                 <%= msg %>
             </div>

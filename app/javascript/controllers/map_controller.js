@@ -50,7 +50,8 @@ export default class extends Controller {
     document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
     document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
-    
+    document.removeEventListener('turbo:submit-end', this.boundTurboSubmitEnd)
+
     // Уничтожаем карту
     if (this.map) {
       this.map.destroy()
@@ -154,7 +155,7 @@ export default class extends Controller {
           strokeWidth: 2,
           strokeOpacity: 0.8
         })
-      
+
         this.map.geoObjects.add(this.rowsCollection)
         // Слушаем изменения геометрии
         this.currentPolygon.geometry.events.add('change', () => {
@@ -164,6 +165,13 @@ export default class extends Controller {
         })
         this.showPolygon()
       }
+
+      this.boundTurboSubmitEnd = (event) => {
+        if (this.mode === 'new' && event.detail.success) {
+          this.clearDraft()
+        }
+      }
+      document.addEventListener('turbo:submit-end', this.boundTurboSubmitEnd)
 
       if (this.boundNextSide) {
         document.removeEventListener('vineyard:nextSide', this.boundNextSide)
@@ -176,24 +184,28 @@ export default class extends Controller {
       this.boundNextSide = () => {
         if (!this.currentPolygon?.geometry) return
         this.switchToNextSide()
+        this.saveDraft()
       }
-      
+
       this.boundPrevSide = () => {
         if (!this.currentPolygon?.geometry) return
         this.switchToPreviousSide()
+        this.saveDraft()
       }
-      
+
       this.boundFirstBush = () => {
         if (!this.currentPolygon?.geometry) return
         this.referenceVertexIsFirst = !this.referenceVertexIsFirst
         this.regenerateRows()
+        this.saveDraft()
       }
-      
+
       this.boundSpacing = (event) => {
         if (!this.currentPolygon?.geometry) return
         this.rowSpacing = event.detail.rowSpacing
         this.bushSpacing = event.detail.bushSpacing
         this.regenerateRows()
+        this.saveDraft()
       }
 
       // Добавляем обработчики
@@ -240,6 +252,36 @@ export default class extends Controller {
       detail: { coordinates: coordinates }
     })
     document.dispatchEvent(event)
+    this.saveDraft()
+  }
+
+  saveDraft() {
+    if (this.mode !== 'new') return
+    const coords = this.currentPolygon?.geometry?.getCoordinates()?.[0]
+    if (!coords || coords.length < 3) return
+    localStorage.setItem('vineyard_new_draft', JSON.stringify({
+      coordinates: coords,
+      rowSpacing: this.rowSpacing,
+      bushSpacing: this.bushSpacing,
+      referenceSideIndex: this.referenceSideIndex,
+      referenceVertexIsFirst: this.referenceVertexIsFirst
+    }))
+  }
+
+  clearDraft() {
+    localStorage.removeItem('vineyard_new_draft')
+  }
+
+  setDefaultRectangle() {
+    const size = this.getRectangleSize()
+    const center = this.map.getCenter()
+    this.currentPolygon.geometry.setCoordinates([[
+      [center[0] + size, center[1] - size],
+      [center[0] + size, center[1] + size],
+      [center[0] - size, center[1] + size],
+      [center[0] - size, center[1] - size],
+      [center[0] + size, center[1] - size]
+    ]])
   }
 
   switchToPreviousSide() {
@@ -338,18 +380,30 @@ export default class extends Controller {
         }))
       }
       else {
-        // Обновляем координаты под текущий центр карты
-        const size = this.getRectangleSize()
-        const center = this.map.getCenter()
-        const Coords = [[
-          [center[0] + size, center[1] - size],
-          [center[0] + size, center[1] + size],
-          [center[0] - size, center[1] + size],
-          [center[0] - size, center[1] - size],
-          [center[0] + size, center[1] - size]
-        ]]
-
-        this.currentPolygon.geometry.setCoordinates(Coords)
+        const draftStr = this.mode === 'new' ? localStorage.getItem('vineyard_new_draft') : null
+        if (draftStr) {
+          try {
+            const draft = JSON.parse(draftStr)
+            this.rowSpacing = draft.rowSpacing ?? this.rowSpacing
+            this.bushSpacing = draft.bushSpacing ?? this.bushSpacing
+            this.referenceSideIndex = draft.referenceSideIndex ?? this.referenceSideIndex
+            this.referenceVertexIsFirst = draft.referenceVertexIsFirst ?? this.referenceVertexIsFirst
+            this.currentPolygon.geometry.setCoordinates([draft.coordinates])
+            const bounds = this.currentPolygon.geometry.getBounds()
+            this.map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 30 })
+            document.dispatchEvent(new CustomEvent('vineyard:initFormFromExistingPolygon', {
+              detail: {
+                rowSpacing: this.rowSpacing,
+                bushSpacing: this.bushSpacing,
+                referenceVertexIsFirst: this.referenceVertexIsFirst
+              }
+            }))
+          } catch(e) {
+            this.setDefaultRectangle()
+          }
+        } else {
+          this.setDefaultRectangle()
+        }
       }
       this.currentPolygon.editor.startEditing()
     }

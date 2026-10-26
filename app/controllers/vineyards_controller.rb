@@ -37,99 +37,37 @@ class VineyardsController < ApplicationController
   end
 
   def new
-    @map_center, @map_zoom = initialize_map
-    @mode = "new"
-
-    @vineyard = current_user.vineyards.new(session.delete(:vineyard_params) || {})
-    if @vineyard.polygon.present?
-    @vineyard_data = {
-      polygon: @vineyard.polygon.to_s,
-      row_spacing: @vineyard.row_spacing.to_f,
-      bush_spacing: @vineyard.bush_spacing.to_f,
-      reference_side_index: @vineyard.reference_side_index,
-      reference_vertex_is_first: @vineyard.reference_vertex_is_first
-    }
-    else
-      @vineyard_data = nil
-    end
-
-    @vineyards = policy_scope(Vineyard).active.for_index
-    @vineyards_data = @vineyards.map do |v|
-      {
-        id: v.id,
-        name: v.name,
-        polygon: v.polygon.to_s,
-        total_rows: v.total_rows,
-        total_bushes: v.total_bushes,
-        area: v.area_hectares.to_f,
-        grape_variety: v.grape_variety
-      }
-    end
-
-    @errors = session.delete(:vineyard_errors)
+    @vineyard = current_user.vineyards.new
+    setup_new_form_data
   end
 
   def create
-    # Удаляем временные поля вершин из params перед созданием
-    vineyard_params = vineyard_params_permit
-    @vineyard = current_user.vineyards.build(vineyard_params)
+    @vineyard = current_user.vineyards.build(vineyard_params_permit)
     if @vineyard.save
-      bushes_per_row = params[:vineyard][:bushes_per_row]
-      GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
+      GenerateRowsAndBushesJob.perform_later(@vineyard.id, params[:vineyard][:bushes_per_row])
       redirect_to @vineyard, notice: "Виноградник создан"
     else
-      session[:vineyard_params] = vineyard_params.to_h
-      session[:vineyard_errors] = @vineyard.errors.full_messages
-      redirect_to new_vineyard_path
+      setup_new_form_data
+      render :new, status: :unprocessable_entity
     end
   end
 
   def edit
-    @map_center, @map_zoom = initialize_map
-    @mode = "edit"
-
     @vineyard = Vineyard.active.find(params[:id])
-    # Если есть параметры в сессии (после ошибки валидации), используем их
-    if session[:vineyard_params].present?
-      @vineyard.assign_attributes(session[:vineyard_params])
-      session.delete(:vineyard_params)
-    end
-    @errors = session.delete(:vineyard_errors)
     authorize @vineyard
-    @vineyard_data = {
-      polygon: @vineyard.polygon.to_s,
-      row_spacing: @vineyard.row_spacing.to_f,
-      bush_spacing: @vineyard.bush_spacing.to_f,
-      reference_side_index: @vineyard.reference_side_index,
-      reference_vertex_is_first: @vineyard.reference_vertex_is_first
-    }
-
-    @vineyards = policy_scope(Vineyard).active.for_index.where.not(id: params[:id])
-    @vineyards_data = @vineyards.map do |v|
-      {
-        id: v.id,
-        name: v.name,
-        polygon: v.polygon.to_s,
-        total_rows: v.total_rows,
-        total_bushes: v.total_bushes,
-        area: v.area_hectares.to_f,
-        grape_variety: v.grape_variety
-      }
-    end
+    setup_edit_form_data
   end
 
   def update
     @vineyard = Vineyard.active.find(params[:id])
     authorize @vineyard
-    vineyard_params = vineyard_params_permit
 
-    if @vineyard.update(vineyard_params)
+    if @vineyard.update(vineyard_params_permit)
       RegenerateRowsAndBushesJob.perform_later(@vineyard.id, params[:vineyard][:bushes_per_row])
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
-      session[:vineyard_params] = vineyard_params.to_h
-      session[:vineyard_errors] = @vineyard.errors.full_messages
-      redirect_to edit_vineyard_path(id: params[:id])
+      setup_edit_form_data
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -182,6 +120,48 @@ class VineyardsController < ApplicationController
   end
 
   private
+
+  def setup_new_form_data
+    @map_center, @map_zoom = initialize_map
+    @mode = "new"
+    @vineyard_data = @vineyard.polygon.present? ? {
+      polygon: @vineyard.polygon.to_s,
+      row_spacing: @vineyard.row_spacing.to_f,
+      bush_spacing: @vineyard.bush_spacing.to_f,
+      reference_side_index: @vineyard.reference_side_index,
+      reference_vertex_is_first: @vineyard.reference_vertex_is_first
+    } : nil
+    @vineyards = policy_scope(Vineyard).active.for_index
+    @vineyards_data = vineyard_map_data(@vineyards)
+  end
+
+  def setup_edit_form_data
+    @map_center, @map_zoom = initialize_map
+    @mode = "edit"
+    @vineyard_data = {
+      polygon: @vineyard.polygon.to_s,
+      row_spacing: @vineyard.row_spacing.to_f,
+      bush_spacing: @vineyard.bush_spacing.to_f,
+      reference_side_index: @vineyard.reference_side_index,
+      reference_vertex_is_first: @vineyard.reference_vertex_is_first
+    }
+    @vineyards = policy_scope(Vineyard).active.for_index.where.not(id: @vineyard.id)
+    @vineyards_data = vineyard_map_data(@vineyards)
+  end
+
+  def vineyard_map_data(vineyards)
+    vineyards.map do |v|
+      {
+        id: v.id,
+        name: v.name,
+        polygon: v.polygon.to_s,
+        total_rows: v.total_rows,
+        total_bushes: v.total_bushes,
+        area: v.area_hectares.to_f,
+        grape_variety: v.grape_variety
+      }
+    end
+  end
 
   def vineyard_params_permit
     vertices = []
