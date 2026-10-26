@@ -105,7 +105,7 @@ jobs:
       - name: Set up databases
         run: |
           bin/rails db:create
-          bin/rails db:schema:load
+          bin/rails db:migrate
           bin/rails db:migrate:queue
           bin/rails db:schema:load:cable
 
