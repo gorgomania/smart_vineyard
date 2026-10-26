@@ -88,8 +88,8 @@ RSpec.describe "MediaItems", type: :request do
   describe "POST /media_items/:id/classify" do
     before { sign_in user }
 
-    it "calls classify! and redirects" do
-      expect_any_instance_of(MediaItem).to receive(:classify!)
+    it "enqueues ClassifyMediaJob and redirects" do
+      expect(ClassifyMediaJob).to receive(:perform_later).with(media_item.id)
       post classify_media_item_path(media_item)
       expect(response).to redirect_to(media_item_path(media_item))
     end
