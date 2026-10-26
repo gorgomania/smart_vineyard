@@ -111,11 +111,10 @@ class MediaItemsController < ApplicationController
   end
 
   def classify
-    id = params[:id]
-    media_item = MediaItem.find(id)
+    media_item = MediaItem.find(params[:id])
     authorize media_item
-    media_item.classify!
-    redirect_to media_item_path(id)
+    ClassifyMediaJob.perform_later(media_item.id)
+    redirect_to media_item_path(media_item), notice: "Классификация запущена"
   end
 
   def attach
