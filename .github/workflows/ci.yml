@@ -88,13 +88,14 @@ jobs:
       DB_PORT: 5432
       DB_NAME: smart_vineyard_test
       DB_NAME_QUEUE: smart_vineyard_test_queue
+      DB_NAME_CABLE: smart_vineyard_test_cable
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
 
       - name: Install system dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y libvips
+        run: sudo apt-get update -qq && sudo apt-get install -y libvips-tools ffmpeg
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -102,8 +103,12 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
-      - name: Set up database
-        run: bin/rails db:test:prepare
+      - name: Set up databases
+        run: |
+          bin/rails db:create
+          bin/rails db:schema:load
+          bin/rails db:migrate:queue
+          bin/rails db:schema:load:cable
 
       - name: Run tests
         run: bundle exec rspec

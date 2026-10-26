@@ -1,8 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "CI" ]
     branches: [ main ]
+    types: [ completed ]
   workflow_dispatch:
 
 permissions:
@@ -13,54 +15,8 @@ env:
   IMAGE: ghcr.io/gorgomania/smart_vineyard
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgis/postgis:16-3.5
-        env:
-          POSTGRES_USER: gorgomania
-          POSTGRES_PASSWORD: password
-        ports: [ "5432:5432" ]
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      RAILS_ENV: test
-      DB_USER: gorgomania
-      DB_PASSWORD: password
-      DB_HOST: localhost
-      DB_PORT: 5432
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Install system dependencies
-        run: sudo apt-get install -y libvips-tools ffmpeg
-
-      - name: Set up databases
-        run: |
-          bin/rails db:create
-          bin/rails db:schema:load
-          bin/rails db:migrate:queue
-          bin/rails db:schema:load:cable
-
-      - name: Run tests
-        run: bundle exec rspec
-
   build:
-    needs: test
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     # Native arm64 runner: the Oracle Ampere A1 server is arm64
     runs-on: ubuntu-24.04-arm
     steps:
