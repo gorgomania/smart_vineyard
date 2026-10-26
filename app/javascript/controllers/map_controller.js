@@ -49,6 +49,7 @@ export default class extends Controller {
     document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
     document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+    document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
     
     // Уничтожаем карту
     if (this.map) {
@@ -202,11 +203,12 @@ export default class extends Controller {
       document.addEventListener('vineyard:spacingChanged', this.boundSpacing)
 
       // Подписываемся на события от формы
-      document.addEventListener('form:polygonUpdated', (event) => {
+      this.boundPolygonUpdated = (event) => {
         if (this.currentPolygon) {
           this.currentPolygon.geometry.setCoordinates(event.detail.coordinates)
         }
-      })
+      }
+      document.addEventListener('form:polygonUpdated', this.boundPolygonUpdated)
 
       this.map.events.add('boundschange', () => {
         this.dispatchMapUpdated()
