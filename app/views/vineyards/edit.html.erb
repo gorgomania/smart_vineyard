@@ -29,20 +29,9 @@
           <% end %>
         <% end %>
 
-        <div class="field">
-          <%= f.label "Название", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :name, class: "auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autofocus: true, autocomplete: "name"%>
-        </div>
-
-        <div class="field -mt-1">
-          <%= f.label "Сорт винограда", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :grape_variety, class: "auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
-        </div>
-
-        <div class="field -mt-1">
-          <%= f.label "Год посадки", class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-          <%= f.text_field :planting_year, class: "auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "title"%>
-        </div>
+        <%= render "shared/float_field", f: f, name: :name, label: "Название", width: "w-full", html: { autofocus: true, autocomplete: "name" } %>
+        <%= render "shared/float_field", f: f, name: :grape_variety, label: "Сорт винограда", width: "w-full", div_class: "-mt-1", html: { autocomplete: "title" } %>
+        <%= render "shared/float_field", f: f, name: :planting_year, label: "Год посадки", width: "w-full", div_class: "-mt-1", html: { autocomplete: "title" } %>
 
         <div id="vertices-container"></div>
 
