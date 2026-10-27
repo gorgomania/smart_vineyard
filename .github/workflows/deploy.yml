@@ -59,7 +59,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_KEY }}
           source: chart
-          target: /home/ubuntu
+          target: /home/ubuntu/deploy
           rm: true
 
       - name: helm upgrade
@@ -70,7 +70,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           command_timeout: 15m
           script: |
-            helm upgrade --install smart-vineyard /home/ubuntu/chart \
+            helm upgrade --install smart-vineyard /home/ubuntu/deploy/chart \
               --namespace smart-vineyard \
               --set image.tag=${{ github.sha }} \
               --wait --timeout 10m
