@@ -19,7 +19,7 @@ Rails.application.configure do
     Logger.new($stdout),
     Logger.new(Rails.root.join("log/development.log"))
   )
-  config.log_level = :info
+  config.log_level = :debug
 
   # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
   # Run rails dev:cache to toggle Action Controller caching.
