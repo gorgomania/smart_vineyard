@@ -18,6 +18,7 @@ development:
   cable:
     <<: *default
     database: smart_vineyard_development_cable
+    migrations_paths: db/cable_migrate
 
 test:
   primary:
@@ -31,6 +32,7 @@ test:
   cable:
     <<: *default
     database: <%= ENV.fetch("DB_NAME_CABLE", "smart_vineyard_test_cable") %>
+    migrations_paths: db/cable_migrate
 
 production:
   primary:
@@ -46,3 +48,4 @@ production:
     <<: *default
     database: <%= ENV.fetch("DB_NAME_CABLE", "smart_vineyard_production_cable") %>
     username: <%= ENV.fetch("DB_USER", "rails") %>
+    migrations_paths: db/cable_migrate
