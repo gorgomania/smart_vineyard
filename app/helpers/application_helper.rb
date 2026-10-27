@@ -5,7 +5,7 @@ module ApplicationHelper
 
   def nav_buttons
     capture do
-      concat content_tag(:div, data: { controller: "history-nav" }) {
+      concat content_tag(:div, class: "contents", data: { controller: "history-nav" }) {
         concat(
           link_to("javascript:history.back()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Назад", data: { history_nav_target: "back" }) do
             image_tag "/back.png", alt: "Back", class: "w-8 h-8"

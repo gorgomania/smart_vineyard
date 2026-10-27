@@ -10,11 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_06_174259) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_202208) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+  enable_extension "pg_trgm"
   enable_extension "postgis"
   enable_extension "topology.postgis_topology"
 
@@ -38,6 +39,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_06_174259) do
     t.string "checksum"
     t.datetime "created_at", null: false
     t.index ["created_at"], name: "index_active_storage_blobs_on_created_at"
+    t.index ["filename"], name: "index_active_storage_blobs_on_filename", opclass: :gin_trgm_ops, using: :gin
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
@@ -68,6 +70,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_06_174259) do
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_folders_on_created_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
+    t.index ["title"], name: "index_folders_on_title", opclass: :gin_trgm_ops, using: :gin
     t.index ["user_id", "title", "parent_id"], name: "index_folders_on_user_id_and_title_and_parent_id", unique: true
     t.index ["user_id", "title"], name: "index_folders_on_user_id_and_title", unique: true, where: "(parent_id IS NULL)"
     t.index ["user_id"], name: "index_folders_on_user_id"
@@ -85,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_06_174259) do
     t.datetime "updated_at", null: false
     t.index ["ai_class_id"], name: "index_media_items_on_ai_class_id"
     t.index ["bush_id"], name: "index_media_items_on_bush_id"
+    t.index ["folder_id", "created_at"], name: "index_media_items_on_folder_id_and_created_at"
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end
 
