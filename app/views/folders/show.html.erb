@@ -106,7 +106,7 @@
                                 <%= image_tag file.media.variant(resize_to_limit: [132, 88]),
                                     class: "w-33 h-22",
                                     loading: "lazy",
-                                    onload: "this.parentElement.querySelector('.skeleton').classList.add('hidden')" %>
+                                    onload: "var s=this.parentElement.querySelector('.skeleton');if(s)s.classList.add('hidden')" %>
                             </div>
                         <% else %>
                             <%= render "video_preview", file: file %>

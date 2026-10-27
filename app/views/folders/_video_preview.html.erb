@@ -6,7 +6,7 @@
       <%= image_tag file.video_preview,
         class: "w-33 h-22",
         loading: "lazy",
-        onload: "document.getElementById('skeleton-" + file.id.to_s + "').classList.add('hidden')" %>
+        onload: "var s=document.getElementById('skeleton-" + file.id.to_s + "');if(s)s.classList.add('hidden')" %>
     </div>
   <% else %>
     <div class="w-33 h-22 bg-gray-200 animate-pulse"></div>
