@@ -26,5 +26,12 @@
       <% end %>
 
       <%= render "devise/shared/links" %>
+
+      <% if ENV["DEMO_MASTER_EMAIL"].present? %>
+        <%= button_to "Демо аккаунт", demo_session_path,
+              method: :post,
+              form_class: "w-full",
+              class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+      <% end %>
   </div>
 </main>

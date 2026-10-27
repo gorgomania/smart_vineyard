@@ -52,6 +52,8 @@ Rails.application.routes.draw do
     resources :blobs, only: [ :destroy ]
   end
 
+  post "/demo_session", to: "demo_sessions#create", as: :demo_session
+
   post "/rails/active_storage/direct_uploads", to: "active_storage/direct_uploads#create"
 
   root "vineyards#index"
