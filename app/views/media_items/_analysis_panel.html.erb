@@ -10,8 +10,14 @@
       <span><%= media_item.ai_classified_at.in_time_zone("Moscow").strftime("%d.%m.%Y %H:%M") %> </span>
     </div>
   <% end %>
-  <%= button_to media_item.ai_class_id.present? ? "Реанализ" : "Анализ",
-        classify_media_item_path(media_item.id),
-        method: :post,
-        class: "h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
+  <% if local_assigns[:processing] %>
+    <button disabled class="h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 opacity-60 cursor-not-allowed">
+      ⏳ В обработке...
+    </button>
+  <% else %>
+    <%= button_to media_item.ai_class_id.present? ? "Реанализ" : "Анализ",
+          classify_media_item_path(media_item.id),
+          method: :post,
+          class: "h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90" %>
+  <% end %>
 </div>

@@ -114,7 +114,16 @@ class MediaItemsController < ApplicationController
     media_item = MediaItem.find(params[:id])
     authorize media_item
     ClassifyMediaJob.perform_later(media_item.id)
-    redirect_to media_item_path(media_item), notice: "Классификация запущена"
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "analysis-panel-#{media_item.id}",
+          partial: "media_items/analysis_panel",
+          locals: { media_item: media_item, class_names: GrapeClassifier.class_names, processing: true }
+        )
+      end
+      format.html { redirect_to media_item_path(media_item), notice: "Классификация запущена" }
+    end
   end
 
   def attach
