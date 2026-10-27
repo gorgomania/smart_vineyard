@@ -5,23 +5,25 @@ module ApplicationHelper
 
   def nav_buttons
     capture do
-      concat(
-        link_to("javascript:history.back()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", id: "back-button", title: "Назад") do
-          image_tag "/back.png", alt: "Back", class: "w-8 h-8"
-        end
-      )
-      concat(
-        link_to("javascript:history.forward()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", id: "forward-button", title: "Вперёд") do
-          image_tag "/back.png", alt: "Forward", class: "w-8 h-8 rotate-180"
-        end
-      )
-      if @parent_id.present?
+      concat content_tag(:div, data: { controller: "history-nav" }) {
         concat(
-          link_to(folder_path(@parent_id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Вверх") do
-            image_tag "/back.png", alt: "Forward", class: "w-8 h-8 rotate-90"
+          link_to("javascript:history.back()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Назад", data: { history_nav_target: "back" }) do
+            image_tag "/back.png", alt: "Back", class: "w-8 h-8"
           end
         )
-      end
+        concat(
+          link_to("javascript:history.forward()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Вперёд", data: { history_nav_target: "forward" }) do
+            image_tag "/back.png", alt: "Forward", class: "w-8 h-8 rotate-180"
+          end
+        )
+        if @parent_id.present?
+          concat(
+            link_to(folder_path(@parent_id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Вверх") do
+              image_tag "/back.png", alt: "Up", class: "w-8 h-8 rotate-90"
+            end
+          )
+        end
+      }
     end
   end
 

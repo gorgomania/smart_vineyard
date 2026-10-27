@@ -1,18 +1,18 @@
-<header class="fixed top-0 flex justify-between bg-white py-4 pl-[74px] pr-[76px] z-10 w-full">
+<header class="fixed top-0 flex justify-between bg-white py-4 pl-[74px] pr-[76px] z-10 w-full" data-controller="nav">
     <%= link_to vineyards_path, class: "hover:opacity-[0.9]" do %>
         <%= image_tag "/logo.png", alt: "Logo", class: "h-[50px]" %>
     <%end%>
-    <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12") do |f| %>
+    <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12", data: { controller: "search" }) do |f| %>
         <div class="field w-full">
-        <%= f.text_field :title, class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-full min-w-61 outline-none", autofocus: true, autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов",  required: @search_query.blank? %>
+        <%= f.text_field :title, class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-full min-w-61 outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autofocus: true, autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов",  required: @search_query.blank?, data: { "search-target": "input" } %>
         </div>
         <div class="w-0 h-0">
-        <%= image_submit_tag("/search.png", name: "commit", class: "search_img relative right-[50px] top-[11px] w-[26px] h-[26px] rounded-[12px] hover:bg-[#f2f2f2] hover:shadow-[0_0_0_10px_#f2f2f2]", title: "Поиск") %>
+        <%= image_submit_tag("/search.png", name: "commit", class: "search_img relative right-[50px] top-[11px] w-[26px] h-[26px] rounded-[12px] hover:bg-[#f2f2f2] hover:shadow-[0_0_0_10px_#f2f2f2]", title: "Поиск", data: { action: "mouseenter->search#imgEnter mouseleave->search#imgLeave" }) %>
         </div>
     <% end %>
-    <div id = "desktopMenu" class="flex items-end ml-11">
+    <div id="desktopMenu" class="flex items-end ml-11" data-nav-target="desktopMenu">
         <%= link_to folders_path, title: "Проводник", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
-            <%= image_tag "/explorer.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>    
+            <%= image_tag "/explorer.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
         <%= link_to vineyards_path, title: "Виноградники", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
@@ -20,41 +20,41 @@
         <%end%>
 
         <%= link_to total_stats_vineyards_path, title: "Статистика", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
-            <%= image_tag "/stats.png", alt: "Stats", class: "min-w-[26px] h-[26px]" %>    
+            <%= image_tag "/stats.png", alt: "Stats", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
         <%= link_to users_path, title: "Профиль", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
             <%= image_tag "/profile.png", alt: "Profile", class: "min-w-[26px] h-[26px]" %>
         <%end%>
     </div>
-    <button id="burgerMenu" class="hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100 text-[#333]">
+    <button id="burgerMenu" class="hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100 text-[#333]" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
       <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 6h16M4 12h16M4 18h16"></path>
       </svg>
     </button>
-    <div id="dropMenu" class="hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-[#333]">
+    <div id="dropMenu" class="hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-[#333]" data-nav-target="dropMenu">
         <nav class="flex flex-col">
             <%= link_to folders_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
-                <%= image_tag "/explorer.png", alt: "Explorer", class: "w-5 h-5" %> 
+                <%= image_tag "/explorer.png", alt: "Explorer", class: "w-5 h-5" %>
                 <span>Проводник</span>
             <% end %>
-            
+
             <%= link_to vineyards_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
-                <%= image_tag "/map.png", alt: "Map", class: "w-5 h-5" %> 
+                <%= image_tag "/map.png", alt: "Map", class: "w-5 h-5" %>
                 <span>Виноградники</span>
             <% end %>
-            
+
             <%= link_to total_stats_vineyards_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
-                <%= image_tag "/stats.png", alt: "Stats", class: "w-5 h-5" %> 
+                <%= image_tag "/stats.png", alt: "Stats", class: "w-5 h-5" %>
                 <span>Статистика</span>
             <% end %>
 
             <%= link_to users_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do%>
-                <%= image_tag "/profile.png", alt: "Profile", class: "w-5 h-5" %> 
+                <%= image_tag "/profile.png", alt: "Profile", class: "w-5 h-5" %>
                 <span>Профиль</span>
             <%end%>
         </nav>
   </div>
-  <div id="overlay" class="hidden fixed top-[274.8px] bottom-0 left-0 right-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out opacity-0 pointer-events-none z-5"></div>
+  <div id="overlay" class="hidden fixed top-[274.8px] bottom-0 left-0 right-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out opacity-0 pointer-events-none z-5" data-nav-target="overlay" data-action="click->nav#closeMenu"></div>
 </header>

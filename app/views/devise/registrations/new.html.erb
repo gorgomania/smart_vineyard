@@ -7,19 +7,19 @@
     <%= render "devise/shared/error_messages", resource: resource %>
 
     <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
-      <div class="field">
-        <%= f.label :email, class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-        <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]" %>
+      <div class="field" data-controller="auth">
+        <%= f.label :email, class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4", data: { "auth-target": "label" } %>
+        <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", data: { "auth-target": "input", action: "focus->auth#focus blur->auth#blur input->auth#input" } %>
       </div>
 
-      <div class="field">
-        <%= f.label :password,  class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-        <%= f.password_field :password, autocomplete: "new-password", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]" %>
+      <div class="field" data-controller="auth">
+        <%= f.label :password, class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4", data: { "auth-target": "label" } %>
+        <%= f.password_field :password, autocomplete: "new-password", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", data: { "auth-target": "input", action: "focus->auth#focus blur->auth#blur input->auth#input" } %>
       </div>
 
-      <div class="field">
-        <%= f.label :password_confirmation,  class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-        <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]" %>
+      <div class="field" data-controller="auth">
+        <%= f.label :password_confirmation, class: "relative top-[42px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4", data: { "auth-target": "label" } %>
+        <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "auth_input w-[280px] px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", data: { "auth-target": "input", action: "focus->auth#focus blur->auth#blur input->auth#input" } %>
       </div>
 
       <div class="actions">
