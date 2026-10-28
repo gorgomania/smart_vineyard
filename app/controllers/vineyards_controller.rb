@@ -107,6 +107,13 @@ class VineyardsController < ApplicationController
     end
   end
 
+  def bushes_per_row
+    vineyard = Vineyard.active.find(params[:id])
+    authorize vineyard
+    data = vineyard.rows.order(:row_number).pluck(Arel.sql("( SELECT COUNT(*) FROM bushes WHERE bushes.row_id = rows.id )"))
+    render json: data
+  end
+
   def rows
     vineyard = Vineyard.active.find(params[:id])
     authorize vineyard

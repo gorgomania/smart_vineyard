@@ -35,6 +35,11 @@
                         <span> Площадь: <%= vineyard.area_hectares %> га </span>
                     </div>
                     <div class = "flex max-w-33 h-fit">
+                        <button type="button" title="Скопировать структуру рядов"
+                            class="rounded-lg p-2 hover:bg-[#f2f2f2]"
+                            onclick="fetch('<%= bushes_per_row_vineyard_path(vineyard.id) %>').then(r=>r.json()).then(d=>{navigator.clipboard.writeText(JSON.stringify(d));this.title='Скопировано!'})">
+                            <%= image_tag "/copy.png", alt: "Copy", class: "w-4 h-4" %>
+                        </button>
                         <%= link_to edit_vineyard_path(vineyard.id), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                             <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>

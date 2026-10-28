@@ -9,6 +9,7 @@ Rails.application.routes.draw do
     member do
       get :rows
       get :stats
+      get :bushes_per_row
     end
     collection do
       get :total_stats
