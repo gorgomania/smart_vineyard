@@ -15,9 +15,17 @@ Rails.application.configure do
   # Enable server timing.
   config.server_timing = true
 
+  filtered_stdout = Class.new(ActiveSupport::Logger) do
+    SKIP = /solid_queue|TRANSACTION/
+    def add(severity, message = nil, progname = nil, &block)
+      return true if (message || progname).to_s.match?(SKIP)
+      super
+    end
+  end.new($stdout)
+
   config.logger = ActiveSupport::BroadcastLogger.new(
-    Logger.new($stdout),
-    Logger.new(Rails.root.join("log/development.log"))
+    filtered_stdout,
+    ActiveSupport::Logger.new(Rails.root.join("log/development.log"))
   )
   config.log_level = :debug
 

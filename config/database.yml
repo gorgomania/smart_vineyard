@@ -15,6 +15,7 @@ development:
     <<: *default
     database: smart_vineyard_development_queue
     migrations_paths: db/queue_migrate
+    pool: <%= ENV.fetch("QUEUE_DB_POOL") { 25 } %>
   cable:
     <<: *default
     database: smart_vineyard_development_cable
@@ -44,6 +45,7 @@ production:
     database: <%= ENV.fetch("DB_NAME_QUEUE", "smart_vineyard_production_queue") %>
     username: <%= ENV.fetch("DB_USER", "rails") %>
     migrations_paths: db/queue_migrate
+    pool: <%= ENV.fetch("QUEUE_DB_POOL") { 25 } %>
   cable:
     <<: *default
     database: <%= ENV.fetch("DB_NAME_CABLE", "smart_vineyard_production_cable") %>
