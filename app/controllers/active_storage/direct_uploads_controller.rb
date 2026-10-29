@@ -1,4 +1,8 @@
 class ActiveStorage::DirectUploadsController < ApplicationController
+  # Как в штатном ActiveStorage::BaseController: хост для URL загрузки (сервис :local) берётся из запроса.
+  # Без этого в production — "Missing host to link to!" (в development спасал routes.default_url_options)
+  include ActiveStorage::SetCurrent
+
   def create
     blob = ActiveStorage::Blob.create_before_direct_upload!(**blob_args)
     render json: blob.as_json(root: false, methods: :signed_id).merge(
