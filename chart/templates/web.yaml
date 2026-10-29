@@ -39,6 +39,11 @@ spec:
               value: {{ .Values.web.threads | quote }}
             - name: DB_POOL
               value: {{ .Values.web.dbPool | quote }}
+            # Thruster: по умолчанию 30 с на приём тела запроса и на отдачу ответа — мало для файлов до 1 ГБ
+            - name: HTTP_READ_TIMEOUT
+              value: {{ .Values.uploadTimeoutSeconds | quote }}
+            - name: HTTP_WRITE_TIMEOUT
+              value: {{ .Values.uploadTimeoutSeconds | quote }}
           volumeMounts:
             - name: storage
               mountPath: /rails/storage

@@ -16,7 +16,13 @@ ingress:
 
 # Встроенный traefik k3s (HelmChartConfig в kube-system, chart/templates/traefik-config.yaml)
 traefik:
-  preserveClientIp: true   # externalTrafficPolicy: Local — реальный IP клиента в Rails вместо 10.42.0.1
+  manage: true              # false — не трогать traefik кластера
+  preserveClientIp: true    # externalTrafficPolicy: Local — реальный IP клиента в Rails вместо 10.42.0.1
+  requestTimeout: 3600s     # чтение/отдача тела запроса на entrypoints web и websecure (v3 по умолчанию 60s)
+
+# Загрузка и отдача больших файлов (до 1 ГБ) идут через Thruster в web-поде:
+# по умолчанию он рвёт запрос, если тело не пришло за 30 с (→ 502 на «Error storing»)
+uploadTimeoutSeconds: 3600  # HTTP_READ_TIMEOUT и HTTP_WRITE_TIMEOUT Thruster; 1 ГБ при 3 Мбит/с ≈ 45 мин
 
 logLevel: info            # RAILS_LOG_LEVEL: debug | info | warn | error
 

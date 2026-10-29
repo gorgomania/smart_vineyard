@@ -1,8 +1,6 @@
-{{- if .Values.traefik.preserveClientIp }}
+{{- if .Values.traefik.manage }}
 # Настройка встроенного traefik k3s: k3s helm-controller подхватывает HelmChartConfig из kube-system
-# и переустанавливает traefik с этими values.
-# externalTrafficPolicy: Local — без SNAT на входе, чтобы Rails видел реальный IP клиента
-# (иначе все запросы приходят от 10.42.0.1 и rate_limit демо-входа общий на всех)
+# и переустанавливает traefik с этими values
 apiVersion: helm.cattle.io/v1
 kind: HelmChartConfig
 metadata:
@@ -11,8 +9,20 @@ metadata:
   labels:
     {{- include "sv.labels" . | nindent 4 }}
 spec:
+  # Перенесено из прежнего traefik-config.yaml в k3s manifests: при сбое установки переустанавливать чарт
+  failurePolicy: reinstall
   valuesContent: |-
+    {{- if .Values.traefik.preserveClientIp }}
+    # Без SNAT на входе: Rails видит реальный IP клиента (иначе все запросы от 10.42.0.1
+    # и rate_limit демо-входа общий на всех)
     service:
       spec:
         externalTrafficPolicy: Local
+    {{- end }}
+    # Загрузка файлов до 1 ГБ: в traefik v3 тело запроса по умолчанию должно прийти за 60s
+    additionalArguments:
+      {{- range $ep := list "web" "websecure" }}
+      - "--entryPoints.{{ $ep }}.transport.respondingTimeouts.readTimeout={{ $.Values.traefik.requestTimeout }}"
+      - "--entryPoints.{{ $ep }}.transport.respondingTimeouts.writeTimeout={{ $.Values.traefik.requestTimeout }}"
+      {{- end }}
 {{- end }}
