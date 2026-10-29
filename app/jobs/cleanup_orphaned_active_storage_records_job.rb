@@ -1,20 +1,27 @@
 class CleanupOrphanedActiveStorageRecordsJob < ApplicationJob
   queue_as :low_priority
 
+  # ZIP-архив живёт блобом без привязки, пока его не обработает ProcessZipJob
+  ZIP_GRACE_PERIOD = 1.day
+
+  # Сначала удаляем осиротевшие attachments, тогда их blob'ы уйдут в этом же прогоне
   def perform
-    cleanup_blobs_without_attachments
     cleanup_attachments_with_missing_record
+    cleanup_blobs_without_attachments
   end
 
 private
 
-  # Удаляем ВСЕХ сироток (blob'ы без привязки к MediaItem)
+  # Удаляем ВСЕХ сироток (blob'ы без единого attachment)
   def cleanup_blobs_without_attachments
-    # Находим все blob без привязки к MediaItem
     orphaned_blobs = ActiveStorage::Blob
       .left_joins(:attachments)
       .where(active_storage_attachments: { id: nil })
       .where("active_storage_blobs.created_at < ?", 1.hour.ago)
+      .where.not(
+        "active_storage_blobs.content_type = ? AND active_storage_blobs.created_at >= ?",
+        "application/zip", ZIP_GRACE_PERIOD.ago
+      )
 
     count = orphaned_blobs.count
 
@@ -38,11 +45,8 @@ private
       if klass.nil?
         attachments = ActiveStorage::Attachment.where(record_type: record_type)
         count = attachments.count
-        Rails.logger.warn "Model #{record_type} not found, purging #{count} attachments"
-        attachments.find_each do |attachment|
-          attachment.purge
-          total_deleted += 1
-        end
+        Rails.logger.warn "Model #{record_type} not found, deleting #{count} attachments"
+        total_deleted += attachments.delete_all
         next
       end
 
@@ -57,7 +61,8 @@ private
         Rails.logger.info "Deleted orphaned attachment: #{attachment.id} " \
                            "(record_type=#{record_type}, record_id=#{attachment.record_id}, " \
                            "blob=#{attachment.blob&.filename})"
-        attachment.purge
+        # Только delete: blob может быть общим (демо-копии), его удалит cleanup_blobs_without_attachments
+        attachment.delete
         total_deleted += 1
       end
     end

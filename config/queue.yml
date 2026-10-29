@@ -7,10 +7,6 @@ default: &default
       threads: 20
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
-  recurring:
-    cleanup_orphaned_storage:
-      class: CleanupOrphanedActiveStorageRecordsJob
-      schedule: every day at 3am
 
 development:
   <<: *default
