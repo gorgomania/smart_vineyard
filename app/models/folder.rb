@@ -10,6 +10,17 @@ class Folder < ApplicationRecord
   validates :title, length: { maximum: 15, message: "Длина не более 15 символов" }
   validates :vineyard_id, uniqueness: true, if: :vineyard_id_present?
 
+  # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс.
+  # Превращаем это в обычную ошибку валидации: update вернёт false, а не 500
+  def save(...)
+    super
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?("index_folders_on_vineyard_id")
+
+    errors.add(:vineyard_id, :taken)
+    false
+  end
+
   def title_path
     return [ title ] if parent.nil?
     parent.title_path + [ title ]

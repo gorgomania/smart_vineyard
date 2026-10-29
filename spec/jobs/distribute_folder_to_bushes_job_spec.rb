@@ -40,7 +40,9 @@ RSpec.describe DistributeFolderToBushesJob, type: :job do
         row = create(:row, vineyard:, row_number: 1)
         create(:bush, vineyard:, row:, bush_number: 1)
         item = create(:media_item, :with_named_image, folder:, image_filename: "Ряд 1 Куст 1.jpg")
-        allow_any_instance_of(MediaItem).to receive(:update).and_raise(ActiveRecord::RecordNotUnique)
+        create(:media_item, folder: create(:folder, user:), bush: Bush.last)
+        # Гонка: валидация не увидела занятый куст, сработал только индекс
+        allow_any_instance_of(MediaItem).to receive(:bush_id_present?).and_return(false)
 
         expect { described_class.new.perform(folder.id) }.not_to raise_error
         expect(item.reload.bush_id).to be_nil

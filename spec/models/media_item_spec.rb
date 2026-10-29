@@ -28,6 +28,17 @@ RSpec.describe MediaItem, type: :model do
       other = create(:media_item, folder:)
       expect { other.update_column(:bush_id, bush.id) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
+
+    it "turns a unique index race into a validation error" do
+      row  = create(:row, vineyard:, row_number: 1)
+      bush = create(:bush, vineyard:, row:, bush_number: 1)
+      create(:media_item, folder:, bush:)
+      other = create(:media_item, folder:)
+      allow(other).to receive(:bush_id_present?).and_return(false) # валидация «не успела» увидеть занятый куст
+
+      expect(other.update(bush:)).to be false
+      expect(other.errors).to be_added(:bush_id, :taken)
+    end
   end
 
   describe "#row_number" do

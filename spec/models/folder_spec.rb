@@ -36,6 +36,24 @@ RSpec.describe Folder, type: :model do
       other = create(:folder, user:, title: "Other")
       expect { other.update_column(:vineyard_id, vineyard.id) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
+
+    it "turns a unique index race into a validation error" do
+      vineyard = create(:vineyard, user:)
+      create(:folder, user:, vineyard:)
+      other = create(:folder, user:, title: "Other")
+      allow(other).to receive(:vineyard_id_present?).and_return(false) # валидация «не успела» увидеть занятый виноградник
+
+      expect(other.update(vineyard:)).to be false
+      expect(other.errors).to be_added(:vineyard_id, :taken)
+    end
+
+    it "still raises on other unique violations" do
+      create(:folder, user:, title: "Same")
+      other = create(:folder, user:, title: "Other")
+      other.title = "Same"
+
+      expect { other.save(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
   end
 
   describe "#title_path" do

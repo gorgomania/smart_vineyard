@@ -22,12 +22,8 @@ class DistributeFolderToBushesJob < ApplicationJob
 
       if vineyard.present?
         bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
-        begin
-          media.update(bush: bush) if bush
-        rescue ActiveRecord::RecordNotUnique
-          # Куст занял другой файл в параллельной задаче: этот оставляем без привязки, как при ошибке валидации
-          media.restore_attributes
-        end
+        # Если куст занят (в т.ч. параллельной задачей), update вернёт false и файл останется без привязки
+        media.update(bush: bush) if bush
       else
         media.update(bush: nil)
       end

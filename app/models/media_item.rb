@@ -13,6 +13,17 @@ class MediaItem < ApplicationRecord
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?
 
+  # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс.
+  # Превращаем это в обычную ошибку валидации: update вернёт false, а не 500
+  def save(...)
+    super
+  rescue ActiveRecord::RecordNotUnique => e
+    raise unless e.message.include?("index_media_items_on_bush_id")
+
+    errors.add(:bush_id, :taken)
+    false
+  end
+
 public
 
   def row_number
