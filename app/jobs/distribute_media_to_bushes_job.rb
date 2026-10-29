@@ -37,8 +37,11 @@ class DistributeMediaToBushesJob < ApplicationJob
     bush_updates = item_to_bush.reject { |_, bush_id| occupied_bush_ids.include?(bush_id) }
     return if bush_updates.empty?
 
-    when_clauses = bush_updates.map { |mid, bid| "WHEN #{Integer(mid)} THEN #{Integer(bid)}" }.join(" ")
-    MediaItem.where(id: bush_updates.keys)
-             .update_all([ "bush_id = CASE id #{when_clauses} END, updated_at = ?", Time.current ])
+    placeholders = Array.new(bush_updates.size, "WHEN ? THEN ?").join(" ")
+    values = bush_updates.flat_map { |mid, bid| [ Integer(mid), Integer(bid) ] }
+    sql = MediaItem.sanitize_sql_array(
+      [ "bush_id = CASE id #{placeholders} END, updated_at = ?" ] + values + [ Time.current ]
+    )
+    MediaItem.where(id: bush_updates.keys).update_all(sql)
   end
 end
