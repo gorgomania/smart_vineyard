@@ -28,10 +28,7 @@ Rails.application.configure do
   end
 
   # Nonce для importmap и inline-скриптов Rails
-  config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
+  # Случайный на каждый запрос: session.id одинаков всю сессию, а утёкший nonce не должен работать дальше
+  config.content_security_policy_nonce_generator = ->(_request) { SecureRandom.base64(16) }
   config.content_security_policy_nonce_directives = %w[script-src]
-
-  # report_only: браузер присылает нарушения в консоль, но не блокирует.
-  # Снять этот флаг после проверки в production.
-  config.content_security_policy_report_only = true
 end

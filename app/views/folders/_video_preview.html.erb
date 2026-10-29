@@ -1,12 +1,12 @@
 <div id="video-preview-<%= file.id %>" class="relative flex flex-col items-center">
   <% if file.video_preview.attached? %>
     <div class="w-33 h-22 relative">
-      <div id="skeleton-<%= file.id %>" class="absolute inset-0 bg-gray-200 animate-pulse"></div>
+      <div id="skeleton-<%= file.id %>" class="absolute inset-0 bg-gray-200 animate-pulse skeleton"></div>
 
       <%= image_tag file.video_preview,
         class: "w-33 h-22",
         loading: "lazy",
-        onload: "var s=document.getElementById('skeleton-" + file.id.to_s + "');if(s)s.classList.add('hidden')" %>
+        data: { controller: "image-skeleton", action: "load->image-skeleton#hide" } %>
     </div>
   <% else %>
     <div class="w-33 h-22 bg-gray-200 animate-pulse"></div>

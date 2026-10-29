@@ -7,12 +7,14 @@ module ApplicationHelper
     capture do
       concat content_tag(:div, class: "contents", data: { controller: "history-nav" }) {
         concat(
-          link_to("javascript:history.back()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Назад", data: { history_nav_target: "back" }) do
+          link_to("#", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Назад",
+                  data: { history_nav_target: "back", controller: "history", action: "history#back" }) do
             image_tag "/back.png", alt: "Back", class: "w-8 h-8"
           end
         )
         concat(
-          link_to("javascript:history.forward()", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Вперёд", data: { history_nav_target: "forward" }) do
+          link_to("#", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Вперёд",
+                  data: { history_nav_target: "forward", controller: "history", action: "history#forward" }) do
             image_tag "/back.png", alt: "Forward", class: "w-8 h-8 rotate-180"
           end
         )
