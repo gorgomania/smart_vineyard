@@ -33,13 +33,15 @@ class MediaItemsController < ApplicationController
       return
     end
 
-    # Обрабатываем все ZIP
+    # Обрабатываем все ZIP: кладём архив в ActiveStorage, чтобы воркер в другом поде его увидел
     zip_files.each do |zip_file|
-      zip_filename = "#{SecureRandom.hex(8)}_#{zip_file.original_filename}"
-      temp_path = Rails.root.join("tmp", "zip_upload", zip_filename)
-      FileUtils.mkdir_p(File.dirname(temp_path))
-      File.binwrite(temp_path, zip_file.read)
-      ProcessZipJob.perform_later(@folder, temp_path.to_s)
+      zip_blob = ActiveStorage::Blob.create_and_upload!(
+        io: zip_file,
+        filename: zip_file.original_filename,
+        content_type: "application/zip",
+        identify: false
+      )
+      ProcessZipJob.perform_later(@folder, zip_blob)
     end
 
     # Обрабатываем обычные файлы если есть

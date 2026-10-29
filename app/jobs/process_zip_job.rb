@@ -12,24 +12,26 @@ class ProcessZipJob < ApplicationJob
     ".mp4"  => "video/mp4"
   }.freeze
 
-  def perform(folder, zip_path)
+  def perform(folder, zip_blob)
     media_items_data = []
     blob_results = []
 
-    Zip::File.open(zip_path) do |zip_file|
-      entries = zip_file.select { |e| e.file? && MIME_TYPES.key?(File.extname(e.name).downcase) }
+    zip_blob.open do |tempfile|
+      Zip::File.open(tempfile.path) do |zip_file|
+        entries = zip_file.select { |e| e.file? && MIME_TYPES.key?(File.extname(e.name).downcase) }
 
-      entries.each do |entry|
-        ext = File.extname(entry.name).downcase
+        entries.each do |entry|
+          ext = File.extname(entry.name).downcase
 
-        blob = ActiveStorage::Blob.create_and_upload!(
-          io: entry.get_input_stream,
-          filename: File.basename(entry.name),
-          content_type: MIME_TYPES[ext],
-          identify: false
-        )
-        blob_results << blob
-        media_items_data << { folder_id: folder.id, created_at: Time.current, updated_at: Time.current }
+          blob = ActiveStorage::Blob.create_and_upload!(
+            io: entry.get_input_stream,
+            filename: File.basename(entry.name),
+            content_type: MIME_TYPES[ext],
+            identify: false
+          )
+          blob_results << blob
+          media_items_data << { folder_id: folder.id, created_at: Time.current, updated_at: Time.current }
+        end
       end
     end
 
@@ -72,6 +74,6 @@ class ProcessZipJob < ApplicationJob
     blob_results&.each { |b| b.purge rescue nil }
     raise e
   ensure
-    File.delete(zip_path) if zip_path && File.exist?(zip_path)
+    zip_blob&.purge
   end
 end

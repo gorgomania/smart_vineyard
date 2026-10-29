@@ -58,6 +58,21 @@ RSpec.describe "MediaItems", type: :request do
         expect(response).to redirect_to(folder_path(folder, page: "-1"))
       end
     end
+
+    context "with a ZIP archive" do
+      it "stores the archive as a blob and enqueues ProcessZipJob with it" do
+        zip = Rack::Test::UploadedFile.new(StringIO.new("PK\x05\x06" + "\x00" * 18), "application/zip", original_filename: "photos.zip")
+
+        expect {
+          post media_items_path, params: { media_item: { folder_id: folder.id, media: [ zip ] } }
+        }.to change(ActiveStorage::Blob, :count).by(1)
+
+        blob = ActiveStorage::Blob.last
+        expect(blob.filename.to_s).to eq("photos.zip")
+        expect(ProcessZipJob).to have_been_enqueued.with(folder, blob)
+        expect(response).to redirect_to(folder_path(folder, page: "-1"))
+      end
+    end
   end
 
   describe "DELETE /media_items/:id" do
