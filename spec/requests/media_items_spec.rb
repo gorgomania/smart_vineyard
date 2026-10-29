@@ -75,6 +75,25 @@ RSpec.describe "MediaItems", type: :request do
     end
   end
 
+  describe "PATCH /media_items/:id" do
+    let(:demo_user)   { create(:user) }
+    let(:demo_folder) { create(:folder, user: demo_user) }
+    let(:demo_item) do
+      create(:media_item, folder: demo_folder).tap do |item|
+        ActiveStorage::Attachment.create!(name: "media", record: item, blob: media_item.media.blob)
+      end
+    end
+
+    before { sign_in demo_user }
+
+    it "renames only the demo copy when the blob is shared with the master" do
+      patch media_item_path(demo_item), params: { media_item: { filename: "renamed" } }
+
+      expect(demo_item.reload.media.blob.filename.to_s).to eq("renamed.jpg")
+      expect(media_item.reload.media.blob.filename.to_s).to eq("test.jpg")
+    end
+  end
+
   describe "DELETE /media_items/:id" do
     before { sign_in user }
 

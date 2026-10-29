@@ -36,6 +36,30 @@ public
     )
   end
 
+  # Copy-on-write: блоб общий с демо-копиями, поэтому перед изменением его полей
+  # (например filename) даём записи собственную копию файла
+  def ensure_own_media_blob!
+    return unless media.attached?
+
+    shared_blob = media_attachment.blob
+    return shared_blob unless ActiveStorage::Attachment.where(blob_id: shared_blob.id).count > 1
+
+    own_blob = shared_blob.open do |file|
+      ActiveStorage::Blob.create_and_upload!(
+        io: file,
+        filename: shared_blob.filename,
+        content_type: shared_blob.content_type,
+        metadata: shared_blob.metadata,
+        identify: false
+      )
+    end
+    # update_columns, а не attach: attach запустил бы purge_later старого (общего) блоба
+    media_attachment.update_columns(blob_id: own_blob.id)
+    media_attachment.reload
+    generate_image_preview
+    own_blob
+  end
+
   def normalize_filename!
     return unless media.attached?
 

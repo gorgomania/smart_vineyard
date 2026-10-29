@@ -71,7 +71,6 @@ class MediaItemsController < ApplicationController
     search_query = params[:search_query]
     page = params[:page]
 
-    blob = @media_item.media.blob
     new_base_name = media_item_params[:filename]
 
     if new_base_name.blank?
@@ -79,6 +78,9 @@ class MediaItemsController < ApplicationController
       render "edit", status: :unprocessable_entity
       return
     end
+
+    # Имя хранится в блобе: общий блоб (демо-копии) сначала копируем, чтобы не переименовать чужой файл
+    blob = @media_item.ensure_own_media_blob!
 
     new_filename = "#{new_base_name}#{blob.filename.extension_with_delimiter}"
     blob.filename = new_filename
