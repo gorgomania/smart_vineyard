@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  # Проверки readiness/liveness в k8s; без маршрута /up уходил в catch-all и редиректил на логин (302)
+  get "up" => "rails/health#show", as: :rails_health_check
+
   devise_for :users, controllers: {
     registrations: "users/registrations"
   }
