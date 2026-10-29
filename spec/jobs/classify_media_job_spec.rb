@@ -22,5 +22,17 @@ RSpec.describe ClassifyMediaJob, type: :job do
         described_class.new.perform(item.id)
       end
     end
+
+    context "when media is a video" do
+      it "skips classification without failing and refreshes the panel" do
+        item = create(:media_item)
+        item.media.attach(io: StringIO.new("fake"), filename: "clip.mp4", content_type: "video/mp4")
+        expect(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
+          .with("media_item_#{item.id}", hash_including(target: "analysis-panel-#{item.id}"))
+
+        expect { described_class.new.perform(item.id) }.not_to raise_error
+        expect(item.reload.ai_class_id).to be_nil
+      end
+    end
   end
 end

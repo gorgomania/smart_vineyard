@@ -14,7 +14,7 @@
     <button disabled class="h-16 mt-5 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 opacity-60 cursor-not-allowed">
       ⏳ В обработке...
     </button>
-  <% else %>
+  <% elsif media_item.media.attached? && media_item.media.image? %>
     <%= button_to media_item.ai_class_id.present? ? "Реанализ" : "Анализ",
           classify_media_item_path(media_item.id),
           method: :post,

@@ -5,7 +5,8 @@ class ClassifyMediaJob < ApplicationJob
     media_item = MediaItem.find_by(id: media_item_id)
     return unless media_item&.media&.attached?
 
-    media_item.classify!
+    # Модель понимает только картинки; для видео не падаем, а просто перерисуем панель, чтобы снять «В обработке»
+    media_item.classify! if media_item.media.image?
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "media_item_#{media_item_id}",
