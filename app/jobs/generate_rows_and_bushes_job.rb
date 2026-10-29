@@ -10,24 +10,22 @@ class GenerateRowsAndBushesJob < ApplicationJob
     if bushes_per_row.is_a?(String)
       bushes_per_row = JSON.parse(bushes_per_row)
     end
+    bushes_per_row = bushes_per_row.map(&:to_i)
+    return if bushes_per_row.empty?
 
+    now = Time.current
     ActiveRecord::Base.transaction do
-      bushes_per_row.each_with_index do |bushes_count, row_index|
-        row_number = row_index + 1
-
-        # Создаём ряд
-        row = vineyard.rows.create!(row_number: row_number)
-
-        # Создаём кусты в ряду
-        bushes_count.to_i.times do |bush_index|
-          bush_number = bush_index + 1
-          bush_attrs = {
-            vineyard: vineyard,
-            bush_number: bush_number
-          }
-          row.bushes.create!(bush_attrs)
-        end
+      # Все ряды одним INSERT, кусты — пачками: на 10 га это десятки тысяч записей
+      rows_data = bushes_per_row.each_index.map do |row_index|
+        { vineyard_id: vineyard.id, row_number: row_index + 1, created_at: now, updated_at: now }
       end
+      row_ids = Row.insert_all!(rows_data, returning: [ :id, :row_number ])
+                   .to_h { |r| [ r["row_number"], r["id"] ] }
+
+      Bush.insert_numbered!(
+        vineyard.id,
+        bushes_per_row.each_with_index.to_h { |count, row_index| [ row_ids[row_index + 1], 1..count ] }
+      )
     end
   end
 end

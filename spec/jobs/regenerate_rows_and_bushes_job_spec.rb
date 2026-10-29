@@ -61,6 +61,52 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
       end
     end
 
+    context "when a removed bush or row had a media item" do
+      before { setup_rows([ 3, 2 ]) }
+
+      it "keeps the media item but unlinks it" do
+        trimmed = create(:media_item, bush: vineyard.rows.find_by(row_number: 1).bushes.find_by(bush_number: 3))
+        in_removed_row = create(:media_item, bush: vineyard.rows.find_by(row_number: 2).bushes.first)
+
+        perform([ 2, 0 ])
+
+        expect(trimmed.reload.bush_id).to be_nil
+        expect(in_removed_row.reload.bush_id).to be_nil
+      end
+    end
+
+    context "when an existing row has no bushes yet" do
+      before { setup_rows([ 0 ]) }
+
+      it "fills it instead of failing on a duplicate row" do
+        perform([ 2 ])
+        expect(vineyard.rows.count).to eq(1)
+        expect(vineyard.rows.first.bushes.pluck(:bush_number).sort).to eq([ 1, 2 ])
+      end
+    end
+
+    context "when bush numbers have gaps" do
+      before do
+        row = create(:row, vineyard:, row_number: 1)
+        [ 1, 2, 5 ].each { |n| create(:bush, vineyard:, row:, bush_number: n) }
+      end
+
+      it "continues numbering after the highest number" do
+        perform([ 7 ])
+        expect(vineyard.rows.first.bushes.pluck(:bush_number).sort).to eq([ 1, 2, 5, 6, 7 ])
+      end
+    end
+
+    context "with many rows and bushes" do
+      before { setup_rows([ 2, 2 ]) }
+
+      it "applies a large layout in bulk" do
+        perform(Array.new(50) { 200 })
+        expect(vineyard.rows.count).to eq(50)
+        expect(vineyard.bushes.count).to eq(10_000)
+      end
+    end
+
     context "with an empty layout" do
       before { setup_rows([ 3, 4 ]) }
 

@@ -32,6 +32,21 @@ RSpec.describe GenerateRowsAndBushesJob, type: :job do
       end
     end
 
+    context "with a large layout" do
+      it "creates every row and bush" do
+        perform(Array.new(60) { 250 })
+        expect(vineyard.rows.count).to eq(60)
+        expect(vineyard.bushes.count).to eq(15_000)
+        expect(vineyard.rows.find_by(row_number: 60).bushes.maximum(:bush_number)).to eq(250)
+      end
+    end
+
+    context "with an empty layout" do
+      it "creates nothing" do
+        expect { perform([]) }.not_to change(Row, :count)
+      end
+    end
+
     context "with JSON string input" do
       it "parses the JSON and creates rows and bushes" do
         perform("[2, 3]")
