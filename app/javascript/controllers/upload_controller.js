@@ -16,7 +16,12 @@ export default class extends Controller {
   connect() {
     // ключ name_size → { file, isZip, loaded, status: preparing|uploading|done|error, signedId, xhr, wrapper, overlay }
     this.uploads = new Map()
+    this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
     this.render()
+  }
+
+  disconnect() {
+    clearInterval(this.batch?.timer)
   }
 
   fileInputChange(event) {
@@ -145,10 +150,11 @@ export default class extends Controller {
       wrapper.appendChild(img)
       if (entry.file.type.startsWith("video/")) {
         this.videoFrame(entry.file, url => { img.src = url })
-        const playIcon = new Image()
-        playIcon.src = "/video_play_violet.png"
-        playIcon.className = "w-3 h-3 absolute top-[14.5px] left-[35.5px]"
-        wrapper.appendChild(playIcon)
+        // По центру превью любого размера (inset-0 + m-auto); показывается после загрузки — см. renderEntry
+        entry.playIcon = new Image()
+        entry.playIcon.src = "/video_play_violet.png"
+        entry.playIcon.className = "hidden absolute inset-0 m-auto w-6 h-6 pointer-events-none"
+        wrapper.appendChild(entry.playIcon)
       } else {
         img.src = URL.createObjectURL(entry.file)
         img.onload = () => URL.revokeObjectURL(img.src)
@@ -209,11 +215,15 @@ export default class extends Controller {
     this.progressPercentTarget.textContent = `${percent}%`
 
     if (this.pending().length > 0) {
+      this.trackBatch(loadedBytes)
       this.progressStatusTarget.textContent =
-        `Загружено ${done} из ${active.length} · ${this.formatMb(loadedBytes)} из ${this.formatMb(totalBytes)} МБ`
+        `Загружено ${done} из ${active.length} · ${this.formatMb(loadedBytes)} из ${this.formatMb(totalBytes)} МБ\n` +
+        `Время загрузки ${this.formatDuration(this.elapsedSeconds())}\n` +
+        this.etaText(loadedBytes, totalBytes)
       this.submitBtnTarget.disabled = true
       this.submitBtnTarget.value = `Загрузка ${percent}%...`
     } else {
+      this.finishBatch()
       this.progressStatusTarget.textContent = failed > 0
         ? `✅ Загружено ${done}, с ошибкой ${failed}`
         : "✅ Все файлы загружены!"
@@ -223,6 +233,8 @@ export default class extends Controller {
   }
 
   renderEntry(entry) {
+    entry.playIcon?.classList.toggle("hidden", entry.status !== "done")
+
     const marks = { done: [ "✓", "bg-green-500" ], error: [ "✗", "bg-red-500" ] }
     if (marks[entry.status]) {
       const [ symbol, color ] = marks[entry.status]
@@ -233,6 +245,51 @@ export default class extends Controller {
     } else {
       entry.overlay.textContent = "Подготовка..." // считается checksum и создаётся blob
     }
+  }
+
+  // --- оценка оставшегося времени ---
+
+  // Серия начинается, когда появляются незавершённые загрузки, и заканчивается, когда их не остаётся.
+  // Скорость — средняя за всю серию: она ровнее мгновенной и не скачет от каждого события progress
+  trackBatch(loadedBytes) {
+    if (this.batch) return
+    this.batch = {
+      startedAt: performance.now(),
+      baseLoaded: loadedBytes, // файлы, загруженные до этой серии, в скорость не входят
+      timer: setInterval(() => this.render(), 1000) // обновлять «Время загрузки/Осталось», даже если progress замер
+    }
+  }
+
+  finishBatch() {
+    clearInterval(this.batch?.timer)
+    this.batch = null
+  }
+
+  elapsedSeconds() {
+    return this.batch ? (performance.now() - this.batch.startedAt) / 1000 : 0
+  }
+
+  etaText(loadedBytes, totalBytes) {
+    const elapsed = this.elapsedSeconds()
+    const transferred = loadedBytes - this.batch.baseLoaded
+    // Первые секунды уходят на checksum в браузере и создание блобов: скорости ещё нет
+    if (elapsed < 5 || transferred <= 0) return "Рассчитываем оставшееся время..."
+
+    const remaining = (totalBytes - loadedBytes) / (transferred / elapsed)
+    return `Осталось ~${this.formatDuration(remaining, { rough: true })}`
+  }
+
+  formatDuration(seconds, { rough = false } = {}) {
+    const s = Math.max(0, Math.round(seconds))
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    if (rough) {
+      if (s < 60) return `${s} с`
+      return h > 0 ? `${h} ч ${m} мин` : `${m + (s % 60 >= 30 ? 1 : 0)} мин`
+    }
+    const mm = String(m).padStart(h > 0 ? 2 : 1, "0")
+    const ss = String(s % 60).padStart(2, "0")
+    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
   }
 
   pending() {
