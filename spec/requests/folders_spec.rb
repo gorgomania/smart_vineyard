@@ -111,12 +111,28 @@ RSpec.describe "Folders", type: :request do
       expect(response).to be_redirect
     end
 
+    it "deletes nested folders and files at once and purges files in the background" do
+      nested = create(:folder, user:, parent: folder, title: "Nested")
+      item = create(:media_item, :with_image, folder: nested)
+
+      expect {
+        delete folder_path(folder)
+      }.to change(Folder, :count).by(-2)
+        .and change(MediaItem, :count).by(-1)
+        .and have_enqueued_job(PurgeUnattachedBlobsJob).with([ item.media.blob.id ])
+    end
+
     context "when another user tries to delete" do
       before { sign_in other_user }
 
       it "redirects with access denied" do
         delete folder_path(folder)
         expect(response).to redirect_to(folders_path)
+      end
+
+      it "does not delete anything" do
+        folder
+        expect { delete folder_path(folder) }.not_to change(Folder, :count)
       end
     end
   end

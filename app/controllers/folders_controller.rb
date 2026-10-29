@@ -136,7 +136,7 @@ class FoldersController < ApplicationController
     folder = Folder.find(params[:id])
     authorize folder
     parent_id = folder.parent_id
-    folder.destroy
+    folder.delete_tree! # мгновенно в БД, файлы удалит фоновая задача
     if search_query.blank?
       if parent_id
         redirect_to folder_path(parent_id, page: page), notice: "Папка успешно удалена"

@@ -10,6 +10,42 @@ class Folder < ApplicationRecord
   validates :title, length: { maximum: 15, message: "Длина не более 15 символов" }
   validates :vineyard_id, uniqueness: true, if: :vineyard_id_present?
 
+  # Быстрое удаление папок со всем поддеревом за несколько SQL-запросов вместо destroy каждой записи.
+  # Вложенные папки и файлы удаляет FK ON DELETE CASCADE (folders.parent_id, media_items.folder_id);
+  # вложения полиморфные, без FK, поэтому их удаляем сами. Файлы с диска убирает PurgeUnattachedBlobsJob
+  # после коммита. Колбэки MediaItem не вызываются: всё, что они делали, покрыто здесь
+  def self.delete_trees!(root_ids)
+    root_ids = Array(root_ids)
+    return if root_ids.empty?
+
+    transaction do
+      subtree = where(id: root_ids).select(:id)
+      subtree_sql = <<~SQL.squish
+        WITH RECURSIVE tree AS (
+          #{subtree.to_sql}
+          UNION ALL
+          SELECT f.id FROM #{quoted_table_name} f JOIN tree ON f.parent_id = tree.id
+        )
+        SELECT id FROM tree
+      SQL
+
+      attachments = ActiveStorage::Attachment.where(
+        record_type: "MediaItem",
+        record_id: MediaItem.where("folder_id IN (#{subtree_sql})").select(:id)
+      )
+      blob_ids = attachments.distinct.pluck(:blob_id)
+      attachments.delete_all
+      where(id: root_ids).delete_all
+
+      # Задачи — в другой БД (queue): ставим после коммита, иначе задача увидит ещё прикреплённые блобы
+      ActiveRecord.after_all_transactions_commit { PurgeUnattachedBlobsJob.enqueue_in_batches(blob_ids) }
+    end
+  end
+
+  def delete_tree!
+    self.class.delete_trees!(id)
+  end
+
   # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс.
   # Превращаем это в обычную ошибку валидации: update вернёт false, а не 500
   def save(...)

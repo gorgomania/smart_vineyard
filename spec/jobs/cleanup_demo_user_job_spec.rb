@@ -14,6 +14,19 @@ RSpec.describe CleanupDemoUserJob, type: :job do
       expect(Vineyard.where(user_id: demo.id)).to be_empty
     end
 
+    it "removes nested folders and files without destroying records one by one" do
+      demo = create(:user, demo_temp: true, demo_expires_at: 1.hour.ago)
+      root = create(:folder, user: demo)
+      nested = create(:folder, user: demo, parent: root, title: "Nested")
+      item = create(:media_item, :with_image, folder: nested)
+      expect_any_instance_of(MediaItem).not_to receive(:destroy)
+
+      expect {
+        described_class.new.perform(demo.id)
+      }.to have_enqueued_job(PurgeUnattachedBlobsJob).with([ item.media.blob.id ])
+      expect(Folder.where(id: [ root.id, nested.id ])).to be_empty
+    end
+
     it "never touches a regular user even if given their id" do
       user = create(:user)
       described_class.new.perform(user.id)
