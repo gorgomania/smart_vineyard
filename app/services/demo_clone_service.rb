@@ -40,12 +40,12 @@ class DemoCloneService
 
   def clone_vineyards(user)
     now = Time.current
-    vineyards = @master.vineyards.includes(rows: :bushes).to_a
+    # Удалённые мастером (soft delete) не копируем: папки и медиа на них в демо просто останутся без привязки
+    vineyards = @master.vineyards.active.includes(rows: :bushes).to_a
 
     vineyards.each do |vineyard|
       new_vineyard = vineyard.dup
       new_vineyard.user = user
-      new_vineyard.deleted_at = nil
       new_vineyard.save!(validate: false)
       @vineyard_map[vineyard.id] = new_vineyard.id
     end
