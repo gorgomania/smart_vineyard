@@ -39,6 +39,6 @@ class DistributeMediaToBushesJob < ApplicationJob
 
     when_clauses = bush_updates.map { |mid, bid| "WHEN #{Integer(mid)} THEN #{Integer(bid)}" }.join(" ")
     MediaItem.where(id: bush_updates.keys)
-             .update_all("bush_id = CASE id #{when_clauses} END, updated_at = '#{Time.current.utc.strftime('%Y-%m-%d %H:%M:%S.%6N')}'")
+             .update_all([ "bush_id = CASE id #{when_clauses} END, updated_at = ?", Time.current ])
   end
 end
