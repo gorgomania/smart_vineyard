@@ -5,8 +5,11 @@ class MediaItem < ApplicationRecord
   has_one_attached :media, dependent: :purge_later
   has_one_attached :video_preview, dependent: :purge_later
 
-  after_create_commit :generate_video_preview
-  after_create_commit :generate_image_preview
+  attr_accessor :skip_preview_generation
+
+  before_destroy :detach_shared_blobs
+  after_create_commit :generate_video_preview, unless: :skip_preview_generation
+  after_create_commit :generate_image_preview, unless: :skip_preview_generation
 
   validates :bush_id, uniqueness: true, if: :bush_id_present?
 
@@ -75,7 +78,18 @@ public
 private
 
   def bush_id_present?
-    bush_id.present?  # проверяем только если не nil
+    bush_id.present?
+  end
+
+  def detach_shared_blobs
+    { media_attachment: :media_attachment, video_preview_attachment: :video_preview_attachment }.each do |reader, assoc_name|
+      attachment = public_send(reader)
+      next unless attachment
+      if ActiveStorage::Attachment.where(blob_id: attachment.blob_id).count > 1
+        attachment.delete
+        association(assoc_name).reset
+      end
+    end
   end
 
   def generate_image_preview

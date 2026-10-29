@@ -20,8 +20,8 @@ class DemoCloneService
       temp_user = create_temp_user
       clone_vineyards(temp_user)
       clone_folders(temp_user)
-      clone_media_items
     end
+    CloneDemoMediaJob.perform_later(temp_user.id, @folder_map, @bush_map)
     temp_user
   end
 
@@ -72,21 +72,6 @@ class DemoCloneService
       new_folder.save!(validate: false)
       @folder_map[folder.id] = new_folder.id
     end
-  end
-
-  def clone_media_items
-    MediaItem
-      .where(folder_id: @folder_map.keys)
-      .includes(media_attachment: :blob, video_preview_attachment: :blob)
-      .find_each do |item|
-        new_item = item.dup
-        new_item.folder_id = @folder_map[item.folder_id]
-        new_item.bush_id = @bush_map[item.bush_id] if item.bush_id
-        new_item.save!(validate: false)
-
-        new_item.media.attach(item.media.blob) if item.media.attached?
-        new_item.video_preview.attach(item.video_preview.blob) if item.video_preview.attached?
-      end
   end
 
   def folder_depth(folder, folder_by_id)
