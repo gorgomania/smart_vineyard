@@ -30,6 +30,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{ include "sv.secretEnv" (dict "name" $env "secret" $s "key" $key) }}
 {{- end }}
 {{ include "sv.secretEnv" (dict "name" "YANDEX_MAPS_API_KEY" "secret" $s "key" "yandex-maps-api-key" "optional" true) }}
+{{ include "sv.secretEnv" (dict "name" "DEMO_MASTER_EMAIL" "secret" $s "key" "demo-master-email" "optional" true) }}
 {{- end }}
 
 {{- define "sv.image" -}}
