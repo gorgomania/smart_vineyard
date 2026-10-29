@@ -90,6 +90,40 @@ RSpec.describe "Vineyards", type: :request do
     end
   end
 
+  describe "PATCH /vineyards/:id" do
+    before { sign_in user }
+
+    context "when only the name changes" do
+      it "updates without regenerating rows" do
+        expect {
+          patch vineyard_path(vineyard), params: { vineyard: { name: "Новое имя", bushes_per_row: "[]" } }
+        }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
+        expect(vineyard.reload.name).to eq("Новое имя")
+        expect(response).to redirect_to(vineyard_path(vineyard))
+      end
+    end
+
+    context "when the layout changes with a valid bushes_per_row" do
+      it "enqueues RegenerateRowsAndBushesJob with parsed counts" do
+        expect {
+          patch vineyard_path(vineyard), params: { vineyard: { row_spacing: 2.8, bushes_per_row: "[3,4]" } }
+        }.to have_enqueued_job(RegenerateRowsAndBushesJob).with(vineyard.id, [ 3, 4 ])
+        expect(response).to redirect_to(vineyard_path(vineyard))
+      end
+    end
+
+    context "when the layout changes but bushes_per_row is empty" do
+      it "rejects the update and keeps rows" do
+        old_spacing = vineyard.row_spacing
+        expect {
+          patch vineyard_path(vineyard), params: { vineyard: { row_spacing: 2.8, bushes_per_row: "[]" } }
+        }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(vineyard.reload.row_spacing).to eq(old_spacing)
+      end
+    end
+  end
+
   describe "DELETE /vineyards/:id" do
     context "when authenticated as owner" do
       before { sign_in user }

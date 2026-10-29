@@ -61,6 +61,15 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
       end
     end
 
+    context "with an empty layout" do
+      before { setup_rows([ 3, 4 ]) }
+
+      it "keeps existing rows and bushes" do
+        expect { perform("[]") }.not_to change { vineyard.bushes.count }
+        expect(vineyard.rows.count).to eq(2)
+      end
+    end
+
     context "when vineyard does not exist" do
       it "is discarded without raising" do
         expect {

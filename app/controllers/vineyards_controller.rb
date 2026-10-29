@@ -1,4 +1,6 @@
 class VineyardsController < ApplicationController
+  LAYOUT_ATTRIBUTES = %w[polygon row_spacing bush_spacing reference_side_index reference_vertex_is_first].freeze
+
   def index
     @map_center, @map_zoom = initialize_map
     @mode = "index"
@@ -62,8 +64,18 @@ class VineyardsController < ApplicationController
     @vineyard = Vineyard.active.find(params[:id])
     authorize @vineyard
 
-    if @vineyard.update(vineyard_params_permit)
-      RegenerateRowsAndBushesJob.perform_later(@vineyard.id, params[:vineyard][:bushes_per_row])
+    @vineyard.assign_attributes(vineyard_params_permit)
+    # Ряды пересчитываем только при изменении геометрии и только по валидной раскладке с карты:
+    # пустой "[]" (карта не пересчитала поле) иначе удалил бы все ряды и кусты
+    layout_changed = @vineyard.changed.intersect?(LAYOUT_ATTRIBUTES)
+    bushes_per_row = parse_bushes_per_row(params[:vineyard][:bushes_per_row])
+
+    if layout_changed && bushes_per_row.nil?
+      @vineyard.errors.add(:base, "Не удалось рассчитать ряды и кусты. Дождитесь загрузки карты и попробуйте снова")
+      setup_edit_form_data
+      render :edit, status: :unprocessable_entity
+    elsif @vineyard.save
+      RegenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row) if layout_changed
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
       setup_edit_form_data
@@ -168,6 +180,16 @@ class VineyardsController < ApplicationController
         grape_variety: v.grape_variety
       }
     end
+  end
+
+  # Массив непустой, из целых >= 0, хотя бы один ряд с кустами; иначе nil
+  def parse_bushes_per_row(raw)
+    counts = JSON.parse(raw.to_s)
+    return unless counts.is_a?(Array) && counts.all? { |c| c.is_a?(Integer) && c >= 0 } && counts.any?(&:positive?)
+
+    counts
+  rescue JSON::ParserError
+    nil
   end
 
   def vineyard_params_permit

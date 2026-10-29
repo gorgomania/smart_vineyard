@@ -16,6 +16,9 @@ class RegenerateRowsAndBushesJob < ApplicationJob
       new_bushes_per_row = JSON.parse(new_bushes_per_row).map(&:to_i)
     end
 
+    # Пустая раскладка означает, что карта ничего не посчитала, а не «удалить все ряды»
+    return if new_bushes_per_row.blank? || new_bushes_per_row.none?(&:positive?)
+
     max_length = [ new_bushes_per_row.length, bushes_per_row.length ].max
     a1 = new_bushes_per_row + [ 0 ] * (max_length - new_bushes_per_row.length)
     a2 = bushes_per_row + [ 0 ] * (max_length - bushes_per_row.length)
