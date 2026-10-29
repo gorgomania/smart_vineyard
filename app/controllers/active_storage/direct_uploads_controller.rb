@@ -3,11 +3,16 @@ class ActiveStorage::DirectUploadsController < ApplicationController
   # Без этого в production — "Missing host to link to!" (в development спасал routes.default_url_options)
   include ActiveStorage::SetCurrent
 
+  # Сервис :local проверяет срок токена, когда Puma уже приняла всё тело запроса. Со штатными 5 минутами
+  # файл до 1 ГБ, который грузится дольше, дошёл бы до конца и получил отказ. Больше таймаута загрузки
+  # (uploadTimeoutSeconds в чарте, 1 час) с запасом на подсчёт checksum в браузере
+  UPLOAD_URL_EXPIRES_IN = 2.hours
+
   def create
     blob = ActiveStorage::Blob.create_before_direct_upload!(**blob_args)
     render json: blob.as_json(root: false, methods: :signed_id).merge(
       "direct_upload" => {
-        "url" => blob.service_url_for_direct_upload,
+        "url" => blob.service_url_for_direct_upload(expires_in: UPLOAD_URL_EXPIRES_IN),
         "headers" => blob.service_headers_for_direct_upload
       }
     )

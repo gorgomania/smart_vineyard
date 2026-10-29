@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "ActiveStorage overrides", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user)       { create(:user) }
   let(:other_user) { create(:user) }
 
@@ -30,6 +32,20 @@ RSpec.describe "ActiveStorage overrides", type: :request do
       expect(body["signed_id"]).to be_present
       expect(body.dig("direct_upload", "url")).to be_present
       expect(ActiveStorage::Blob.find_signed(body["signed_id"]).metadata["user_id"]).to eq(user.id)
+    end
+
+    # Большой файл грузится дольше штатных 5 минут, а токен проверяется уже после приёма всего тела
+    it "issues an upload URL that stays valid for a long upload" do
+      sign_in user
+      post "/rails/active_storage/direct_uploads", params:, as: :json
+      token = URI(response.parsed_body.dig("direct_upload", "url")).path.split("/").last
+
+      travel 90.minutes do
+        expect(ActiveStorage.verifier.verified(token, purpose: :blob_token)).to be_present
+      end
+      travel 3.hours do
+        expect(ActiveStorage.verifier.verified(token, purpose: :blob_token)).to be_nil
+      end
     end
   end
 
