@@ -35,6 +35,19 @@ RSpec.describe DistributeMediaToBushesJob, type: :job do
       end
     end
 
+    context "when two files in one batch point to the same bush" do
+      it "assigns the bush to the first file only" do
+        row    = create(:row, vineyard:, row_number: 1)
+        bush   = create(:bush, vineyard:, row:, bush_number: 1)
+        first  = create(:media_item, :with_named_image, folder:, image_filename: "Ряд 1 Куст 1.jpg")
+        second = create(:media_item, :with_named_image, folder:, image_filename: "Ряд 1 Куст 1(2).jpg")
+
+        expect { described_class.new.perform([ first.id, second.id ]) }.not_to raise_error
+        expect(first.reload.bush_id).to eq(bush.id)
+        expect(second.reload.bush_id).to be_nil
+      end
+    end
+
     context "when filename does not match the pattern" do
       it "does not assign a bush" do
         item = create(:media_item, :with_named_image,

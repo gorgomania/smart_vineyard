@@ -20,6 +20,14 @@ RSpec.describe MediaItem, type: :model do
       duplicate = build(:media_item, folder:, bush:)
       expect(duplicate).not_to be_valid
     end
+
+    it "enforces one media_item per bush at the database level" do
+      row  = create(:row, vineyard:, row_number: 1)
+      bush = create(:bush, vineyard:, row:, bush_number: 1)
+      create(:media_item, folder:, bush:)
+      other = create(:media_item, folder:)
+      expect { other.update_column(:bush_id, bush.id) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
   end
 
   describe "#row_number" do

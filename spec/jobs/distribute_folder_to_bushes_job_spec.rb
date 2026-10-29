@@ -35,6 +35,18 @@ RSpec.describe DistributeFolderToBushesJob, type: :job do
       end
     end
 
+    context "when a parallel job takes the bush first (unique index)" do
+      it "leaves the file unattached and keeps going" do
+        row = create(:row, vineyard:, row_number: 1)
+        create(:bush, vineyard:, row:, bush_number: 1)
+        item = create(:media_item, :with_named_image, folder:, image_filename: "Ряд 1 Куст 1.jpg")
+        allow_any_instance_of(MediaItem).to receive(:update).and_raise(ActiveRecord::RecordNotUnique)
+
+        expect { described_class.new.perform(folder.id) }.not_to raise_error
+        expect(item.reload.bush_id).to be_nil
+      end
+    end
+
     context "when filename does not match the pattern" do
       it "does not assign a bush" do
         create(:row, vineyard:, row_number: 1)

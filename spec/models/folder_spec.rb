@@ -29,6 +29,13 @@ RSpec.describe Folder, type: :model do
       duplicate = build(:folder, user:, title: "Other", vineyard:)
       expect(duplicate).not_to be_valid
     end
+
+    it "enforces one folder per vineyard at the database level" do
+      vineyard = create(:vineyard, user:)
+      create(:folder, user:, vineyard:)
+      other = create(:folder, user:, title: "Other")
+      expect { other.update_column(:vineyard_id, vineyard.id) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
   end
 
   describe "#title_path" do

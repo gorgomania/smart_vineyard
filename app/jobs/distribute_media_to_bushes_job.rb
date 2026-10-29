@@ -1,5 +1,7 @@
 class DistributeMediaToBushesJob < ApplicationJob
   queue_as :default
+  # Параллельная задача заняла куст между проверкой и UPDATE: при повторе он попадёт в occupied_bush_ids
+  retry_on ActiveRecord::RecordNotUnique, wait: 1.second, attempts: 3
 
   def perform(media_item_ids)
     media_items = MediaItem.where(id: media_item_ids)
@@ -24,7 +26,8 @@ class DistributeMediaToBushesJob < ApplicationJob
       next unless match
 
       bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
-      item_to_bush[media.id] = bush.id if bush
+      # Один куст — один файл: "Ряд 1 Куст 1.jpg" и "Ряд 1 Куст 1(2).jpg" претендуют на один куст, берём первый
+      item_to_bush[media.id] = bush.id if bush && !item_to_bush.value?(bush.id)
     end
     return if item_to_bush.empty?
 

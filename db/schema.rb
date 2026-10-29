@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_27_124308) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_29_170000) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -74,7 +74,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_124308) do
     t.index ["user_id", "title", "parent_id"], name: "index_folders_on_user_id_and_title_and_parent_id", unique: true
     t.index ["user_id", "title"], name: "index_folders_on_user_id_and_title", unique: true, where: "(parent_id IS NULL)"
     t.index ["user_id"], name: "index_folders_on_user_id"
-    t.index ["vineyard_id"], name: "index_folders_on_vineyard_id"
+    t.index ["vineyard_id"], name: "index_folders_on_vineyard_id", unique: true
   end
 
   create_table "public.media_items", force: :cascade do |t|
@@ -87,7 +87,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_27_124308) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["ai_class_id"], name: "index_media_items_on_ai_class_id"
-    t.index ["bush_id"], name: "index_media_items_on_bush_id"
+    t.index ["bush_id"], name: "index_media_items_on_bush_id", unique: true
     t.index ["folder_id", "created_at"], name: "index_media_items_on_folder_id_and_created_at"
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end
