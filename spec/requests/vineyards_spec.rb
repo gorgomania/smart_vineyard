@@ -60,7 +60,8 @@ RSpec.describe "Vineyards", type: :request do
           total_rows: 5,
           total_bushes: 50,
           row_spacing: 2.5,
-          bush_spacing: 1.5
+          bush_spacing: 1.5,
+          bushes_per_row: "[10,10,10,10,10]"
         }
       }
     end
@@ -80,6 +81,21 @@ RSpec.describe "Vineyards", type: :request do
           post vineyards_path, params: valid_params
         }.to change(Vineyard, :count).by(1)
         expect(response).to redirect_to(vineyard_path(Vineyard.last))
+      end
+
+      it "enqueues GenerateRowsAndBushesJob with parsed counts" do
+        expect {
+          post vineyards_path, params: valid_params
+        }.to have_enqueued_job(GenerateRowsAndBushesJob).with(kind_of(Integer), [ 10, 10, 10, 10, 10 ])
+      end
+
+      it "does not create when bushes_per_row was not calculated" do
+        params = valid_params.deep_merge(vineyard: { bushes_per_row: "[]" })
+        expect {
+          post vineyards_path, params:
+        }.not_to change(Vineyard, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("Не удалось рассчитать ряды и кусты")
       end
 
       it "does not create with invalid params" do

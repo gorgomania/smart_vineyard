@@ -1,5 +1,6 @@
 class VineyardsController < ApplicationController
   LAYOUT_ATTRIBUTES = %w[polygon row_spacing bush_spacing reference_side_index reference_vertex_is_first].freeze
+  LAYOUT_NOT_CALCULATED_MESSAGE = "Не удалось рассчитать ряды и кусты. Дождитесь загрузки карты и попробуйте снова".freeze
 
   def index
     @map_center, @map_zoom = initialize_map
@@ -45,8 +46,15 @@ class VineyardsController < ApplicationController
 
   def create
     @vineyard = current_user.vineyards.build(vineyard_params_permit)
-    if @vineyard.save
-      GenerateRowsAndBushesJob.perform_later(@vineyard.id, params[:vineyard][:bushes_per_row])
+    bushes_per_row = parse_bushes_per_row(params[:vineyard][:bushes_per_row])
+
+    if bushes_per_row.nil?
+      @vineyard.valid? # чтобы вместе показать и остальные ошибки формы
+      @vineyard.errors.add(:base, LAYOUT_NOT_CALCULATED_MESSAGE)
+      setup_new_form_data
+      render :new, status: :unprocessable_entity
+    elsif @vineyard.save
+      GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
       redirect_to @vineyard, notice: "Виноградник создан"
     else
       setup_new_form_data
@@ -71,7 +79,8 @@ class VineyardsController < ApplicationController
     bushes_per_row = parse_bushes_per_row(params[:vineyard][:bushes_per_row])
 
     if layout_changed && bushes_per_row.nil?
-      @vineyard.errors.add(:base, "Не удалось рассчитать ряды и кусты. Дождитесь загрузки карты и попробуйте снова")
+      @vineyard.valid?
+      @vineyard.errors.add(:base, LAYOUT_NOT_CALCULATED_MESSAGE)
       setup_edit_form_data
       render :edit, status: :unprocessable_entity
     elsif @vineyard.save
