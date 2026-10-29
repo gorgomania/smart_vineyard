@@ -22,75 +22,92 @@ A web application for vineyard management with AI-based vine health classificati
 
 ## Features
 
-- **Vineyard map** — add and edit vineyards via an interactive map (Yandex Maps)
-- **Row and bush structure** — automatic generation of rows and bushes from given parameters
-- **Media library** — upload photos and videos, organize into folders, link to specific bushes
-- **AI classification** — analyze vine health from a photo (black rot, ESCA, leaf blight, healthy) using an ONNX model
-- **Statistics** — vineyard health summary with charts
-- **Background jobs** — ZIP archive processing, preview generation, media distribution to bushes via Solid Queue
+- **Vineyard map** — draw and edit vineyard polygons on an interactive map (Yandex Maps)
+- **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place
+- **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`)
+- **AI classification** — vine health from a photo (black rot, ESCA, leaf blight, healthy) with a local ONNX model
+- **Statistics** — disease breakdown charts and a per-bush health heatmap
+- **Demo mode** — a "Demo account" button on the login page clones a master account into a temporary user that is deleted after 24 hours
 
 ## Stack
 
-- **Ruby on Rails 8.1** + PostgreSQL + PostGIS
-- **Devise** — authentication
-- **Pundit** — authorization
-- **Solid Queue / Solid Cache** — queues, cache
-- **Action Cable** — WebSocket (Redis in production)
-- **ActiveStorage** — media file storage
-- **ONNX Runtime** — AI model inference
-- **Hotwire** (Turbo + Stimulus) + TailwindCSS 4
+- **Ruby on Rails 8.1**, Ruby 3.3.12, PostgreSQL 16 + PostGIS
+- **Devise** — authentication (with email confirmation), **Pundit** — authorization
+- **Solid Queue** — background jobs, **Solid Cable** — Action Cable over PostgreSQL (no Redis)
+- **ActiveStorage** — media storage on local disk (a persistent volume in production)
+- **ONNX Runtime** + **libvips** — AI inference and image processing, **FFmpeg** — video previews
+- **Hotwire** (Turbo + Stimulus), importmap, TailwindCSS 4, Chart.js
+- Deployment: Docker image (arm64) + Helm chart on k3s, GitHub Actions CI/CD
 
 ## Requirements
 
-- Ruby 3.3+
-- PostgreSQL with PostGIS extension
-- FFmpeg (for video previews)
-- libvips (for image processing)
-- Redis (production only — ActionCable adapter)
+- Ruby 3.3.12 (`.ruby-version`)
+- PostgreSQL with the PostGIS extension
+- libvips and FFmpeg
 
 ## Configuration
 
-### Rails credentials (development)
+### Development: `.env`
+
+Settings are read from environment variables; in development they are loaded from `.env` in the project root by `dotenv-rails` (the file is git-ignored):
+
+```dotenv
+# Database (database names are fixed in config/database.yml)
+DB_USER=
+DB_PASSWORD=
+DB_HOST=localhost
+DB_PORT=5432
+
+# Yandex Maps JavaScript API key — required for the map
+YANDEX_MAPS_API_KEY=
+
+# SMTP for Devise emails (Yandex by default)
+SMTP_USER_NAME=
+SMTP_PASSWORD=
+
+# Optional: email of the account cloned into demo users; the demo button is hidden if empty
+DEMO_MASTER_EMAIL=
+```
+
+### Production: Kubernetes secret
+
+The Helm chart reads secrets from `smart-vineyard-secrets` in the `smart-vineyard` namespace (`chart/templates/_helpers.tpl`):
+
+| Secret key            | Env variable          | Required | Notes                                   |
+|-----------------------|-----------------------|----------|-----------------------------------------|
+| `db-name`             | `DB_NAME`             | yes      | also used by the Postgres StatefulSet   |
+| `db-user`             | `DB_USER`             | yes      |                                         |
+| `db-password`         | `DB_PASSWORD`         | yes      |                                         |
+| `secret-key-base`     | `SECRET_KEY_BASE`     | yes      |                                         |
+| `smtp-user-name`      | `SMTP_USER_NAME`      | yes      |                                         |
+| `smtp-password`       | `SMTP_PASSWORD`       | yes      |                                         |
+| `smtp-address`        | `SMTP_ADDRESS`        | no       | default `smtp.yandex.ru`                |
+| `smtp-port`           | `SMTP_PORT`           | no       | default `465`                           |
+| `smtp-domain`         | `SMTP_DOMAIN`         | no       | default `yandex.ru`                     |
+| `mailer-sender`       | `MAILER_SENDER`       | no       | "From" address of Devise emails         |
+| `yandex-maps-api-key` | `YANDEX_MAPS_API_KEY` | no       | the map does not load without it        |
+| `demo-master-email`   | `DEMO_MASTER_EMAIL`   | no       | enables demo mode                       |
+
+Add or change a key, then restart the pods (env from a secret is read only at startup):
 
 ```bash
-bin/rails credentials:edit
+kubectl -n smart-vineyard patch secret smart-vineyard-secrets \
+  --type merge -p '{"stringData":{"demo-master-email":"master@example.com"}}'
+kubectl -n smart-vineyard rollout restart deploy
 ```
 
-```yaml
-yandex:
-  api_key: <Yandex Maps API key>
-
-smtp:
-  user_name: <email@yandex.ru>
-  password: <app password>
-```
-
-### Environment variables (production)
-
-| Variable              | Description                                        |
-|-----------------------|----------------------------------------------------|
-| `YANDEX_MAPS_API_KEY` | Yandex Maps API key                                |
-| `SMTP_USER_NAME`      | Email address for sending mail                     |
-| `SMTP_PASSWORD`       | SMTP password                                      |
-| `SMTP_ADDRESS`        | SMTP server (default: `smtp.yandex.ru`)            |
-| `DB_NAME`             | Database name                                      |
-| `DB_USER`             | Database user                                      |
-| `DB_PASSWORD`         | Database password                                  |
-| `DB_HOST`             | Database host                                      |
+Non-secret settings (host, threads, DB pool, log level, resources, volume sizes) live in `chart/values.yaml`.
 
 ## Setup
 
 ```bash
 git clone <repo>
 cd smart_vineyard
-bundle install
-
-# Create the database and run migrations
-bin/rails db:create db:migrate
-
-# Start in development
-bin/dev
+# create .env (see above)
+bin/setup     # bundle install + db:prepare (primary, queue and cable databases) + starts bin/dev
 ```
+
+`bin/dev` runs the web server, the Tailwind watcher and the Solid Queue worker (`Procfile.dev`). Use `bin/rails db:prepare` rather than `db:create db:migrate`: it also loads the `queue` and `cable` database schemas.
 
 ## Tests
 
@@ -98,35 +115,49 @@ bin/dev
 bundle exec rspec
 ```
 
-Stack: RSpec + FactoryBot + Shoulda Matchers + Faker, 143 examples. Tests are split into three groups.
+RSpec + FactoryBot + Shoulda Matchers + Faker, 207 examples:
 
-**Models** (`spec/models/`) — validations, associations, scopes, instance methods:
-- `Vineyard` — area limits, soft-delete via `#destroy`, `area_hectares=` strips the "га" suffix
-- `Folder` — uniqueness per user/parent, `#title_path` / `#id_path` for nested folders
-- `Row`, `Bush` — associations, validations, `#display_name`
-- `MediaItem` — associations, validations, `#row_number`, `#vineyard_name`, `#normalize_filename!`, `#classify!`
+- `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard)
+- `spec/jobs/` — every background job: row/bush generation and regeneration, ZIP processing, bush distribution, previews, classification, demo cloning and cleanup, storage cleanup and its schedule
+- `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model)
+- `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides, `/up`
 
-**Jobs** (`spec/jobs/`) — unit tests for all background jobs:
-- `GenerateRowsAndBushesJob` — creates correct row/bush counts from array or JSON string input
-- `RegenerateRowsAndBushesJob` — drops existing rows/bushes and recreates them
-- `ProcessZipJob` — extracts images from ZIP, skips unsupported formats, cleans up on error
-- `ClassifyMediaJob` — calls `classify!` on media item, handles missing record/attachment gracefully
-- `AttachMediaJob`, `DistributeMediaToBushesJob`, `DistributeFolderToBushesJob` — filename-based bush assignment
-- `GenerateImagePreviewJob`, `GenerateVideoPreviewJob`, `NormalizeMediaFilenamesJob`
-- `DestroyVineyardJob`, `CleanupOrphanedActiveStorageRecordsJob`
-
-**Requests** (`spec/requests/`) — HTTP-level integration tests covering auth, authorization, and happy paths:
-- `Vineyards` — index/show/create/delete; 404 for other users' vineyards
-- `Folders` — index with search, show, access denied for other users
-- `MediaItems` — show, upload (enqueues `AttachMediaJob`), delete, classify, attach/detach bush
-- `Rows` — JSON endpoint
-- `Registrations` — Devise sign-up flow
+CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop.
 
 ## Background Jobs
 
-Solid Queue starts automatically via `bin/dev`. Queues:
-- `default` — main jobs (bush generation, classification, media upload)
-- `low_priority` — image and video previews, filename normalization
+Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in production). Queues:
+
+- `default` — row/bush generation, classification, uploads and ZIP processing, distribution to bushes, demo cloning
+- `low_priority` — image and video previews, storage cleanup
+
+Recurring tasks (`config/recurring.yml`, production only):
+
+- `cleanup_orphaned_storage` — daily at 3:00, removes unattached blobs and attachments of deleted records (shared demo blobs and pending ZIP uploads are kept)
+- `clear_solid_queue_finished_jobs` — hourly
+
+## Demo Mode
+
+When `DEMO_MASTER_EMAIL` is set and points to an existing user, the login page shows a "Demo account" button (`POST /demo_session`):
+
+1. `DemoCloneService` creates a temporary confirmed user and copies the master's active vineyards, rows, bushes and folders.
+2. `CloneDemoMediaJob` copies media items; they share the master's files (no file copies). Renaming a file in the demo first gives it its own copy, so the master is never changed.
+3. `CleanupDemoUserJob` deletes the demo user after 24 hours; shared files stay with the master.
+
+Demo creation is rate limited: 10 per hour per IP and 100 per hour overall.
+
+## Deployment
+
+Pushing to `main` runs CI; when it passes, `.github/workflows/deploy.yml`:
+
+1. checks that the commit is newer than the one in production (an older CI run finishing late never rolls production back);
+2. builds an arm64 image and pushes `ghcr.io/gorgomania/smart_vineyard:<sha>`;
+3. copies `chart/` to the server and runs `helm upgrade --install smart-vineyard ... --set image.tag=<sha>`;
+4. tags the deployed image as `latest`.
+
+Deploys run one at a time. A manual run is available via "Run workflow" (`workflow_dispatch`). Migrations run on pod start (`bin/docker-entrypoint` → `db:prepare`).
+
+Required repository secrets: `SSH_HOST`, `SSH_KEY`.
 
 ## AI Classification
 
@@ -164,10 +195,14 @@ For each image the model returns the predicted class, confidence score, and per-
 
 ```
 User
-└── Vineyard
-    ├── Row
-    │   └── Bush
-    │       └── MediaItem (photo/video with AI classification)
-    └── Folder (media folder)
-        └── MediaItem
+├── Vineyard (soft delete via deleted_at)
+│   └── Row
+│       └── Bush
+└── Folder (nested via parent_id)
+    └── MediaItem (photo/video, preview, AI classification)
 ```
+
+Links between the two trees (both optional and unique):
+
+- `Folder.vineyard_id` — at most one folder per vineyard; files in it are distributed to the vineyard's bushes by name
+- `MediaItem.bush_id` — at most one file per bush
