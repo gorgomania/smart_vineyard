@@ -18,9 +18,10 @@ private
       .left_joins(:attachments)
       .where(active_storage_attachments: { id: nil })
       .where("active_storage_blobs.created_at < ?", 1.hour.ago)
+      # По расширению, а не content_type: его задаёт браузер (application/x-zip-compressed в Windows, иногда пусто)
       .where.not(
-        "active_storage_blobs.content_type = ? AND active_storage_blobs.created_at >= ?",
-        "application/zip", ZIP_GRACE_PERIOD.ago
+        "active_storage_blobs.filename ILIKE ? AND active_storage_blobs.created_at >= ?",
+        "%.zip", ZIP_GRACE_PERIOD.ago
       )
 
     count = orphaned_blobs.count

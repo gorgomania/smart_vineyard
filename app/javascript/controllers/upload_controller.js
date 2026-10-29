@@ -1,6 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 import { DirectUpload } from "@rails/activestorage"
 
+const MAX_FILE_SIZE = 1073741824 // 1 ГБ
+const DIRECT_UPLOAD_URL = "/rails/active_storage/direct_uploads"
+
+// Все файлы (включая ZIP) сразу грузятся через DirectUpload, прогресс считается по байтам.
+// При отправке формы уходят только signed id: сами файлы второй раз не передаются
 export default class extends Controller {
   static targets = [
     "fileInput", "dropZone", "previewContainer", "errorContainer",
@@ -9,46 +14,17 @@ export default class extends Controller {
   ]
 
   connect() {
-    this.uploadedBlobs = []
-    this.pendingUploads = 0
-    this.totalFiles = 0
+    // ключ name_size → { file, isZip, loaded, status: preparing|uploading|done|error, signedId, xhr, wrapper, overlay }
+    this.uploads = new Map()
+    this.render()
   }
 
   fileInputChange(event) {
     event.preventDefault()
-    event.stopPropagation()
-
     this.errorContainerTarget.innerHTML = ""
-    this.previewContainerTarget.innerHTML = ""
-    this.uploadedBlobs = []
-    this.pendingUploads = 0
-    this.totalFiles = 0
-    this.progressContainerTarget.classList.add("hidden")
-    this.progressBarTarget.style.width = "0%"
-
-    const dataTransfer = new DataTransfer()
-    const fileInput = this.fileInputTarget
-    const filesToPreview = []
-
-    for (let i = 0; i < fileInput.files.length; i++) {
-      const file = fileInput.files[i]
-      const isZip = file.name.toLowerCase().endsWith(".zip")
-      const isSizeValid = file.size <= 1073741824
-
-      if (isSizeValid) {
-        const isValidType = isZip || file.type.startsWith("image/") || file.type.startsWith("video/")
-        if (isValidType) {
-          dataTransfer.items.add(file)
-          filesToPreview.push(file)
-        } else {
-          this.showError("Недопустимый тип файла " + file.name)
-        }
-      } else {
-        this.showError("Недопустимый размер файла " + file.name)
-      }
-    }
-    fileInput.files = dataTransfer.files
-    this.showPreview(filesToPreview)
+    this.addFiles(this.fileInputTarget.files)
+    // Чтобы повторный выбор того же файла снова вызвал change
+    this.fileInputTarget.value = ""
   }
 
   dragOver(event) {
@@ -62,267 +38,218 @@ export default class extends Controller {
   }
 
   drop(event) {
-    this.errorContainerTarget.innerHTML = ""
     event.preventDefault()
     event.stopPropagation()
+    this.errorContainerTarget.innerHTML = ""
     this.dropZoneTarget.classList.remove("border-purple-500", "bg-purple-100")
-    this.addFilesWithCheckDuplicates(event.dataTransfer.files)
+    this.addFiles(event.dataTransfer.files)
   }
 
   submit(event) {
-    if (this.uploadedBlobs.length === 0) {
+    const done = [ ...this.uploads.values() ].filter(u => u.status === "done")
+    if (this.pending().length > 0 || done.length === 0) {
       event.preventDefault()
-      this.showError("Нет загруженных файлов")
+      if (done.length === 0) this.showError("Нет загруженных файлов")
       return
     }
-    const blobInput = document.createElement("input")
-    blobInput.type = "hidden"
-    blobInput.name = "signed_blob_ids"
-    blobInput.value = this.uploadedBlobs.map(b => b.signed_id).join(",")
-    this.formTarget.appendChild(blobInput)
+
+    this.appendHidden("signed_blob_ids", done.filter(u => !u.isZip).map(u => u.signedId))
+    this.appendHidden("signed_zip_ids", done.filter(u => u.isZip).map(u => u.signedId))
+    // Файлы уже на сервере: отключённое поле не попадает в тело запроса
+    this.fileInputTarget.disabled = true
   }
 
-  addFilesWithCheckDuplicates(newFiles) {
-    const dataTransfer = new DataTransfer()
-    const fileInput = this.fileInputTarget
-    const existingFiles = fileInput.files
-    const existingFilesMap = new Map()
+  // --- добавление файлов ---
 
-    for (let i = 0; i < existingFiles.length; i++) {
-      existingFilesMap.set(`${existingFiles[i].name}_${existingFiles[i].size}`, true)
-      dataTransfer.items.add(existingFiles[i])
-    }
-
-    const filesToPreview = []
-    for (let i = 0; i < newFiles.length; i++) {
-      const file = newFiles[i]
+  addFiles(files) {
+    Array.from(files).forEach(file => {
       const key = `${file.name}_${file.size}`
-      const isZip = file.name.toLowerCase().endsWith(".zip")
-      const isSizeValid = file.size <= 1073741824
+      if (this.uploads.has(key)) return
 
-      if (isSizeValid) {
-        const isValidType = isZip || file.type.startsWith("image/") || file.type.startsWith("video/")
-        if (isValidType) {
-          if (!existingFilesMap.has(key)) {
-            dataTransfer.items.add(file)
-            filesToPreview.push(file)
-          }
-        } else {
-          this.showError("Недопустимый тип файла " + file.name)
-        }
-      } else {
-        this.showError("Недопустимый размер файла " + file.name)
+      const isZip = file.name.toLowerCase().endsWith(".zip")
+      if (file.size > MAX_FILE_SIZE) return this.showError("Недопустимый размер файла " + file.name)
+      if (!(isZip || file.type.startsWith("image/") || file.type.startsWith("video/"))) {
+        return this.showError("Недопустимый тип файла " + file.name)
       }
-    }
-    fileInput.files = dataTransfer.files
-    this.showPreview(filesToPreview)
+
+      const entry = { key, file, isZip, loaded: 0, status: "preparing", signedId: null, xhr: null }
+      this.uploads.set(key, entry)
+      this.buildPreview(entry)
+      this.startUpload(entry)
+    })
+    this.render()
   }
 
-  showPreview(files) {
-    this.totalFiles += files.length
-    this.progressContainerTarget.classList.remove("hidden")
-    this.updateProgress()
-    files.forEach(file => {
-      const isZip = file.name.toLowerCase().endsWith(".zip")
-      const isVideo = file.type.startsWith("video/")
-      if (isZip) {
-        this.createZipPreview(file)
-      } else if (isVideo) {
-        this.createVideoPreview(file)
-      } else {
-        this.createImagePreview(file)
+  startUpload(entry) {
+    const upload = new DirectUpload(entry.file, DIRECT_UPLOAD_URL, {
+      directUploadWillStoreFileWithXHR: (xhr) => {
+        entry.xhr = xhr
+        entry.status = "uploading"
+        xhr.upload.addEventListener("progress", (e) => {
+          entry.loaded = e.loaded
+          this.render()
+        })
+        this.render()
       }
+    })
+
+    upload.create((error, blob) => {
+      if (!this.uploads.has(entry.key)) return // удалён пользователем во время загрузки
+
+      if (error) {
+        entry.status = "error"
+        this.showError(`Ошибка загрузки "${entry.file.name}": ${error.message || error}`)
+      } else {
+        entry.status = "done"
+        entry.loaded = entry.file.size
+        entry.signedId = blob.signed_id
+      }
+      this.render()
     })
   }
 
-  createZipPreview(file) {
-    const previewWrapper = document.createElement("div")
-    previewWrapper.style.position = "relative"
-    previewWrapper.className = "preview-item"
+  remove(entry) {
+    this.uploads.delete(entry.key)
+    entry.wrapper.remove()
 
-    const zipDiv = document.createElement("div")
-    zipDiv.className = "w-full aspect-square bg-purple-50 rounded-lg border-2 border-purple-300 flex flex-col items-center justify-center"
-    zipDiv.innerHTML = `
-      <span class="text-xs text-[#4e4e4e] mt-2">ZIP архив</span>
-      <span class="text-xs text-slate-500">${(file.size / 1024 / 1024).toFixed(2)} МБ</span>
-    `
+    if (entry.status === "uploading") {
+      entry.xhr?.abort()
+    } else if (entry.status === "done") {
+      const csrfToken = document.querySelector('[name="csrf-token"]').content
+      fetch(`/active_storage/blobs/${entry.signedId}`, {
+        method: "DELETE",
+        headers: { "X-CSRF-Token": csrfToken }
+      })
+    }
+    this.render()
+  }
 
-    const readyMark = document.createElement("div")
-    readyMark.className = "absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center"
-    readyMark.innerHTML = "✓"
+  // --- превью ---
+
+  buildPreview(entry) {
+    const wrapper = document.createElement("div")
+    wrapper.className = "relative"
+    entry.wrapper = wrapper
+
+    if (entry.isZip) {
+      const tile = document.createElement("div")
+      tile.className = "w-full aspect-square bg-purple-50 rounded-lg border-2 border-purple-300 flex flex-col items-center justify-center"
+      tile.innerHTML = `
+        <span class="text-xs text-[#4e4e4e] mt-2">ZIP архив</span>
+        <span class="text-xs text-slate-500">${this.formatMb(entry.file.size)} МБ</span>
+      `
+      wrapper.appendChild(tile)
+    } else {
+      const img = new Image()
+      img.className = "w-full aspect-square object-cover rounded-lg"
+      wrapper.appendChild(img)
+      if (entry.file.type.startsWith("video/")) {
+        this.videoFrame(entry.file, url => { img.src = url })
+        const playIcon = new Image()
+        playIcon.src = "/video_play_violet.png"
+        playIcon.className = "w-3 h-3 absolute top-[14.5px] left-[35.5px]"
+        wrapper.appendChild(playIcon)
+      } else {
+        img.src = URL.createObjectURL(entry.file)
+        img.onload = () => URL.revokeObjectURL(img.src)
+      }
+    }
+
+    entry.overlay = document.createElement("div")
+    entry.overlay.className = "absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center text-white text-xs"
+    wrapper.appendChild(entry.overlay)
 
     const removeBtn = document.createElement("button")
+    removeBtn.type = "button"
     removeBtn.className = "absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white hover:bg-[#69377c]"
     removeBtn.innerHTML = "&times;"
-
     removeBtn.addEventListener("click", (e) => {
       e.preventDefault()
       e.stopPropagation()
-
-      const index = this.uploadedBlobs.findIndex(item => item.filename === file.name)
-      if (index !== -1) this.uploadedBlobs.splice(index, 1)
-      previewWrapper.remove()
-
-      const dt = new DataTransfer()
-      Array.from(this.fileInputTarget.files).forEach(f => {
-        if (f.name !== file.name) dt.items.add(f)
-      })
-      this.fileInputTarget.files = dt.files
-
-      this.totalFiles--
-      this.updateProgress()
-      if (this.previewContainerTarget.children.length === 0) {
-        this.previewContainerTarget.classList.remove("mt-3")
-      }
+      this.remove(entry)
     })
+    wrapper.appendChild(removeBtn)
 
-    previewWrapper.appendChild(zipDiv)
-    previewWrapper.appendChild(removeBtn)
-    previewWrapper.appendChild(readyMark)
-
-    this.uploadedBlobs.push({ signed_id: null, filename: file.name })
-    this.previewContainerTarget.classList.add("mt-3")
-    this.previewContainerTarget.appendChild(previewWrapper)
-    this.updateProgress()
+    this.previewContainerTarget.appendChild(wrapper)
   }
 
-  createImagePreview(file) {
-    const reader = new FileReader()
-    reader.onload = (e) => this.createPreviewWrapper(e.target.result, file)
-    reader.readAsDataURL(file)
-  }
-
-  createVideoPreview(file) {
+  videoFrame(file, callback) {
     const video = document.createElement("video")
     video.src = URL.createObjectURL(file)
     video.muted = true
-    video.crossOrigin = "anonymous"
     video.onloadedmetadata = () => { video.currentTime = video.duration * 0.1 }
     video.onseeked = () => {
       const canvas = document.createElement("canvas")
       canvas.width = video.videoWidth || 640
       canvas.height = video.videoHeight || 480
       canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height)
-      this.createPreviewWrapper(canvas.toDataURL("image/jpeg"), file)
+      callback(canvas.toDataURL("image/jpeg"))
       URL.revokeObjectURL(video.src)
-      video.src = ""
       video.remove()
     }
   }
 
-  createPreviewWrapper(url, file) {
-    const previewWrapper = document.createElement("div")
-    previewWrapper.style.position = "relative"
+  // --- отрисовка состояния ---
 
-    const img = new Image()
-    img.src = url
+  render() {
+    const entries = [ ...this.uploads.values() ]
+    entries.forEach(entry => this.renderEntry(entry))
 
-    const removeBtn = document.createElement("button")
-    removeBtn.className = "absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white hover:bg-[#69377c]"
-    removeBtn.innerHTML = "&times;"
+    this.previewContainerTarget.classList.toggle("mt-3", entries.length > 0)
+    this.progressContainerTarget.classList.toggle("hidden", entries.length === 0)
 
-    removeBtn.addEventListener("click", async (e) => {
-      e.preventDefault()
-      e.stopPropagation()
+    const active = entries.filter(u => u.status !== "error")
+    const totalBytes = active.reduce((sum, u) => sum + u.file.size, 0)
+    const loadedBytes = active.reduce((sum, u) => sum + u.loaded, 0)
+    const percent = totalBytes === 0 ? 0 : Math.floor((loadedBytes / totalBytes) * 100)
+    const done = entries.filter(u => u.status === "done").length
+    const failed = entries.length - active.length
 
-      const blobData = this.uploadedBlobs.find(item => item.filename === file.name)
-      if (blobData) {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content
-        await fetch(`/active_storage/blobs/${blobData.signed_id}`, {
-          method: "DELETE",
-          headers: { "X-CSRF-Token": csrfToken, "Content-Type": "application/json" }
-        })
-        this.uploadedBlobs = this.uploadedBlobs.filter(item => item.filename !== file.name)
-      } else if (this.pendingUploads > 0) {
-        this.pendingUploads--
-      }
-
-      this.totalFiles--
-      this.updateProgress()
-      previewWrapper.remove()
-
-      const dt = new DataTransfer()
-      Array.from(this.fileInputTarget.files).forEach(f => {
-        if (f.name !== file.name) dt.items.add(f)
-      })
-      this.fileInputTarget.files = dt.files
-
-      if (this.previewContainerTarget.children.length === 0) {
-        this.previewContainerTarget.classList.remove("mt-3")
-      }
-    })
-
-    previewWrapper.appendChild(img)
-    previewWrapper.appendChild(removeBtn)
-
-    if (file.type.startsWith("video/")) {
-      const playIcon = new Image()
-      playIcon.src = "/video_play_violet.png"
-      playIcon.className = "w-3 h-3 absolute top-[14.5px] left-[35.5px]"
-      previewWrapper.appendChild(playIcon)
-    }
-
-    img.onload = () => {
-      this.previewContainerTarget.classList.add("mt-3")
-      this.previewContainerTarget.appendChild(previewWrapper)
-      this.startDirectUpload(file, previewWrapper)
-    }
-  }
-
-  startDirectUpload(file, previewWrapper) {
-    this.pendingUploads++
-    this.submitBtnTarget.disabled = true
-    this.submitBtnTarget.value = `Загрузка (${this.uploadedBlobs.length}/${this.totalFiles})...`
-
-    const loadingIndicator = document.createElement("div")
-    loadingIndicator.className = "absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center text-white text-xs"
-    loadingIndicator.innerHTML = "⏳ Загрузка..."
-    previewWrapper.appendChild(loadingIndicator)
-
-    const upload = new DirectUpload(file, "/rails/active_storage/direct_uploads")
-    upload.create((error, blob) => {
-      loadingIndicator.remove()
-      if (error) {
-        this.showError(`Ошибка загрузки "${file.name}": ${error.message || error}`)
-        const errorMark = document.createElement("div")
-        errorMark.className = "absolute top-0 left-0 w-4 h-4 bg-red-500 rounded-full text-white text-xs flex items-center justify-center"
-        errorMark.innerHTML = "✗"
-        previewWrapper.appendChild(errorMark)
-      } else {
-        this.uploadedBlobs.push({ signed_id: blob.signed_id, filename: file.name })
-        const successMark = document.createElement("div")
-        successMark.className = "absolute top-0 left-0 w-4 h-4 bg-green-500 rounded-full text-white text-xs flex items-center justify-center"
-        successMark.innerHTML = "✓"
-        previewWrapper.appendChild(successMark)
-      }
-      this.pendingUploads--
-      this.updateProgress()
-    })
-  }
-
-  updateProgress() {
-    const completed = this.uploadedBlobs.length
-    const percent = this.totalFiles === 0 ? 0 : Math.round((completed / this.totalFiles) * 100)
-
-    this.progressPercentTarget.textContent = `${percent}%`
     this.progressBarTarget.style.width = `${percent}%`
-    this.progressStatusTarget.textContent = `Загружено ${completed} из ${this.totalFiles} файлов`
+    this.progressPercentTarget.textContent = `${percent}%`
 
-    if (this.pendingUploads > 0) {
+    if (this.pending().length > 0) {
+      this.progressStatusTarget.textContent =
+        `Загружено ${done} из ${active.length} · ${this.formatMb(loadedBytes)} из ${this.formatMb(totalBytes)} МБ`
       this.submitBtnTarget.disabled = true
-      this.submitBtnTarget.value = `Загрузка (${completed}/${this.totalFiles})...`
-    } else if (this.pendingUploads === 0 && this.totalFiles > 0) {
-      this.submitBtnTarget.disabled = false
-      this.submitBtnTarget.value = "Загрузить"
-      const status = completed === this.totalFiles
-        ? "✅ Все файлы загружены!"
-        : `✅ Загружено ${completed} из ${this.totalFiles} (с ошибками)`
-      this.progressStatusTarget.textContent = status
+      this.submitBtnTarget.value = `Загрузка ${percent}%...`
     } else {
-      this.submitBtnTarget.disabled = true
+      this.progressStatusTarget.textContent = failed > 0
+        ? `✅ Загружено ${done}, с ошибкой ${failed}`
+        : "✅ Все файлы загружены!"
+      this.submitBtnTarget.disabled = done === 0
       this.submitBtnTarget.value = "Загрузить"
-      this.progressContainerTarget.classList.add("hidden")
     }
+  }
+
+  renderEntry(entry) {
+    const marks = { done: [ "✓", "bg-green-500" ], error: [ "✗", "bg-red-500" ] }
+    if (marks[entry.status]) {
+      const [ symbol, color ] = marks[entry.status]
+      entry.overlay.className = `absolute top-0 left-0 w-4 h-4 ${color} rounded-full text-white text-xs flex items-center justify-center`
+      entry.overlay.textContent = symbol
+    } else if (entry.status === "uploading") {
+      entry.overlay.textContent = `${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`
+    } else {
+      entry.overlay.textContent = "Подготовка..." // считается checksum и создаётся blob
+    }
+  }
+
+  pending() {
+    return [ ...this.uploads.values() ].filter(u => u.status === "preparing" || u.status === "uploading")
+  }
+
+  appendHidden(name, values) {
+    if (values.length === 0) return
+    const input = document.createElement("input")
+    input.type = "hidden"
+    input.name = name
+    input.value = values.join(",")
+    this.formTarget.appendChild(input)
+  }
+
+  formatMb(bytes) {
+    return (bytes / 1024 / 1024).toFixed(1)
   }
 
   showError(message) {

@@ -59,18 +59,33 @@ RSpec.describe "MediaItems", type: :request do
       end
     end
 
-    context "with a ZIP archive" do
-      it "stores the archive as a blob and enqueues ProcessZipJob with it" do
-        zip = Rack::Test::UploadedFile.new(StringIO.new("PK\x05\x06" + "\x00" * 18), "application/zip", original_filename: "photos.zip")
+    context "with ZIP archives uploaded via DirectUpload" do
+      def zip_blob(owner_id, filename: "photos.zip")
+        ActiveStorage::Blob.create_before_direct_upload!(
+          filename:, byte_size: 22, checksum: "abc", content_type: "application/x-zip-compressed",
+          metadata: { "user_id" => owner_id }
+        )
+      end
+
+      it "enqueues ProcessZipJob with the user's archive blob" do
+        blob = zip_blob(user.id)
 
         expect {
-          post media_items_path, params: { media_item: { folder_id: folder.id, media: [ zip ] } }
-        }.to change(ActiveStorage::Blob, :count).by(1)
-
-        blob = ActiveStorage::Blob.last
-        expect(blob.filename.to_s).to eq("photos.zip")
-        expect(ProcessZipJob).to have_been_enqueued.with(folder, blob)
+          post media_items_path, params: { media_item: { folder_id: folder.id }, signed_zip_ids: blob.signed_id }
+        }.to have_enqueued_job(ProcessZipJob).with(folder, blob)
         expect(response).to redirect_to(folder_path(folder, page: "-1"))
+      end
+
+      it "ignores archives uploaded by someone else and non-zip blobs" do
+        foreign = zip_blob(other_user.id)
+        not_zip = zip_blob(user.id, filename: "photo.jpg")
+
+        expect {
+          post media_items_path, params: {
+            media_item: { folder_id: folder.id }, signed_zip_ids: [ foreign.signed_id, not_zip.signed_id ].join(",")
+          }
+        }.not_to have_enqueued_job(ProcessZipJob)
+        expect(response).to redirect_to(new_media_item_path(folder_id: folder.id))
       end
     end
   end

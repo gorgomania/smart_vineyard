@@ -20,29 +20,20 @@ class MediaItemsController < ApplicationController
     @folder = Folder.find(media_item_params[:folder_id])
     authorize @folder, :create_media_item?
 
-    blob_ids = params[:signed_blob_ids]&.split(",")
-    uploaded_files = Array(media_item_params[:media]).select(&:present?)
-
-    # Находим все ZIP среди загруженных файлов
-    zip_files = uploaded_files.select { |f| f.original_filename.to_s.end_with?(".zip") }
+    # Все файлы, включая ZIP, браузер уже загрузил через DirectUpload и прислал только signed id
+    blob_ids = params[:signed_blob_ids].to_s.split(",").compact_blank
+    zip_blobs = params[:signed_zip_ids].to_s.split(",").compact_blank
+                      .filter_map { |id| ActiveStorage::Blob.find_signed(id) }
+                      .select { |blob| own_zip_blob?(blob) }
 
     # Проверяем, было ли что-то загружено
-    if zip_files.blank? && blob_ids.blank?
+    if zip_blobs.blank? && blob_ids.blank?
       flash[:alert] = [ "Сначала выберите файл" ]
       redirect_to new_media_item_path(folder_id: @folder)
       return
     end
 
-    # Обрабатываем все ZIP: кладём архив в ActiveStorage, чтобы воркер в другом поде его увидел
-    zip_files.each do |zip_file|
-      zip_blob = ActiveStorage::Blob.create_and_upload!(
-        io: zip_file,
-        filename: zip_file.original_filename,
-        content_type: "application/zip",
-        identify: false
-      )
-      ProcessZipJob.perform_later(@folder, zip_blob)
-    end
+    zip_blobs.each { |zip_blob| ProcessZipJob.perform_later(@folder, zip_blob) }
 
     # Обрабатываем обычные файлы если есть
     if blob_ids.present?
@@ -51,7 +42,7 @@ class MediaItemsController < ApplicationController
 
     # Формируем сообщение
     messages = []
-    messages << "#{zip_files.count} ZIP #{Russian.p(zip_files.count, 'архив', 'архива', 'архивов')}" if zip_files.present?
+    messages << "#{zip_blobs.count} ZIP #{Russian.p(zip_blobs.count, 'архив', 'архива', 'архивов')}" if zip_blobs.present?
     messages << "#{blob_ids.count} #{Russian.p(blob_ids.count, 'файл', 'файла', 'файлов')}" if blob_ids.present?
 
     redirect_to folder_path(@folder, page: "-1"), notice: "#{messages.join(' и ')} загружаются в фоне"
@@ -204,6 +195,11 @@ class MediaItemsController < ApplicationController
 
 private
   def media_item_params
-    params.require(:media_item).permit(:folder_id, :filename, media: [])
+    params.require(:media_item).permit(:folder_id, :filename)
+  end
+
+  # signed id сам по себе не доказывает владение: проверяем, что архив загрузил этот пользователь
+  def own_zip_blob?(blob)
+    blob.metadata["user_id"] == current_user.id && blob.filename.extension.casecmp?("zip")
   end
 end
