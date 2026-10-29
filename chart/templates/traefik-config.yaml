@@ -1,0 +1,18 @@
+{{- if .Values.traefik.preserveClientIp }}
+# Настройка встроенного traefik k3s: k3s helm-controller подхватывает HelmChartConfig из kube-system
+# и переустанавливает traefik с этими values.
+# externalTrafficPolicy: Local — без SNAT на входе, чтобы Rails видел реальный IP клиента
+# (иначе все запросы приходят от 10.42.0.1 и rate_limit демо-входа общий на всех)
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+  labels:
+    {{- include "sv.labels" . | nindent 4 }}
+spec:
+  valuesContent: |-
+    service:
+      spec:
+        externalTrafficPolicy: Local
+{{- end }}
