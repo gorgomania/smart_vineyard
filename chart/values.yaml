@@ -14,12 +14,18 @@ ingress:
   clusterIssuer: letsencrypt-prod
   httpsRedirect: true
 
+logLevel: info            # RAILS_LOG_LEVEL: debug | info | warn | error
+
 web:
+  threads: 3              # RAILS_MAX_THREADS — потоки Puma
+  dbPool: 10              # DB_POOL — потоки Puma + Action Cable (worker_pool_size 4) + запас
   resources:
     requests: { cpu: 200m, memory: 512Mi }
     limits: { cpu: "2", memory: 4Gi }
 
 worker:
+  concurrency: 1          # JOB_CONCURRENCY — процессы solid_queue, по 20 потоков (config/queue.yml)
+  dbPool: 25              # DB_POOL и QUEUE_DB_POOL на процесс: 20 потоков задач + служебные
   resources:
     requests: { cpu: 200m, memory: 512Mi }
     limits: { cpu: "2", memory: 3Gi }

@@ -34,6 +34,11 @@ spec:
               containerPort: 80
           env:
             {{- include "sv.appEnv" . | nindent 12 }}
+            # Только для web: в worker RAILS_MAX_THREADS урезал бы DB_POOL (он берётся из него по умолчанию)
+            - name: RAILS_MAX_THREADS
+              value: {{ .Values.web.threads | quote }}
+            - name: DB_POOL
+              value: {{ .Values.web.dbPool | quote }}
           volumeMounts:
             - name: storage
               mountPath: /rails/storage

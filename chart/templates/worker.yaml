@@ -33,6 +33,13 @@ spec:
           command: ["bin/jobs"]
           env:
             {{- include "sv.appEnv" . | nindent 12 }}
+            - name: JOB_CONCURRENCY
+              value: {{ .Values.worker.concurrency | quote }}
+            # Пул на процесс: 20 потоков задач (config/queue.yml) + служебные потоки solid_queue
+            - name: DB_POOL
+              value: {{ .Values.worker.dbPool | quote }}
+            - name: QUEUE_DB_POOL
+              value: {{ .Values.worker.dbPool | quote }}
           volumeMounts:
             - name: storage
               mountPath: /rails/storage
