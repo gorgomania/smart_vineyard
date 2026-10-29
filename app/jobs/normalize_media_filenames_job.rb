@@ -1,5 +1,5 @@
 class NormalizeMediaFilenamesJob < ApplicationJob
-  queue_as :low_priority
+  queue_as :default
 
   def perform(media_item_ids)
     media_items = MediaItem.where(id: media_item_ids)

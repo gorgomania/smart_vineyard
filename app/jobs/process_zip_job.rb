@@ -11,6 +11,7 @@ class ProcessZipJob < ApplicationJob
     ".webp" => "image/webp",
     ".mp4"  => "video/mp4"
   }.freeze
+  CHUNK_SIZE = 1.megabyte
 
   def perform(folder, zip_blob)
     media_items_data = []
@@ -21,19 +22,12 @@ class ProcessZipJob < ApplicationJob
         entries = zip_file.select { |e| e.file? && MIME_TYPES.key?(File.extname(e.name).downcase) }
 
         entries.each do |entry|
-          ext = File.extname(entry.name).downcase
-
-          blob = ActiveStorage::Blob.create_and_upload!(
-            io: entry.get_input_stream,
-            filename: File.basename(entry.name),
-            content_type: MIME_TYPES[ext],
-            identify: false
-          )
-          blob_results << blob
+          blob_results << store_entry(entry, MIME_TYPES[File.extname(entry.name).downcase])
           media_items_data << { folder_id: folder.id, created_at: Time.current, updated_at: Time.current }
         end
       end
     end
+    return if blob_results.empty? # в архиве нет поддерживаемых файлов
 
     media_item_ids = ActiveRecord::Base.transaction do
       result = MediaItem.insert_all!(media_items_data, returning: [ :id ])
@@ -75,5 +69,33 @@ class ProcessZipJob < ApplicationJob
     raise e
   ensure
     zip_blob&.purge
+  end
+
+  private
+
+  # Распаковываем запись один раз, считая checksum на лету. create_and_upload! с потоком из архива
+  # распаковывал бы её дважды: для checksum и для записи
+  def store_entry(entry, content_type)
+    Tempfile.create([ "zip_entry", File.extname(entry.name) ], binmode: true) do |file|
+      digest = ActiveStorage.checksum_implementation.new
+      entry.get_input_stream do |input|
+        while (chunk = input.read(CHUNK_SIZE))
+          digest << chunk
+          file.write(chunk)
+        end
+      end
+      file.rewind
+
+      blob = ActiveStorage::Blob.new(
+        filename: File.basename(entry.name),
+        content_type:,
+        byte_size: file.size,
+        checksum: digest.base64digest
+      )
+      # Сначала файл, потом запись: при сбое загрузки не остаётся blob без файла
+      blob.upload_without_unfurling(file)
+      blob.save!
+      blob
+    end
   end
 end

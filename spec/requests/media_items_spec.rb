@@ -137,9 +137,10 @@ RSpec.describe "MediaItems", type: :request do
   describe "POST /media_items/:id/classify" do
     before { sign_in user }
 
-    it "enqueues ClassifyMediaJob and redirects" do
-      expect(ClassifyMediaJob).to receive(:perform_later).with(media_item.id)
-      post classify_media_item_path(media_item)
+    it "enqueues ClassifyMediaJob on the default queue, ahead of bulk classification" do
+      expect {
+        post classify_media_item_path(media_item)
+      }.to have_enqueued_job(ClassifyMediaJob).with(media_item.id).on_queue("default")
       expect(response).to redirect_to(media_item_path(media_item))
     end
   end

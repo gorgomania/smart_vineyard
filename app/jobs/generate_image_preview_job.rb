@@ -1,5 +1,5 @@
 class GenerateImagePreviewJob < ApplicationJob
-  queue_as :low_priority
+  queue_as :default
   discard_on ActiveRecord::RecordNotFound
 
   def perform(media_item_id)

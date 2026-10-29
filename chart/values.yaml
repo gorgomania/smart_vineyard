@@ -24,11 +24,12 @@ web:
     limits: { cpu: "2", memory: 4Gi }
 
 worker:
-  concurrency: 1          # JOB_CONCURRENCY — процессы solid_queue, по 20 потоков (config/queue.yml)
-  dbPool: 25              # DB_POOL и QUEUE_DB_POOL на процесс: 20 потоков задач + служебные
+  concurrency: 3          # JOB_CONCURRENCY — процессы solid_queue: на 4 ядрах 3 под задачи, 1 под web и Postgres
+  threads: 5              # JOB_THREADS — потоков на процесс; больше не нужно: процессорная работа упирается в GVL
+  dbPool: 10              # DB_POOL и QUEUE_DB_POOL на процесс: потоки задач + служебные
   resources:
     requests: { cpu: 200m, memory: 512Mi }
-    limits: { cpu: "2", memory: 3Gi }
+    limits: { cpu: "3", memory: 4Gi }   # 3 процесса по ~0.5–1 ГБ при декодировании больших фото
 
 storage:
   size: 50Gi             # ActiveStorage uploads (photos, videos)

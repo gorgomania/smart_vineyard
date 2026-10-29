@@ -35,7 +35,9 @@ spec:
             {{- include "sv.appEnv" . | nindent 12 }}
             - name: JOB_CONCURRENCY
               value: {{ .Values.worker.concurrency | quote }}
-            # Пул на процесс: 20 потоков задач (config/queue.yml) + служебные потоки solid_queue
+            - name: JOB_THREADS
+              value: {{ .Values.worker.threads | quote }}
+            # Пул на процесс: потоки задач (JOB_THREADS) + служебные потоки solid_queue
             - name: DB_POOL
               value: {{ .Values.worker.dbPool | quote }}
             - name: QUEUE_DB_POOL

@@ -108,7 +108,8 @@ class MediaItemsController < ApplicationController
   def classify
     media_item = MediaItem.find(params[:id])
     authorize media_item
-    ClassifyMediaJob.perform_later(media_item.id)
+    # Пользователь ждёт результат: в обход очереди массовой классификации
+    ClassifyMediaJob.set(queue: :default).perform_later(media_item.id)
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(

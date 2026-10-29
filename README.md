@@ -126,10 +126,14 @@ CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCo
 
 ## Background Jobs
 
-Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in production). Queues:
+Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in production). Queues, in the order workers take them:
 
-- `default` — row/bush generation, classification, uploads and ZIP processing, distribution to bushes, demo cloning
-- `low_priority` — image and video previews, storage cleanup
+- `default` — uploads and ZIP processing, image/video previews, filename normalization, distribution to bushes, row/bush generation, demo cloning, and classification started manually with the "Анализ" button
+- `low_priority` — bulk classification of uploaded photos, storage cleanup
+
+Previews go first so thumbnails appear right after an upload; bulk classification catches up after them.
+
+The work is CPU-bound (libvips, ONNX Runtime), and threads of one Ruby process don't run it in parallel (GVL), so parallelism comes from processes: `worker.concurrency` (`JOB_CONCURRENCY`, 3 by default for a 4-core node) with `worker.threads` (`JOB_THREADS`, 5) each, in `chart/values.yaml`.
 
 Recurring tasks (`config/recurring.yml`, production only):
 

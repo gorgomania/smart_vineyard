@@ -15,49 +15,48 @@ RSpec.describe ProcessZipJob, type: :job do
 
   describe "#perform" do
     context "with valid images in ZIP" do
-      it "creates media_items and enqueues downstream jobs" do
-        zip_blob = create_zip_blob("photo.jpg" => "\xFF\xD8\xFF\xE0fake")
+      let(:jpeg) { "\xFF\xD8\xFF\xE0".b + SecureRandom.random_bytes(3.megabytes) }
 
-        allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_return(
-          instance_double(ActiveStorage::Blob, id: 1, content_type: "image/jpeg")
-        )
-        allow(MediaItem).to receive(:insert_all!).and_return(
-          [ { "id" => 1 } ]
-        )
-        allow(ActiveStorage::Attachment).to receive(:insert_all!)
+      it "stores each file with correct content and checksum, then enqueues downstream jobs" do
+        zip_blob = create_zip_blob("Ряд 1 Куст 1.jpg" => jpeg, "docs/readme.txt" => "skip me")
 
         expect {
           described_class.new.perform(folder, zip_blob)
         }.to have_enqueued_job(DistributeMediaToBushesJob)
            .and have_enqueued_job(NormalizeMediaFilenamesJob)
+           .and have_enqueued_job(GenerateImagePreviewJob)
+           .and have_enqueued_job(ClassifyMediaJob).on_queue("low_priority")
 
+        item = folder.media_items.sole
+        blob = item.media.blob
+        expect(blob.filename.to_s).to eq("Ряд 1 Куст 1.jpg")
+        expect(blob.content_type).to eq("image/jpeg")
+        expect(blob.byte_size).to eq(jpeg.bytesize)
+        expect(blob.download).to eq(jpeg)
+        expect(blob.checksum).to eq(OpenSSL::Digest::MD5.base64digest(jpeg))
         expect(ActiveStorage::Blob.exists?(zip_blob.id)).to be false
       end
     end
 
-    context "when ZIP contains unsupported file types" do
-      it "skips unsupported files" do
+    context "when ZIP contains only unsupported file types" do
+      it "creates nothing and still removes the archive" do
         zip_blob = create_zip_blob("document.pdf" => "pdf content")
 
-        expect(ActiveStorage::Blob).not_to receive(:create_and_upload!)
-
-        allow(MediaItem).to receive(:insert_all!).and_return([])
-        allow(ActiveStorage::Attachment).to receive(:insert_all!)
-
-        described_class.new.perform(folder, zip_blob)
+        expect { described_class.new.perform(folder, zip_blob) }.not_to change(MediaItem, :count)
+        expect(ActiveStorage::Blob.exists?(zip_blob.id)).to be false
       end
     end
 
     context "when an error occurs" do
-      it "purges the zip blob and re-raises" do
-        zip_blob = create_zip_blob("photo.jpg" => "\xFF\xD8fake")
-        allow(ActiveStorage::Blob).to receive(:create_and_upload!).and_raise(StandardError, "upload failed")
+      it "purges the zip blob and already stored files, and re-raises" do
+        zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake", "b.jpg" => "\xFF\xD8fake2")
+        allow(MediaItem).to receive(:insert_all!).and_raise(StandardError, "db down")
 
         expect {
           described_class.new.perform(folder, zip_blob)
-        }.to raise_error(StandardError, "upload failed")
+        }.to raise_error(StandardError, "db down")
 
-        expect(ActiveStorage::Blob.exists?(zip_blob.id)).to be false
+        expect(ActiveStorage::Blob.count).to eq(0)
       end
     end
   end

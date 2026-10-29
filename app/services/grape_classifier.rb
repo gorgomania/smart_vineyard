@@ -46,7 +46,9 @@ class GrapeClassifier
       raise "Model file not found at #{model_path}"
     end
 
-    @session = OnnxRuntime::InferenceSession.new(model_path.to_s)
+    # Один поток на инференс: параллельность дают процессы worker'а (JOB_CONCURRENCY),
+    # иначе каждая сессия занимает все ядра и процессы мешают друг другу
+    @session = OnnxRuntime::InferenceSession.new(model_path.to_s, intra_op_num_threads: 1, inter_op_num_threads: 1)
   end
 
   def predict_from_active_storage(attachment)
