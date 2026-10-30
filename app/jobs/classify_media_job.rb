@@ -12,7 +12,7 @@ class ClassifyMediaJob < ApplicationJob
       media_item.classify!
       # Пока шла классификация, раскладка могла привязать файл к кусту, а её сигнал перечитать карту
       # пришёл раньше нашего результата. Без reload куст бы не нашёлся и точка осталась серой
-      media_item.reload.broadcast_heatmap_bush
+      media_item.reload.broadcast_diagnosis
     end
 
     Turbo::StreamsChannel.broadcast_replace_to(

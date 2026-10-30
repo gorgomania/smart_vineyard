@@ -139,7 +139,7 @@ class MediaItemsController < ApplicationController
 
     old_vineyard_id = @media_item.bush&.vineyard_id
     if @media_item.update(bush: @bush)
-      Vineyard.broadcast_heatmap_refresh([ old_vineyard_id, @bush.vineyard_id ])
+      Vineyard.broadcast_diagnoses_changed([ old_vineyard_id, @bush.vineyard_id ])
       redirect_to @media_item, notice: "Файл успешно прикреплен к кусту"
     else
       flash[:alert] = "Выбранный куст уже занят другим файлом"
@@ -183,7 +183,7 @@ class MediaItemsController < ApplicationController
 
     old_vineyard_id = @media_item.bush&.vineyard_id
     if @media_item.update(bush: @bush)
-      Vineyard.broadcast_heatmap_refresh([ old_vineyard_id, @bush.vineyard_id ])
+      Vineyard.broadcast_diagnoses_changed([ old_vineyard_id, @bush.vineyard_id ])
       redirect_to @media_item, notice: "Файл успешно перекреплен к кусту"
     else
       flash[:alert] = "Выбранный куст уже занят другим файлом"
@@ -197,7 +197,7 @@ class MediaItemsController < ApplicationController
 
     old_vineyard_id = @media_item.bush&.vineyard_id
     @media_item.update(bush: nil)
-    Vineyard.broadcast_heatmap_refresh(old_vineyard_id)
+    Vineyard.broadcast_diagnoses_changed(old_vineyard_id)
     redirect_to @media_item, notice: "Файл успешно откреплен от куста"
   end
 

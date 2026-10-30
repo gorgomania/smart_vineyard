@@ -566,7 +566,7 @@ export default class extends Controller {
       const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
 
       if (bushPoint) {
-        // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_heatmap_bush
+        // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis
         const bushKey = `${rowIndex}-${i + 1}`
         const [mediaItemId, classId] = this.bushesDiagnoses[bushKey] || [null, null];
 

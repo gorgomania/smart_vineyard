@@ -29,18 +29,18 @@ RSpec.describe DistributeMediaToBushesJob, type: :job do
         old_vineyard = create(:vineyard, user:)
         old_bush = create(:bush, vineyard: old_vineyard, row: create(:row, vineyard: old_vineyard, row_number: 1), bush_number: 1)
         named_item("Ряд 1 Куст 1.jpg", bush: old_bush)
-        allow(Vineyard).to receive(:broadcast_heatmap_refresh)
+        allow(Vineyard).to receive(:broadcast_diagnoses_changed)
 
         described_class.new.perform(folder.id)
-        expect(Vineyard).to have_received(:broadcast_heatmap_refresh).with(contain_exactly(old_vineyard.id, vineyard.id))
+        expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with(contain_exactly(old_vineyard.id, vineyard.id))
       end
 
       it "stays silent when nothing changed" do
         named_item("Ряд 1 Куст 1.jpg", bush:)
-        allow(Vineyard).to receive(:broadcast_heatmap_refresh)
+        allow(Vineyard).to receive(:broadcast_diagnoses_changed)
 
         described_class.new.perform(folder.id)
-        expect(Vineyard).not_to have_received(:broadcast_heatmap_refresh)
+        expect(Vineyard).not_to have_received(:broadcast_diagnoses_changed)
       end
     end
 
