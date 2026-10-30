@@ -17,7 +17,7 @@ module SolidCableOrderedWrites
 
   def with_write_lock
     transaction do
-      connection.execute("SELECT pg_advisory_xact_lock(#{LOCK_KEY})")
+      connection.execute(sanitize_sql_array([ "SELECT pg_advisory_xact_lock(?)", LOCK_KEY ]))
       yield
     end
   end
