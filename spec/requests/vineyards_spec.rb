@@ -208,6 +208,23 @@ RSpec.describe "Vineyards", type: :request do
     end
   end
 
+  describe "GET /vineyards/:id/heatmap" do
+    it "returns current bush diagnoses to the owner" do
+      sign_in user
+      row  = create(:row, vineyard:, row_number: 1)
+      item = create(:media_item, bush: create(:bush, vineyard:, row:, bush_number: 2), ai_class_id: 3)
+
+      get heatmap_vineyard_path(vineyard, format: :json)
+      expect(JSON.parse(response.body)).to eq("1-2" => [ item.id, 3 ])
+    end
+
+    it "denies another user" do
+      sign_in other_user
+      get heatmap_vineyard_path(vineyard, format: :json)
+      expect(response).not_to have_http_status(:ok)
+    end
+  end
+
   describe "GET /vineyards/total_stats" do
     context "when not authenticated" do
       it "redirects to login" do

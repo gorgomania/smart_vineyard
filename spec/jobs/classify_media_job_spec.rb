@@ -23,6 +23,25 @@ RSpec.describe ClassifyMediaJob, type: :job do
       end
     end
 
+    context "when the classified media is attached to a bush" do
+      it "repaints that bush on the vineyard heatmap" do
+        vineyard = create(:vineyard)
+        row = create(:row, vineyard:, row_number: 3)
+        item = create(:media_item, :with_image, bush: create(:bush, vineyard:, row:, bush_number: 7))
+        allow(GrapeClassifier).to receive(:predict_from_media_item)
+          .and_return(class_id: 2, confidence: 0.99, predictions: [])
+
+        allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+
+        described_class.new.perform(item.id)
+        expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to).with(
+          vineyard, :heatmap,
+          hash_including(action: :heatmap_bush, target: "map",
+                         attributes: { bush: "3-7", "media-item-id": item.id, "class-id": 2 })
+        )
+      end
+    end
+
     context "when media is a video" do
       it "skips classification without failing and refreshes the panel" do
         item = create(:media_item)

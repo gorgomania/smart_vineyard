@@ -35,10 +35,11 @@ class Vineyard < ApplicationRecord
     DestroyVineyardJob.perform_later(id)
   end
 
+  # Тепловая карта: { "ряд-куст" => [id файла, класс] } только для кустов с файлом, остальные карта красит серым
   def bushes_diagnoses
-    bushes.left_joins(:media_item)
-          .order("rows.row_number ASC, bushes.bush_number ASC")
-          .pluck("media_items.id", "media_items.ai_class_id")
+    bushes.joins(:row, :media_item)
+          .pluck("rows.row_number", "bushes.bush_number", "media_items.id", "media_items.ai_class_id")
+          .to_h { |row_number, bush_number, media_item_id, class_id| [ "#{row_number}-#{bush_number}", [ media_item_id, class_id ] ] }
   end
 
   def area_hectares=(value)

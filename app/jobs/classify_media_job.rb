@@ -8,7 +8,10 @@ class ClassifyMediaJob < ApplicationJob
     return unless media_item&.media&.attached?
 
     # Модель понимает только картинки; для видео не падаем, а просто перерисуем панель, чтобы снять «В обработке»
-    media_item.classify! if media_item.media.image?
+    if media_item.media.image?
+      media_item.classify!
+      media_item.broadcast_heatmap_bush
+    end
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "media_item_#{media_item_id}",

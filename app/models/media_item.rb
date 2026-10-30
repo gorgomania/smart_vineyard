@@ -47,6 +47,18 @@ public
     )
   end
 
+  # Открытая тепловая карта виноградника (turbo_stream_from в vineyards/show) перекрашивает точку куста без перезагрузки
+  def broadcast_heatmap_bush
+    return unless bush
+
+    Turbo::StreamsChannel.broadcast_action_to(
+      bush.vineyard, :heatmap,
+      action: :heatmap_bush,
+      target: "map",
+      attributes: { bush: "#{bush.row.row_number}-#{bush.bush_number}", "media-item-id": id, "class-id": ai_class_id }
+    )
+  end
+
   # Copy-on-write: блоб общий с демо-копиями, поэтому перед изменением его полей
   # (например filename) даём записи собственную копию файла
   def ensure_own_media_blob!
