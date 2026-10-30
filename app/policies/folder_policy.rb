@@ -3,11 +3,9 @@ class FolderPolicy < ApplicationPolicy
     record.user_id == user.id
   end
 
+  # Только внутри своей папки. Корень создаёт FoldersController#root_folder в обход политики
   def create?
-    return false unless record.user_id == user.id
-    return true if record.parent_id.nil? # корневая папка, всё ок
-    parent = Folder.find_by(id: record.parent_id)
-    parent.present? && parent.user_id == user.id
+    record.user_id == user.id && record.parent&.user_id == user.id
   end
 
   def create_media_item?
@@ -22,8 +20,9 @@ class FolderPolicy < ApplicationPolicy
     show?
   end
 
+  # Корень удалять нельзя: вместе с ним ушло бы всё дерево пользователя
   def destroy?
-    show?
+    show? && record.parent_id.present?
   end
 
   def select_page?

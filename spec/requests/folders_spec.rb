@@ -77,6 +77,48 @@ RSpec.describe "Folders", type: :request do
       post folders_path, params: { folders: { title: "", parent_id: root.id } }
       expect(response).to have_http_status(:unprocessable_content)
     end
+
+    it "does not create a top-level folder without a parent" do
+      expect {
+        post folders_path, params: { folders: { title: "Orphan", parent_id: "" } }
+      }.not_to change(Folder, :count)
+      expect(response).to redirect_to(folders_path)
+    end
+
+    it "does not create a folder inside someone else's folder" do
+      foreign = create(:folder, user: other_user)
+      expect {
+        post folders_path, params: { folders: { title: "Intruder", parent_id: foreign.id } }
+      }.not_to change(Folder, :count)
+    end
+  end
+
+  describe "root folder" do
+    before { sign_in user }
+
+    it "is created on the first visit" do
+      expect { get folders_path }.to change { user.folders.where(parent_id: nil).count }.from(0).to(1)
+    end
+
+    it "has no delete button in search results, unlike nested folders" do
+      root = create(:folder, user:, title: "Root")
+      child = create(:folder, user:, title: "Rootstock", parent: root)
+
+      get folders_path(folders: { title: "Root" })
+
+      delete_form = ->(f) { %(action="#{ERB::Util.h(folder_path(f.id, page: 1, search_query: 'Root'))}") }
+      expect(response.body).to include(ERB::Util.h(edit_folder_path(root.id, page: 1, search_query: "Root")))
+      expect(response.body).not_to include(delete_form.(root))
+      expect(response.body).to include(delete_form.(child))
+    end
+
+    it "is still found after being renamed" do
+      root = create(:folder, user:, title: "Root")
+      root.update!(title: "Мои фото")
+
+      expect { get folders_path }.not_to change(Folder, :count)
+      expect(response).to redirect_to(folder_path(root))
+    end
   end
 
   describe "PATCH /folders/:id" do
@@ -98,6 +140,15 @@ RSpec.describe "Folders", type: :request do
 
   describe "DELETE /folders/:id" do
     before { sign_in user }
+
+    let(:root)   { create(:folder, user:, title: "Root") }
+    let(:folder) { create(:folder, user:, title: "My Folder", parent: root) }
+
+    it "does not delete the root folder" do
+      root
+      expect { delete folder_path(root) }.not_to change(Folder, :count)
+      expect(response).to redirect_to(folders_path)
+    end
 
     it "destroys the folder" do
       folder

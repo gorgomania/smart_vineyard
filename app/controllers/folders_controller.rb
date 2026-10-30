@@ -237,9 +237,12 @@ class FoldersController < ApplicationController
     params.require(:folders).permit(:title, :parent_id)
   end
 
+  # Корень — папка пользователя без родителя. Ищем не по названию: после переименования корня
+  # создался бы новый пустой «Root», а всё дерево осталось бы недоступным
   def root_folder
-    Folder.find_or_create_by!(title: "Root", parent_id: nil, user_id: current_user.id)
-  rescue ActiveRecord::RecordNotUnique
-    Folder.find_by!(title: "Root", parent_id: nil, user_id: current_user.id)
+    roots = current_user.folders.where(parent_id: nil).order(:id)
+    roots.first || current_user.folders.create!(title: "Root")
+  rescue ActiveRecord::RecordNotUnique, ActiveRecord::RecordInvalid
+    roots.first! # параллельный запрос успел создать корень раньше
   end
 end

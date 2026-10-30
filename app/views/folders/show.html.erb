@@ -73,9 +73,12 @@
                         <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
 
-                    <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
-                        <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
-                    <%end%>
+                    <%# Корень попадает сюда через поиск, а удалять его нельзя (FolderPolicy#destroy?) %>
+                    <% if policy(children).destroy? %>
+                        <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                            <%= image_tag "/trash.png", alt: "Del", class: "w-4 h-4" %>
+                        <%end%>
+                    <% end %>
                 </div>
                 <%= link_to folder_path(children.id), class: "flex flex-col items-center gap-1" do %>
                     <%= image_tag "/folder.png", alt: "Folder", class: "min-w-33 h-22" %>
