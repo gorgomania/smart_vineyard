@@ -1,5 +1,5 @@
 class GenerateImagePreviewJob < ApplicationJob
-  queue_as :default
+  queue_as :heavy
   queue_with_priority PREVIEW_PRIORITY
   discard_on ActiveRecord::RecordNotFound
 
