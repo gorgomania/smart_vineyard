@@ -42,6 +42,23 @@ RSpec.describe ClassifyMediaJob, type: :job do
       end
     end
 
+    context "when the file lands on a bush while classification is running" do
+      it "still repaints that bush" do
+        vineyard = create(:vineyard)
+        bush = create(:bush, vineyard:, row: create(:row, vineyard:, row_number: 1), bush_number: 4)
+        item = create(:media_item, :with_image)
+        allow(GrapeClassifier).to receive(:predict_from_media_item) do
+          MediaItem.where(id: item.id).update_all(bush_id: bush.id) # раскладка в параллельной задаче
+          { class_id: 1, confidence: 0.9, predictions: [] }
+        end
+        allow(Turbo::StreamsChannel).to receive(:broadcast_action_to)
+
+        described_class.new.perform(item.id)
+        expect(Turbo::StreamsChannel).to have_received(:broadcast_action_to)
+          .with(vineyard, :heatmap, hash_including(attributes: hash_including(bush: "1-4", "class-id": 1)))
+      end
+    end
+
     context "when media is a video" do
       it "skips classification without failing and refreshes the panel" do
         item = create(:media_item)

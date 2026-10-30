@@ -47,6 +47,8 @@ export default class extends Controller {
       this.updateBush(e.detail)
     }
     this.element.addEventListener('heatmap:bush', this.boundHeatmapBush)
+    this.boundHeatmapRefresh = () => this.syncHeatmap()
+    this.element.addEventListener('heatmap:refresh', this.boundHeatmapRefresh)
     this.watchHeatmapStream()
 
     this.loadMap()
@@ -60,6 +62,7 @@ export default class extends Controller {
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
     document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
     this.element.removeEventListener('heatmap:bush', this.boundHeatmapBush)
+    this.element.removeEventListener('heatmap:refresh', this.boundHeatmapRefresh)
     this.heatmapStreamObserver?.disconnect()
     clearTimeout(this.heatmapFallback)
 
@@ -643,6 +646,10 @@ export default class extends Controller {
     Object.entries(diagnoses).forEach(([bush, [mediaItemId, classId]]) => {
       if (!liveBushes.has(bush)) this.updateBush({ bush, mediaItemId, classId })
     })
+    // Куста нет в ответе — файл с него открепили: снова серый
+    Object.keys(this.bushesDiagnoses).forEach(bush => {
+      if (!(bush in diagnoses) && !liveBushes.has(bush)) this.updateBush({ bush, mediaItemId: null, classId: null })
+    })
   }
 
   // Пришёл результат классификации (heatmap:bush из application.js): перекрашиваем одну точку, карту не перерисовываем
@@ -659,7 +666,7 @@ export default class extends Controller {
     const obj = this.objectManager?.objects.getById(bush)
     if (!obj) return
 
-    obj.properties.bushUrl = `/media_items/${mediaItemId}`
+    obj.properties.bushUrl = mediaItemId ? `/media_items/${mediaItemId}` : null
     this.objectManager.objects.setObjectOptions(bush, this.bushIconOptions(classId))
   }
 

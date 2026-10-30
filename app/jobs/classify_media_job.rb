@@ -10,7 +10,9 @@ class ClassifyMediaJob < ApplicationJob
     # Модель понимает только картинки; для видео не падаем, а просто перерисуем панель, чтобы снять «В обработке»
     if media_item.media.image?
       media_item.classify!
-      media_item.broadcast_heatmap_bush
+      # Пока шла классификация, раскладка могла привязать файл к кусту, а её сигнал перечитать карту
+      # пришёл раньше нашего результата. Без reload куст бы не нашёлся и точка осталась серой
+      media_item.reload.broadcast_heatmap_bush
     end
 
     Turbo::StreamsChannel.broadcast_replace_to(
