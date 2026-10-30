@@ -22,9 +22,10 @@ class MediaItemsController < ApplicationController
 
     # Все файлы, включая ZIP, браузер уже загрузил через DirectUpload и прислал только signed id
     blob_ids = params[:signed_blob_ids].to_s.split(",").compact_blank
+                     .select { |id| own_upload?(ActiveStorage::Blob.find_signed(id)) }
     zip_blobs = params[:signed_zip_ids].to_s.split(",").compact_blank
                       .filter_map { |id| ActiveStorage::Blob.find_signed(id) }
-                      .select { |blob| own_zip_blob?(blob) }
+                      .select { |blob| own_upload?(blob) && blob.filename.extension.casecmp?("zip") }
 
     # Проверяем, было ли что-то загружено
     if zip_blobs.blank? && blob_ids.blank?
@@ -199,8 +200,8 @@ private
     params.require(:media_item).permit(:folder_id, :filename)
   end
 
-  # signed id сам по себе не доказывает владение: проверяем, что архив загрузил этот пользователь
-  def own_zip_blob?(blob)
-    blob.metadata["user_id"] == current_user.id && blob.filename.extension.casecmp?("zip")
+  # signed id сам по себе не доказывает владение: проверяем, что файл загрузил этот пользователь
+  def own_upload?(blob)
+    blob.present? && blob.metadata["user_id"] == current_user.id
   end
 end

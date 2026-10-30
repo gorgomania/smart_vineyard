@@ -47,15 +47,41 @@ RSpec.describe "MediaItems", type: :request do
       end
     end
 
-    context "with blob IDs" do
-      it "enqueues AttachMediaJob and redirects" do
+    context "with files uploaded via DirectUpload" do
+      def uploaded_blob(owner_id)
+        ActiveStorage::Blob.create_before_direct_upload!(
+          filename: "photo.jpg", byte_size: 22, checksum: "abc", content_type: "image/jpeg",
+          metadata: { "user_id" => owner_id }
+        )
+      end
+
+      it "enqueues AttachMediaJob with the user's blobs and redirects" do
+        blob = uploaded_blob(user.id)
+
+        expect {
+          post media_items_path, params: { media_item: { folder_id: folder.id }, signed_blob_ids: blob.signed_id }
+        }.to have_enqueued_job(AttachMediaJob).with(folder, [ blob.signed_id ])
+        expect(response).to redirect_to(folder_path(folder, page: "-1"))
+      end
+
+      it "ignores files uploaded by someone else and invalid signed ids" do
+        own = uploaded_blob(user.id)
+        foreign = uploaded_blob(other_user.id)
+
         expect {
           post media_items_path, params: {
-            media_item: { folder_id: folder.id },
-            signed_blob_ids: "id1,id2"
+            media_item: { folder_id: folder.id }, signed_blob_ids: [ own.signed_id, foreign.signed_id, "invalid" ].join(",")
           }
-        }.to have_enqueued_job(AttachMediaJob)
-        expect(response).to redirect_to(folder_path(folder, page: "-1"))
+        }.to have_enqueued_job(AttachMediaJob).with(folder, [ own.signed_id ])
+      end
+
+      it "redirects with alert when none of the files belong to the user" do
+        foreign = uploaded_blob(other_user.id)
+
+        expect {
+          post media_items_path, params: { media_item: { folder_id: folder.id }, signed_blob_ids: foreign.signed_id }
+        }.not_to have_enqueued_job(AttachMediaJob)
+        expect(response).to redirect_to(new_media_item_path(folder_id: folder.id))
       end
     end
 
