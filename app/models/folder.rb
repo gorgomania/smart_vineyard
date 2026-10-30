@@ -46,6 +46,14 @@ class Folder < ApplicationRecord
     self.class.delete_trees!(id)
   end
 
+  # Открытая страница папки (turbo_stream_from в folders/show) перезапрашивает себя и подтягивает новые файлы.
+  # Повтор через несколько секунд — для страницы, открытой редиректом после загрузки: небольшая пачка
+  # успевает обработаться раньше, чем страница подпишется на канал, и первый сигнал до неё не доходит
+  def broadcast_new_files
+    broadcast_refresh
+    RefreshFolderJob.set(wait: 3.seconds).perform_later(self)
+  end
+
   # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс.
   # Превращаем это в обычную ошибку валидации: update вернёт false, а не 500
   def save(...)

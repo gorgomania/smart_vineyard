@@ -36,6 +36,15 @@ RSpec.describe ProcessZipJob, type: :job do
         expect(blob.checksum).to eq(OpenSSL::Digest::MD5.base64digest(jpeg))
         expect(ActiveStorage::Blob.exists?(zip_blob.id)).to be false
       end
+
+      it "refreshes the open folder page" do
+        zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake")
+
+        expect {
+          described_class.new.perform(folder, zip_blob)
+        }.to have_broadcasted_to(folder.to_gid_param).with(a_string_including('action="refresh"'))
+          .and have_enqueued_job(RefreshFolderJob).with(folder)
+      end
     end
 
     context "when ZIP contains only unsupported file types" do

@@ -19,6 +19,14 @@ RSpec.describe AttachMediaJob, type: :job do
       }.not_to raise_error
     end
 
+    it "refreshes the open folder page now and once more a bit later" do
+      blob = upload_blob
+      expect {
+        described_class.new.perform(folder, [ blob.signed_id ])
+      }.to have_broadcasted_to(folder.to_gid_param).with(a_string_including('action="refresh"'))
+        .and have_enqueued_job(RefreshFolderJob).with(folder)
+    end
+
     it "creates a media_item for each valid blob" do
       blob = upload_blob
       expect {

@@ -188,6 +188,18 @@ RSpec.describe "Folders", type: :request do
     end
   end
 
+  describe "GET /folders/:id" do
+    before { sign_in user }
+
+    it "subscribes to folder refreshes and morphs the page on refresh" do
+      get folder_path(folder)
+
+      expect(response.body).to include("<turbo-cable-stream-source")
+      expect(response.body).to include('<meta name="turbo-refresh-method" content="morph">')
+      expect(response.body).to include('<meta name="turbo-refresh-scroll" content="preserve">')
+    end
+  end
+
   describe "GET /folders/:id/attach" do
     before { sign_in user }
 

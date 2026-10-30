@@ -2,7 +2,11 @@ class AttachMediaJob < ApplicationJob
   queue_as :default
   discard_on ActiveRecord::RecordNotFound
 
+  # Большая пачка обрабатывается не мгновенно: показываем файлы по мере появления, но не чаще этого
+  REFRESH_INTERVAL = 2.seconds
+
   def perform(folder, signed_blob_ids)
+    last_refresh_at = Time.current
     vineyard = folder.vineyard
 
     bushes_by_coords = vineyard&.bushes&.joins(:row)
@@ -32,6 +36,13 @@ class AttachMediaJob < ApplicationJob
           end
         end
       end
+
+      if Time.current - last_refresh_at >= REFRESH_INTERVAL
+        folder.broadcast_refresh
+        last_refresh_at = Time.current
+      end
     end
+
+    folder.broadcast_new_files
   end
 end

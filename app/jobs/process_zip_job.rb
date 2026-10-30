@@ -64,6 +64,8 @@ class ProcessZipJob < ApplicationJob
 
     NormalizeMediaFilenamesJob.perform_later(media_item_ids)
 
+    # Последним: сбой рассылки не должен помешать поставить превью и классификацию
+    folder.broadcast_new_files
   rescue => e
     Rails.logger.error "Ошибка обработки ZIP: #{e.message}"
     Rails.logger.error e.backtrace.first(5)

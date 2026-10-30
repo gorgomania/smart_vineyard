@@ -1,4 +1,9 @@
 <%= render template: "layouts/header" %>
+<% if @folder %>
+    <%# Фоновые задачи загрузки шлют сюда refresh (Folder#broadcast_new_files): страница перерисовывается без перезагрузки %>
+    <% turbo_refreshes_with method: :morph, scroll: :preserve %>
+    <%= turbo_stream_from @folder %>
+<% end %>
 <main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
     <div class = "flex gap-1 justify-between">
         <div class = "flex">
@@ -103,7 +108,8 @@
                     
                     <%= link_to media_item_path(file.id), class: "flex flex-col items-center gap-1" do %>
                         <% if file.media.image? %>
-                            <div class="relative w-33 h-22">
+                            <%# permanent: refresh-морфинг (Folder#broadcast_new_files) вернул бы скрытый скелетон поверх загруженной картинки %>
+                            <div id="thumb-<%= file.id %>" data-turbo-permanent class="relative w-33 h-22">
                                 <div class="absolute inset-0 bg-gray-200 animate-pulse skeleton"></div>
                                 
                                 <%= image_tag file.media.variant(resize_to_limit: [132, 88]),
