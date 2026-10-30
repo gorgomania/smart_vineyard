@@ -68,6 +68,18 @@ RSpec.describe Vineyard, type: :model do
     end
   end
 
+  describe "#bushes_diagnoses" do
+    it "maps 'row-bush' to [media item id, class] for bushes with a file only" do
+      vineyard = create(:vineyard)
+      row = create(:row, vineyard:, row_number: 2)
+      create(:bush, vineyard:, row:, bush_number: 1)
+      bush = create(:bush, vineyard:, row:, bush_number: 4)
+      item = create(:media_item, bush:, ai_class_id: 1)
+
+      expect(vineyard.bushes_diagnoses).to eq("2-4" => [ item.id, 1 ])
+    end
+  end
+
   describe "#area_hectares=" do
     it "strips ' га' suffix from string values" do
       vineyard.area_hectares = "2.5 га"

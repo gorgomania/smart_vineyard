@@ -25,11 +25,8 @@ class VineyardsController < ApplicationController
     @vineyard = policy_scope(Vineyard.active).find_by(id: params[:id])
     return not_found if @vineyard.nil?
     authorize @vineyard
-    if params[:bushes_vision].present? && params[:bushes_vision] == "true"
-      @bushes_vision = @vineyard.bushes_diagnoses
-    else
-      @bushes_vision = false
-    end
+    # Диагнозы карта грузит сама с heatmap.json, когда подключится подписка на обновления
+    @bushes_vision = params[:bushes_vision] == "true"
     @vineyard_data = {
       polygon: @vineyard.polygon.to_s,
       row_spacing: @vineyard.row_spacing.to_f,
@@ -133,6 +130,13 @@ class VineyardsController < ApplicationController
     authorize vineyard
     data = vineyard.rows.order(:row_number).pluck(Arel.sql("( SELECT COUNT(*) FROM bushes WHERE bushes.row_id = rows.id )"))
     render json: data
+  end
+
+  # Свежие диагнозы для тепловой карты: она перечитывает их, когда подписка на обновления подключилась
+  def heatmap
+    vineyard = Vineyard.active.find(params[:id])
+    authorize vineyard
+    render json: vineyard.bushes_diagnoses
   end
 
   def rows

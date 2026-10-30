@@ -15,7 +15,9 @@ export default class extends Controller {
     this.mode = this.element.dataset.mapMode
     this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
     this.multiplePolygons = this.element.dataset.mapMultiplePolygons
-    this.bushesDiagnoses = this.element.dataset.mapBushesVision ? JSON.parse(this.element.dataset.mapBushesVision) : null
+    // Тепловая карта: диагнозы { "ряд-куст" => [id файла, класс] } приходят позже из syncHeatmap, до тех пор кусты серые
+    this.heatmapUrl = this.element.dataset.mapHeatmapUrl
+    this.bushesDiagnoses = this.heatmapUrl ? {} : null
     this.currentPolygon = null
     this.rowsCollection = null
     this.objectManager = null
@@ -39,7 +41,14 @@ export default class extends Controller {
       console.error('Map API key is missing')
       return
     }
-    
+
+    this.boundHeatmapBush = (e) => {
+      this.liveBushesDuringSync?.add(e.detail.bush)
+      this.updateBush(e.detail)
+    }
+    this.element.addEventListener('heatmap:bush', this.boundHeatmapBush)
+    this.watchHeatmapStream()
+
     this.loadMap()
   }
 
@@ -50,6 +59,9 @@ export default class extends Controller {
     document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
     document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
     document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
+    this.element.removeEventListener('heatmap:bush', this.boundHeatmapBush)
+    this.heatmapStreamObserver?.disconnect()
+    clearTimeout(this.heatmapFallback)
 
     // Уничтожаем карту
     if (this.map) {
@@ -436,7 +448,7 @@ export default class extends Controller {
       const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows, false, totalBushes)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
         bushesPerRow.push(numBushes)
         totalBushes += numBushes
         offset += stepDeg
@@ -453,7 +465,7 @@ export default class extends Controller {
       const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
       if (intersections.length === 2) {
         numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows, false, totalBushes)
+        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
         bushesPerRow.push(numBushes)
         totalBushes += numBushes
         offset -= stepDeg
@@ -466,7 +478,7 @@ export default class extends Controller {
   }
 
   // Добавление ряда
-  addRow(p1, p2, rowNumber, isFirstRow = false, bushesStartIndex = 0) {
+  addRow(p1, p2, rowNumber, isFirstRow = false) {
     // Вычисляем количество кустов
     const rowLengthMeters = GeometryHelpers.kmDistance(p1, p2) * 1000
     const numBushes = Math.floor(rowLengthMeters / this.bushSpacing) + 1
@@ -526,16 +538,16 @@ export default class extends Controller {
     //Вид кустов
     else {
       if (this.referenceVertexIsFirst) {
-        this.generateBushesOnRow([p1, p2], rowNumber, bushesStartIndex)
+        this.generateBushesOnRow([p1, p2], rowNumber)
       }
       else {
-        this.generateBushesOnRow([p2, p1], rowNumber, bushesStartIndex)
+        this.generateBushesOnRow([p2, p1], rowNumber)
       }
     }
     return numBushes
   }
 
-  generateBushesOnRow(linePoints, rowIndex, bushesStartIndex = 0) {
+  generateBushesOnRow(linePoints, rowIndex) {
     if (linePoints.length < 2) return
     
     // Длина ряда в метрах
@@ -551,18 +563,9 @@ export default class extends Controller {
       const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
 
       if (bushPoint) {
-        const bushId = bushesStartIndex + i;
-        const [mediaItemId, classId] = this.bushesDiagnoses[bushId] || [null, null];
-  
-        // Определяем цвет
-        const colors = {
-          0: '#800000',  // Чёрная гниль
-          1: '#FF8C00',  // Эска
-          2: '#2ECC40',   // Здоровый
-          3: '#D63384'    // Антракноз
-        };
-
-        const color = colors[classId] || '#AAAAAA';
+        // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_heatmap_bush
+        const bushKey = `${rowIndex}-${i + 1}`
+        const [mediaItemId, classId] = this.bushesDiagnoses[bushKey] || [null, null];
 
         // Добавляем куст
         const bushGeoJsonData = {
@@ -570,7 +573,7 @@ export default class extends Controller {
           "features": [
             {
               "type": "Feature",
-              "id": bushesStartIndex + i,
+              "id": bushKey,
               "geometry": {
                 "type": "Point",
                 "coordinates": [bushPoint[0], bushPoint[1]]
@@ -579,16 +582,7 @@ export default class extends Controller {
                 "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`,
                 "bushUrl": mediaItemId ? `/media_items/${mediaItemId}` : null
               },
-              "options": {
-              iconLayout: 'default#image',
-              iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-                <svg width="12" height="12" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="6" cy="6" r="6" fill="${color}"/>
-                </svg>
-              `),
-              iconImageSize: [12, 12],
-              iconImageOffset: [-6, -6]
-            }
+              "options": this.bushIconOptions(classId)
             }
           ]
         }
@@ -596,6 +590,77 @@ export default class extends Controller {
         this.objectManager.add(bushGeoJsonData)
       }
     }
+  }
+
+  bushIconOptions(classId) {
+    const colors = {
+      0: '#800000',  // Чёрная гниль
+      1: '#FF8C00',  // Эска
+      2: '#2ECC40',   // Здоровый
+      3: '#D63384'    // Антракноз
+    };
+
+    const color = colors[classId] || '#AAAAAA';
+
+    return {
+      iconLayout: 'default#image',
+      iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
+        <svg width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6" cy="6" r="6" fill="${color}"/>
+        </svg>
+      `),
+      iconImageSize: [12, 12],
+      iconImageOffset: [-6, -6]
+    }
+  }
+
+  // Диагнозы грузим, когда подписка на heatmap_bush подключилась (атрибут connected — и после обрыва связи тоже):
+  // всё, что классифицируется позже, придёт сообщением. Обычно это раньше, чем загрузятся Яндекс Карты, так что запрос один
+  watchHeatmapStream() {
+    const stream = document.getElementById('heatmap-stream')
+    if (!stream || !this.heatmapUrl) return
+
+    this.heatmapStreamObserver = new MutationObserver(() => {
+      if (stream.hasAttribute('connected')) this.syncHeatmap()
+    })
+    this.heatmapStreamObserver.observe(stream, { attributes: true, attributeFilter: ['connected'] })
+    if (stream.hasAttribute('connected')) this.syncHeatmap()
+
+    // WebSocket не поднялся за секунду — грузим без подписки, чтобы карта не осталась серой; при подключении сверимся ещё раз
+    this.heatmapFallback = setTimeout(() => {
+      if (!this.heatmapRequested) this.syncHeatmap()
+    }, 1000)
+  }
+
+  async syncHeatmap() {
+    this.heatmapRequested = true
+    // Сообщение, пришедшее пока идёт запрос, новее ответа — ответ его не перетирает
+    const liveBushes = this.liveBushesDuringSync = new Set()
+    const response = await fetch(this.heatmapUrl, { headers: { Accept: 'application/json' } })
+    if (!response.ok) return
+
+    const diagnoses = await response.json()
+    Object.entries(diagnoses).forEach(([bush, [mediaItemId, classId]]) => {
+      if (!liveBushes.has(bush)) this.updateBush({ bush, mediaItemId, classId })
+    })
+  }
+
+  // Пришёл результат классификации (heatmap:bush из application.js): перекрашиваем одну точку, карту не перерисовываем
+  updateBush({ bush, mediaItemId, classId }) {
+    if (!this.bushesDiagnoses) return
+
+    // Из сообщения id приходят строками, из JSON — числами
+    const current = this.bushesDiagnoses[bush]
+    if (current && String(current[0]) === String(mediaItemId) && String(current[1]) === String(classId)) return
+
+    // Запоминаем всегда: если карта ещё грузится, generateRows возьмёт цвет отсюда
+    this.bushesDiagnoses[bush] = [mediaItemId, classId]
+
+    const obj = this.objectManager?.objects.getById(bush)
+    if (!obj) return
+
+    obj.properties.bushUrl = `/media_items/${mediaItemId}`
+    this.objectManager.objects.setObjectOptions(bush, this.bushIconOptions(classId))
   }
 
   getPolygonSide(points) {

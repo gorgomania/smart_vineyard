@@ -29,6 +29,10 @@ class VineyardPolicy < ApplicationPolicy
     show?
   end
 
+  def heatmap?
+    show?
+  end
+
   def bushes_per_row?
     show?
   end

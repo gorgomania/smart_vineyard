@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   resources :vineyards do
     member do
       get :rows
+      get :heatmap
       get :stats
       get :bushes_per_row
     end
