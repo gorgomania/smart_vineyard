@@ -8,6 +8,7 @@ class AttachMediaJob < ApplicationJob
   def perform(folder, signed_blob_ids)
     last_refresh_at = Time.current
     vineyard = folder.vineyard
+    attached_to_bush = false
 
     bushes_by_coords = vineyard&.bushes&.joins(:row)
       &.select("bushes.*, rows.row_number AS row_number")
@@ -32,7 +33,7 @@ class AttachMediaJob < ApplicationJob
 
           if match
             bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
-            media_item.update(bush: bush) if bush
+            attached_to_bush = true if bush && media_item.update(bush: bush)
           end
         end
       end
@@ -44,5 +45,7 @@ class AttachMediaJob < ApplicationJob
     end
 
     folder.broadcast_new_files
+    # Классификация, поставленная выше, могла закончиться раньше привязки к кусту (см. DistributeMediaToBushesJob)
+    Vineyard.broadcast_heatmap_refresh(vineyard.id) if attached_to_bush
   end
 end

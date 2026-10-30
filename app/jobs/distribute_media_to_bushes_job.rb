@@ -48,10 +48,15 @@ class DistributeMediaToBushesJob < ApplicationJob
     end
     return if changes.empty?
 
+    # Карты, где кусты освобождаются (откреплённый виноградник) и где занимаются
+    changed_ids = changes.map(&:first)
+    vineyard_ids = Bush.where(id: MediaItem.where(id: changed_ids).select(:bush_id)).distinct.pluck(:vineyard_id)
+    vineyard_ids << folder.vineyard_id
+
     now = Time.current
     MediaItem.transaction do
       # Сначала освобождаем: иначе обмен кустами между двумя файлами упрётся в уникальный индекс
-      MediaItem.where(id: changes.map(&:first)).update_all(bush_id: nil, updated_at: now)
+      MediaItem.where(id: changed_ids).update_all(bush_id: nil, updated_at: now)
 
       changes.reject { |_, bush_id| bush_id.nil? }.each_slice(1000) do |slice|
         placeholders = Array.new(slice.size, "WHEN ? THEN ?").join(" ")
@@ -61,5 +66,9 @@ class DistributeMediaToBushesJob < ApplicationJob
         MediaItem.where(id: slice.map(&:first)).update_all(sql)
       end
     end
+
+    # Классификация идёт параллельно и могла закончиться раньше, чем файл попал на куст, — тогда её сообщение
+    # карте ушло без куста. Перечитывание подхватит и такие файлы
+    Vineyard.broadcast_heatmap_refresh(vineyard_ids)
   end
 end

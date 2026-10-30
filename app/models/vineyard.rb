@@ -40,6 +40,14 @@ class Vineyard < ApplicationRecord
     DestroyVineyardJob.perform_later(id)
   end
 
+  # Привязки файлов к кустам поменялись: открытые тепловые карты этих виноградников перечитывают диагнозы
+  # (vineyards/show, heatmap_refresh в application.js). Одно сообщение на виноградник, а не на каждый куст
+  def self.broadcast_heatmap_refresh(vineyard_ids)
+    where(id: vineyard_ids).find_each do |vineyard|
+      Turbo::StreamsChannel.broadcast_action_to(vineyard, :heatmap, action: :heatmap_refresh, target: "map")
+    end
+  end
+
   # Тепловая карта: { "ряд-куст" => [id файла, класс] } только для кустов с файлом, остальные карта красит серым
   def bushes_diagnoses
     bushes.joins(:row, :media_item)

@@ -24,6 +24,26 @@ RSpec.describe DistributeMediaToBushesJob, type: :job do
       end
     end
 
+    context "heatmap refresh" do
+      it "asks open heatmaps of the old and the new vineyard to reload diagnoses" do
+        old_vineyard = create(:vineyard, user:)
+        old_bush = create(:bush, vineyard: old_vineyard, row: create(:row, vineyard: old_vineyard, row_number: 1), bush_number: 1)
+        named_item("Ряд 1 Куст 1.jpg", bush: old_bush)
+        allow(Vineyard).to receive(:broadcast_heatmap_refresh)
+
+        described_class.new.perform(folder.id)
+        expect(Vineyard).to have_received(:broadcast_heatmap_refresh).with(contain_exactly(old_vineyard.id, vineyard.id))
+      end
+
+      it "stays silent when nothing changed" do
+        named_item("Ряд 1 Куст 1.jpg", bush:)
+        allow(Vineyard).to receive(:broadcast_heatmap_refresh)
+
+        described_class.new.perform(folder.id)
+        expect(Vineyard).not_to have_received(:broadcast_heatmap_refresh)
+      end
+    end
+
     context "when filename matches a bush" do
       it "assigns the correct bush for the whole folder" do
         item = named_item("Ряд 1 Куст 1.jpg")

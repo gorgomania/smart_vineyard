@@ -11,6 +11,11 @@ Turbo.StreamActions.heatmap_bush = function () {
   this.targetElements.forEach(el => el.dispatchEvent(new CustomEvent("heatmap:bush", { detail })))
 }
 
+// Привязки файлов к кустам поменялись (Vineyard.broadcast_heatmap_refresh): карта перечитывает диагнозы целиком
+Turbo.StreamActions.heatmap_refresh = function () {
+  this.targetElements.forEach(el => el.dispatchEvent(new CustomEvent("heatmap:refresh")))
+}
+
 document.addEventListener("turbo:load", () => {
   document.querySelectorAll(".flash").forEach(el => {
     setTimeout(() => {
