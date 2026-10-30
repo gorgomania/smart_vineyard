@@ -6,6 +6,9 @@ class GrapeClassifier
   IMAGE_SIZE = 224
   MEAN = [ 0.485, 0.456, 0.406 ]
   STD = [ 0.229, 0.224, 0.225 ]
+  # (val / 255 - mean) / std  =  val * NORM_SCALE + NORM_OFFSET
+  NORM_SCALE = STD.map { |s| 1.0 / (255.0 * s) }.freeze
+  NORM_OFFSET = MEAN.zip(STD).map { |m, s| -m / s }.freeze
   MUTEX = Mutex.new
 
   class << self
@@ -52,8 +55,8 @@ class GrapeClassifier
   end
 
   def predict_from_active_storage(attachment)
-    attachment.blob.open(tmpdir: Rails.root.join("tmp")) do |tempfile|
-      predict_from_path(tempfile.path)
+    BlobPath.open(attachment.blob, tmpdir: Rails.root.join("tmp")) do |path|
+      predict_from_path(path)
     end
   end
 
@@ -99,24 +102,19 @@ class GrapeClassifier
     crop_y = (resized_height - IMAGE_SIZE) / 2
     cropped = resized.crop(crop_x, crop_y, IMAGE_SIZE, IMAGE_SIZE)
 
-    # Приводим к RGB и 8-бит
+    # Приводим к RGB и 8-бит, альфа-канал PNG отбрасываем
     cropped = cropped.colourspace(:srgb)
     cropped = cropped.cast(:uchar)
+    cropped = cropped.extract_band(0, n: 3) if cropped.bands > 3
 
-    # Получаем пиксели
-    pixels = cropped.to_a
+    # Нормализация (val / 255 - mean) / std в vips, а не циклом Ruby по 150 тыс. значений
+    normalized = cropped.linear(NORM_SCALE, NORM_OFFSET)
 
-    # Нормализация — строим вложенный массив формы [1, 3, H, W]
-    channels = 3.times.map do |c|
-      IMAGE_SIZE.times.map do |h|
-        IMAGE_SIZE.times.map do |w|
-          val = pixels[h]&.[](w)&.[](c)&.to_f || 128.0
-          (val / 255.0 - MEAN[c]) / STD[c]
-        end
-      end
-    end
-
-    [ channels ]
+    # vips хранит пиксели как HWC (RGBRGB…), модели нужен [1, 3, H, W]: каналы друг за другом
+    planes = normalized.bandsplit.map(&:write_to_memory).join
+    tensor = OnnxRuntime::OrtValue.from_shape_and_type([ 1, 3, IMAGE_SIZE, IMAGE_SIZE ], :float)
+    tensor.data_ptr.put_bytes(0, planes)
+    tensor
   end
 
   def softmax(x)

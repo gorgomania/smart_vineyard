@@ -10,13 +10,13 @@ class GenerateVideoPreviewJob < ApplicationJob
     blob = media_item.media.blob
     preview_path = Rails.root.join("tmp", "preview_#{id}.jpg")
 
-    blob.open do |tempfile|
-      duration = get_video_duration(tempfile.path)
+    BlobPath.open(blob) do |video_path|
+      duration = get_video_duration(video_path)
       screenshot_time = duration * 0.1
       time_formatted = format_time(screenshot_time)
 
       success = system(
-        "ffmpeg", "-i", tempfile.path,
+        "ffmpeg", "-i", video_path,
         "-ss", time_formatted,
         "-vframes", "1",
         "-q:v", "2",
