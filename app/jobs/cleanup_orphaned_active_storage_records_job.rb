@@ -12,9 +12,9 @@ class CleanupOrphanedActiveStorageRecordsJob < ApplicationJob
 
 private
 
-  # Удаляем ВСЕХ сироток (blob'ы без единого attachment)
+  # Удаляем ВСЕХ сироток (blob'ы без единого attachment) — пачками, вместе с миниатюрами
   def cleanup_blobs_without_attachments
-    orphaned_blobs = ActiveStorage::Blob
+    orphaned_ids = ActiveStorage::Blob
       .left_joins(:attachments)
       .where(active_storage_attachments: { id: nil })
       .where("active_storage_blobs.created_at < ?", 1.hour.ago)
@@ -23,13 +23,9 @@ private
         "active_storage_blobs.filename ILIKE ? AND active_storage_blobs.created_at >= ?",
         "%.zip", ZIP_GRACE_PERIOD.ago
       )
+      .pluck(:id)
 
-    count = orphaned_blobs.count
-
-    orphaned_blobs.find_each do |blob|
-      blob.purge
-      Rails.logger.info "Deleted orphaned blob: #{blob.id} (#{blob.filename})"
-    end
+    count = orphaned_ids.each_slice(PurgeUnattachedBlobsJob::BATCH_SIZE).sum { |ids| PurgeUnattachedBlobsJob.purge(ids) }
 
     Rails.logger.info "Cleaned up #{count} orphaned blobs"
   end
@@ -51,21 +47,14 @@ private
         next
       end
 
-      attachments = ActiveStorage::Attachment.where(record_type: record_type)
-      existing_ids = klass.unscoped.where(id: attachments.select(:record_id)).pluck(:id).to_set
+      # Одним DELETE с подзапросом, без выгрузки id в Ruby. Только delete: blob может быть общим (демо-копии),
+      # его удалит cleanup_blobs_without_attachments
+      deleted = ActiveStorage::Attachment.where(record_type: record_type)
+                                         .where.not(record_id: klass.unscoped.select(:id))
+                                         .delete_all
 
-      orphaned = attachments.where.not(record_id: existing_ids)
-
-      Rails.logger.info "#{record_type}: #{orphaned.size} attachments with missing record"
-
-      orphaned.find_each do |attachment|
-        Rails.logger.info "Deleted orphaned attachment: #{attachment.id} " \
-                           "(record_type=#{record_type}, record_id=#{attachment.record_id}, " \
-                           "blob=#{attachment.blob&.filename})"
-        # Только delete: blob может быть общим (демо-копии), его удалит cleanup_blobs_without_attachments
-        attachment.delete
-        total_deleted += 1
-      end
+      Rails.logger.info "#{record_type}: deleted #{deleted} attachments with missing record" if deleted.positive?
+      total_deleted += deleted
     end
 
     Rails.logger.info "Cleaned up #{total_deleted} attachments with missing records"

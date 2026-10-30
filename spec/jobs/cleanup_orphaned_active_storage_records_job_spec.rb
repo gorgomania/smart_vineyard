@@ -21,6 +21,20 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
       }.to change(ActiveStorage::Blob, :count).by(-1)
     end
 
+    it "purges orphaned blobs in bulk together with their thumbnails" do
+      jpeg = Vips::Image.black(40, 30).add(120).cast(:uchar).jpegsave_buffer
+      orphans = 3.times.map do
+        ActiveStorage::Blob.create_and_upload!(io: StringIO.new(jpeg), filename: "p.jpg", content_type: "image/jpeg")
+      end
+      thumbs = orphans.map { |b| b.variant(resize_to_limit: [ 20, 20 ]).processed.image.blob }
+      ActiveStorage::Blob.where(id: orphans.map(&:id)).update_all(created_at: 2.hours.ago)
+
+      expect { described_class.new.perform }.not_to have_enqueued_job
+
+      expect(ActiveStorage::Blob.where(id: (orphans + thumbs).map(&:id))).to be_empty
+      expect((orphans + thumbs).map { |b| ActiveStorage::Blob.service.exist?(b.key) }).to all(be false)
+    end
+
     context "with ZIP blobs waiting for ProcessZipJob" do
       def zip_blob(age, content_type: "application/zip")
         ActiveStorage::Blob.create_before_direct_upload!(
