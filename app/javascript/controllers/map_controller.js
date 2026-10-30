@@ -42,8 +42,13 @@ export default class extends Controller {
       return
     }
 
+    // Сверки могут идти одновременно (подключение, сигнал «перечитай», переподключение): у каждой свой список
+    // кустов, обновлённых сообщениями, пока она в пути
+    this.activeSyncs = new Set()
+    this.syncSeq = 0
+    this.appliedSyncSeq = 0
     this.boundHeatmapBush = (e) => {
-      this.liveBushesDuringSync?.add(e.detail.bush)
+      this.activeSyncs.forEach(liveBushes => liveBushes.add(e.detail.bush))
       this.updateBush(e.detail)
     }
     this.element.addEventListener('heatmap:bush', this.boundHeatmapBush)
@@ -637,12 +642,25 @@ export default class extends Controller {
 
   async syncHeatmap() {
     this.heatmapRequested = true
+    const seq = ++this.syncSeq
     // Сообщение, пришедшее пока идёт запрос, новее ответа — ответ его не перетирает
-    const liveBushes = this.liveBushesDuringSync = new Set()
-    const response = await fetch(this.heatmapUrl, { headers: { Accept: 'application/json' } })
-    if (!response.ok) return
+    const liveBushes = new Set()
+    this.activeSyncs.add(liveBushes)
+    let diagnoses
+    try {
+      const response = await fetch(this.heatmapUrl, { headers: { Accept: 'application/json' } })
+      if (!response.ok) return
+      diagnoses = await response.json()
+    } catch {
+      return // нет сети — сверимся после переподключения
+    } finally {
+      this.activeSyncs.delete(liveBushes)
+    }
 
-    const diagnoses = await response.json()
+    // Ответ более ранней сверки пришёл после более поздней — он старее уже применённого
+    if (seq < this.appliedSyncSeq) return
+    this.appliedSyncSeq = seq
+
     Object.entries(diagnoses).forEach(([bush, [mediaItemId, classId]]) => {
       if (!liveBushes.has(bush)) this.updateBush({ bush, mediaItemId, classId })
     })
