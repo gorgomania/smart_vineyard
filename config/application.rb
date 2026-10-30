@@ -37,5 +37,10 @@ module SmartVineyard
     # Don't generate system test files.
     config.generators.system_tests = nil
     config.i18n.default_locale = :ru
+
+    # stylesheet_link_tag дублирует CSS в заголовок Link: rel=preload. Выигрыша нет: early hints не включены,
+    # а <link> и так в начале <head>. Зато ответы Turbo (переходы и prefetch при наведении) снова несут
+    # этот заголовок, а стили уже применены — Chrome сыплет «preloaded but not used»
+    config.action_view.preload_links_header = false
   end
 end
