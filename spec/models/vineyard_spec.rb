@@ -50,6 +50,14 @@ RSpec.describe Vineyard, type: :model do
       expect(vineyard.reload.deleted_at).not_to be_nil
       expect(DestroyVineyardJob).to have_been_enqueued.with(vineyard.id)
     end
+
+    it "refreshes the owner's total stats" do
+      vineyard = create(:vineyard)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_refresh_to)
+
+      vineyard.soft_destroy
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_refresh_to).with(vineyard.user, :stats)
+    end
   end
 
   describe "#destroy" do

@@ -150,6 +150,15 @@ RSpec.describe "MediaItems", type: :request do
       expect(response).to redirect_to(folder_path(folder, page: nil))
     end
 
+    it "refreshes the heatmap and stats of the bush's vineyard" do
+      row = create(:row, vineyard: create(:vineyard, user:), row_number: 1)
+      media_item.update!(bush: create(:bush, vineyard: row.vineyard, row:, bush_number: 1))
+      allow(Vineyard).to receive(:broadcast_diagnoses_changed)
+
+      delete media_item_path(media_item)
+      expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with(row.vineyard_id)
+    end
+
     context "when another user tries to delete" do
       before { sign_in other_user }
 

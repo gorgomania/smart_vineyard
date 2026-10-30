@@ -26,6 +26,16 @@ RSpec.describe Folder, ".delete_trees!" do
     expect(kept.reload.media).to be_attached
   end
 
+  it "refreshes heatmaps and stats of vineyards whose bushes held deleted files" do
+    vineyard = create(:vineyard, user:)
+    bush = create(:bush, vineyard:, row: create(:row, vineyard:, row_number: 1), bush_number: 1)
+    create(:media_item, folder: deep, bush:)
+    allow(Vineyard).to receive(:broadcast_diagnoses_changed)
+
+    root.delete_tree!
+    expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with([ vineyard.id ])
+  end
+
   it "enqueues file purging after commit and the job removes the files and previews" do
     item = create(:media_item, folder: deep)
     jpeg = Vips::Image.black(300, 200, bands: 3).jpegsave_buffer
