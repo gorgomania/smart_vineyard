@@ -3,10 +3,12 @@ default: &default
     - polling_interval: 1
       batch_size: 500
   workers:
-    # Работа задач в основном процессорная (vips, ONNX), а потоки одного процесса упираются в GVL:
-    # параллельность дают процессы (JOB_CONCURRENCY), а не потоки
+    # Работа задач в основном процессорная (vips, ONNX, распаковка), а потоки одного процесса упираются в GVL:
+    # параллельность дают процессы (JOB_CONCURRENCY), а не потоки. Один поток ещё и раздаёт задачи поровну:
+    # процесс забирает из очереди столько задач, сколько у него свободных потоков, и при 5 потоках
+    # два архива уходили в один процесс и шли по очереди, пока остальные простаивали
     - queues: [default, low_priority]
-      threads: <%= ENV.fetch("JOB_THREADS", 5) %>
+      threads: <%= ENV.fetch("JOB_THREADS", 1) %>
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
 
