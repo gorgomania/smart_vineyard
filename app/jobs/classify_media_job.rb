@@ -11,8 +11,9 @@ class ClassifyMediaJob < ApplicationJob
     if media_item.media.image?
       media_item.classify!
       # Пока шла классификация, раскладка могла привязать файл к кусту, а её сигнал перечитать карту
-      # пришёл раньше нашего результата. Без reload куст бы не нашёлся и точка осталась серой
-      media_item.reload.broadcast_diagnosis
+      # пришёл раньше нашего результата: перечитываем файл, иначе куст не найдётся и точка останется серой.
+      # find_by, а не reload: файл могли удалить вместе с папкой, пока шла классификация
+      MediaItem.find_by(id: media_item_id)&.broadcast_diagnosis
     end
 
     Turbo::StreamsChannel.broadcast_replace_to(

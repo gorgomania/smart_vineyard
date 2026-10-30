@@ -71,6 +71,18 @@ RSpec.describe ClassifyMediaJob, type: :job do
       end
     end
 
+    context "when the file is deleted while classification is running" do
+      it "finishes without raising" do
+        item = create(:media_item, :with_image)
+        allow(GrapeClassifier).to receive(:predict_from_media_item) do
+          MediaItem.where(id: item.id).delete_all # удалили вместе с папкой
+          { class_id: 1, confidence: 0.9, predictions: [] }
+        end
+
+        expect { described_class.new.perform(item.id) }.not_to raise_error
+      end
+    end
+
     context "when media is a video" do
       it "skips classification without failing and refreshes the panel" do
         item = create(:media_item)
