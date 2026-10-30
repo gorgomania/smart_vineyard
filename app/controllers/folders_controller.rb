@@ -187,7 +187,7 @@ class FoldersController < ApplicationController
     authorize @vineyard
 
     if @folder.update(vineyard: @vineyard)
-      DistributeFolderToBushesJob.perform_later(@folder.id)
+      DistributeMediaToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно прикреплена к винограднику"
     else
       flash[:alert] = "Выбранный виноградник уже занят другой папкой"
@@ -214,7 +214,7 @@ class FoldersController < ApplicationController
     authorize @vineyard
 
     if @folder.update(vineyard: @vineyard)
-       DistributeFolderToBushesJob.perform_later(@folder.id)
+      DistributeMediaToBushesJob.perform_later(@folder.id)
       redirect_to @folder, notice: "Папка успешно перекреплена к винограднику"
     else
       flash[:alert] = "Выбранный виноградник уже занят другой папкой"
@@ -227,7 +227,7 @@ class FoldersController < ApplicationController
     authorize @folder
 
     @folder.update(vineyard: nil)
-    DistributeFolderToBushesJob.perform_later(@folder.id)
+    DistributeMediaToBushesJob.perform_later(@folder.id)
     redirect_to @folder, notice: "Папка успешно откреплена от виноградника"
   end
 

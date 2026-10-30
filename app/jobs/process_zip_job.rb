@@ -49,7 +49,7 @@ class ProcessZipJob < ApplicationJob
     # Файлы сохранены — архив больше не нужен, даже если дальше что-то упадёт
     zip_blob.purge
 
-    DistributeMediaToBushesJob.perform_later(media_item_ids)
+    DistributeMediaToBushesJob.perform_later(folder.id, media_item_ids)
 
     jobs = []
     media_item_ids.each_with_index do |media_id, index|

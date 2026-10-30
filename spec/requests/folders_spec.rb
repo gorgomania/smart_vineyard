@@ -230,7 +230,7 @@ RSpec.describe "Folders", type: :request do
       vineyard = create(:vineyard, user:)
       expect {
         post attach_to_vineyard_folder_path(folder), params: { vineyard_id: vineyard.id }
-      }.to have_enqueued_job(DistributeFolderToBushesJob)
+      }.to have_enqueued_job(DistributeMediaToBushesJob)
       expect(folder.reload.vineyard_id).to eq(vineyard.id)
     end
   end
@@ -243,7 +243,7 @@ RSpec.describe "Folders", type: :request do
       folder.update!(vineyard:)
       expect {
         delete detach_from_vineyard_folder_path(folder)
-      }.to have_enqueued_job(DistributeFolderToBushesJob)
+      }.to have_enqueued_job(DistributeMediaToBushesJob)
       expect(folder.reload.vineyard_id).to be_nil
     end
   end

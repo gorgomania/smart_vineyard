@@ -1,50 +1,65 @@
 class DistributeMediaToBushesJob < ApplicationJob
   queue_as :default
-  # Параллельная задача заняла куст между проверкой и UPDATE: при повторе он попадёт в occupied_bush_ids
+  # Параллельная задача заняла куст между проверкой и UPDATE: при повторе он попадёт в occupied
   retry_on ActiveRecord::RecordNotUnique, wait: 1.second, attempts: 3
 
-  def perform(media_item_ids)
-    media_items = MediaItem.where(id: media_item_ids)
-      .includes(media_attachment: :blob)
-      .to_a
-    return if media_items.empty?
+  FILENAME_PATTERN = /(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/
 
-    folder = media_items.first.folder
-    vineyard = folder.vineyard
-    return unless vineyard
+  # Трогаем только файлы с именем «Ряд N Куст M»: такой файл оказывается на своём кусте или без куста.
+  # Остальные файлы привязаны вручную — их не меняем, а их кусты считаем занятыми.
+  #
+  # media_item_ids: nil — вся папка (прикрепили/перекрепили/открепили виноградник, перегенерировали кусты),
+  # массив — только эти файлы (новые из архива)
+  def perform(folder_id, media_item_ids = nil)
+    folder = Folder.find_by(id: folder_id)
+    return unless folder
 
-    bushes_by_coords = vineyard.bushes.joins(:row)
-      .select("bushes.*, rows.row_number AS row_number")
-      .each_with_object({}) { |b, h| h[[ b.row_number.to_i, b.bush_number ]] = b }
+    scope = folder.media_items
+    scope = scope.where(id: media_item_ids) if media_item_ids
 
-    item_to_bush = {}
-    media_items.each do |media|
-      filename = media.media_attachment&.blob&.filename.to_s
-      next if filename.blank?
+    # [id, текущий bush_id, [ряд, куст]] — только файлы, подходящие под шаблон
+    named = scope.joins(media_attachment: :blob)
+      .order(:id)
+      .pluck(:id, :bush_id, "active_storage_blobs.filename")
+      .filter_map do |id, bush_id, filename|
+        match = filename.match(FILENAME_PATTERN)
+        [ id, bush_id, [ match[1].to_i, match[2].to_i ] ] if match
+      end
+    return if named.empty?
 
-      match = filename.match(/(?:Ряд|ряд)\s*(\d+)\s*(?:Куст|куст)\s*(\d+)/)
-      next unless match
+    bush_ids_by_coords = folder.vineyard&.bushes&.joins(:row)
+      &.pluck("rows.row_number", "bushes.bush_number", "bushes.id")
+      &.each_with_object({}) { |(row, bush, id), h| h[[ row, bush ]] = id } || {}
 
-      bush = bushes_by_coords[[ match[1].to_i, match[2].to_i ]]
-      # Один куст — один файл: "Ряд 1 Куст 1.jpg" и "Ряд 1 Куст 1(2).jpg" претендуют на один куст, берём первый
-      item_to_bush[media.id] = bush.id if bush && !item_to_bush.value?(bush.id)
-    end
-    return if item_to_bush.empty?
-
-    occupied_bush_ids = MediaItem
-      .where(bush_id: item_to_bush.values)
-      .where.not(id: item_to_bush.keys)
+    named_ids = named.map(&:first)
+    # Куст держит файл, который мы не трогаем (привязан вручную или из другой папки) — не отбираем
+    occupied = MediaItem
+      .where(bush_id: bush_ids_by_coords.values)
+      .where.not(id: named_ids)
       .pluck(:bush_id)
       .to_set
 
-    bush_updates = item_to_bush.reject { |_, bush_id| occupied_bush_ids.include?(bush_id) }
-    return if bush_updates.empty?
+    taken = Set.new
+    changes = named.filter_map do |id, current_bush_id, coords|
+      bush_id = bush_ids_by_coords[coords]
+      # Один куст — один файл: "Ряд 1 Куст 1.jpg" и "Ряд 1 Куст 1(2).jpg" претендуют на один куст, берём первый
+      bush_id = nil if bush_id.nil? || occupied.include?(bush_id) || !taken.add?(bush_id)
+      [ id, bush_id ] if bush_id != current_bush_id
+    end
+    return if changes.empty?
 
-    placeholders = Array.new(bush_updates.size, "WHEN ? THEN ?").join(" ")
-    values = bush_updates.flat_map { |mid, bid| [ Integer(mid), Integer(bid) ] }
-    sql = MediaItem.sanitize_sql_array(
-      [ "bush_id = CASE id #{placeholders} END, updated_at = ?" ] + values + [ Time.current ]
-    )
-    MediaItem.where(id: bush_updates.keys).update_all(sql)
+    now = Time.current
+    MediaItem.transaction do
+      # Сначала освобождаем: иначе обмен кустами между двумя файлами упрётся в уникальный индекс
+      MediaItem.where(id: changes.map(&:first)).update_all(bush_id: nil, updated_at: now)
+
+      changes.reject { |_, bush_id| bush_id.nil? }.each_slice(1000) do |slice|
+        placeholders = Array.new(slice.size, "WHEN ? THEN ?").join(" ")
+        sql = MediaItem.sanitize_sql_array(
+          [ "bush_id = CASE id #{placeholders} END, updated_at = ?", *slice.flatten, now ]
+        )
+        MediaItem.where(id: slice.map(&:first)).update_all(sql)
+      end
+    end
   end
 end
