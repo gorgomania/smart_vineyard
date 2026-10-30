@@ -29,16 +29,20 @@ class Folder < ApplicationRecord
         SELECT id FROM tree
       SQL
 
-      attachments = ActiveStorage::Attachment.where(
-        record_type: "MediaItem",
-        record_id: MediaItem.where("folder_id IN (#{subtree_sql})").select(:id)
-      )
+      media_items = MediaItem.where("folder_id IN (#{subtree_sql})")
+      attachments = ActiveStorage::Attachment.where(record_type: "MediaItem", record_id: media_items.select(:id))
       blob_ids = attachments.distinct.pluck(:blob_id)
+      # Кусты этих виноградников освобождаются: открытые тепловые карты и статистика должны обновиться
+      vineyard_ids = Bush.where(id: media_items.where.not(bush_id: nil).select(:bush_id)).distinct.pluck(:vineyard_id)
       attachments.delete_all
       where(id: root_ids).delete_all
 
-      # Задачи — в другой БД (queue): ставим после коммита, иначе задача увидит ещё прикреплённые блобы
-      ActiveRecord.after_all_transactions_commit { PurgeUnattachedBlobsJob.enqueue_in_batches(blob_ids) }
+      # Задачи — в другой БД (queue): ставим после коммита, иначе задача увидит ещё прикреплённые блобы.
+      # Рассылка тоже после коммита: карта перечитает диагнозы уже без удалённых файлов
+      ActiveRecord.after_all_transactions_commit do
+        PurgeUnattachedBlobsJob.enqueue_in_batches(blob_ids)
+        Vineyard.broadcast_diagnoses_changed(vineyard_ids)
+      end
     end
   end
 

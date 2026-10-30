@@ -98,7 +98,9 @@ class MediaItemsController < ApplicationController
     media_item = MediaItem.find(params[:id])
     authorize media_item
     folder_id = media_item.folder_id
+    old_vineyard_id = media_item.bush&.vineyard_id
     media_item.destroy
+    Vineyard.broadcast_diagnoses_changed(old_vineyard_id)
     if search_query.blank?
       redirect_to folder_path(folder_id, page: page), notice: "Файл успешно удален"
     else

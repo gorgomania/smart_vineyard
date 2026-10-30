@@ -38,6 +38,8 @@ class Vineyard < ApplicationRecord
   def soft_destroy
     update(deleted_at: Time.current)
     DestroyVineyardJob.perform_later(id)
+    # Открытая общая статистика владельца перестаёт учитывать этот виноградник
+    Turbo::StreamsChannel.broadcast_refresh_to(user, :stats)
   end
 
   # Привязки файлов к кустам поменялись: открытые тепловые карты этих виноградников перечитывают диагнозы
