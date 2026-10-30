@@ -7,6 +7,11 @@ class Bush < ApplicationRecord
 
   INSERT_BATCH_SIZE = 5_000
 
+  # Кусты без файла. keep_bush_id — текущий куст перекрепляемого файла: его тоже можно выбрать
+  scope :free, ->(keep_bush_id: nil) {
+    where.not(id: MediaItem.where.not(bush_id: [ nil, keep_bush_id ]).select(:bush_id))
+  }
+
   # Массовая вставка кустов: { row_id => (1..40) } — пачками по INSERT_BATCH_SIZE вместо create! на каждый куст.
   # Валидации и колбэки не вызываются: номера в диапазонах должны быть свободны
   def self.insert_numbered!(vineyard_id, numbers_by_row_id)

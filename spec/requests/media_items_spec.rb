@@ -185,6 +185,22 @@ RSpec.describe "MediaItems", type: :request do
     end
   end
 
+  describe "GET /media_items/:id/edit_attach" do
+    before { sign_in user }
+
+    it "offers the file's own bush but not bushes taken by other files" do
+      row   = create(:row, vineyard: create(:vineyard, user:), row_number: 1)
+      own   = create(:bush, vineyard: row.vineyard, row:, bush_number: 1)
+      taken = create(:bush, vineyard: row.vineyard, row:, bush_number: 2)
+      media_item.update!(bush: own)
+      create(:media_item, folder:, bush: taken)
+
+      get edit_attach_media_item_path(media_item)
+      expect(response.body).to include("Куст 1")
+      expect(response.body).not_to include("Куст 2")
+    end
+  end
+
   describe "DELETE /media_items/:id/detach_from_bush" do
     before { sign_in user }
 

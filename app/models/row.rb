@@ -4,7 +4,13 @@ class Row < ApplicationRecord
 
   validates :row_number, presence: true, uniqueness: { scope: :vineyard_id }
 
-  def display_name
-    "Ряд #{row_number} (#{bushes.size} #{Russian.p(bushes.size, 'куст', 'куста', 'кустов')})"
+  # Ряды, в которых есть свободные кусты: [[ряд, число свободных кустов], ...]
+  def self.with_free_bushes(vineyard, keep_bush_id: nil)
+    counts = Bush.free(keep_bush_id:).where(vineyard:).group(:row_id).count
+    vineyard.rows.where(id: counts.keys).order(:row_number).map { |row| [ row, counts[row.id] ] }
+  end
+
+  def free_bushes_label(count)
+    "Ряд #{row_number} (#{count} #{Russian.p(count, 'свободный куст', 'свободных куста', 'свободных кустов')})"
   end
 end

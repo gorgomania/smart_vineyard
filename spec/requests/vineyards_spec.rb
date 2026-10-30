@@ -193,6 +193,21 @@ RSpec.describe "Vineyards", type: :request do
     end
   end
 
+  describe "GET /vineyards/:id/rows" do
+    before { sign_in user }
+
+    it "lists only rows with free bushes, labelled with the free count" do
+      full_row = create(:row, vineyard:, row_number: 1)
+      open_row = create(:row, vineyard:, row_number: 2)
+      taken = create(:bush, vineyard:, row: full_row, bush_number: 1)
+      create(:bush, vineyard:, row: open_row, bush_number: 1)
+      create(:media_item, folder: create(:folder, user:), bush: taken)
+
+      get rows_vineyard_path(vineyard, format: :json)
+      expect(JSON.parse(response.body)).to eq([ { "id" => open_row.id, "label" => "Ряд 2 (1 свободный куст)" } ])
+    end
+  end
+
   describe "GET /vineyards/total_stats" do
     context "when not authenticated" do
       it "redirects to login" do

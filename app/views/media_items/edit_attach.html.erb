@@ -8,7 +8,7 @@
                 <%= msg %>
             </div>
         <% end %>
-        <%= form_with model: @media_item, url: update_attach_to_bush_media_item_path(@media_item), html: { method: :patch }, class: "mt-5 w-70", data: { controller: "bush-select" } do |form| %>
+        <%= form_with model: @media_item, url: update_attach_to_bush_media_item_path(@media_item), html: { method: :patch }, class: "mt-5 w-70", data: { controller: "bush-select", bush_select_keep_bush_id_value: @media_item.bush_id } do |form| %>
             <div class = "flex flex-col gap-5">
                 <div>
                     <%= select_tag :vineyard_id, 
@@ -16,17 +16,14 @@
                         include_blank: "- Выберите виноградник -",
                         required: true,
                         class: "w-full px-4 py-3 border border-[#e5e5e5] rounded-lg outline-none focus:border-[#69377c] focus:ring-1 focus:ring-[#69377c] bg-white",
-                        data: { 
-                        action: "change->bush-select#loadRows",
-                        controller: "bush-select"
-                        }
+                        data: { action: "change->bush-select#loadRows" }
                     %>
                 </div>
                 
                 <!-- Выбор ряда (появляется после выбора виноградника) -->
                 <div id="rows-container" style="display: <%= (@selected_vineyard_id) ? 'block' : 'none' %>">
                     <%= select_tag :row_id,
-                        options_from_collection_for_select(@rows || [], :id, :display_name, @selected_row_id),
+                        options_for_select(@rows.map { |row, free_count| [row.free_bushes_label(free_count), row.id] }, @selected_row_id),
                         include_blank: "- Выберите ряд -",
                         required: true,
                         class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#69377c] focus:ring-1 focus:ring-[#69377c] bg-white",
