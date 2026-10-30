@@ -52,6 +52,8 @@ Rails.application.configure do
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
+  # При деплое даём начатым задачам доделаться (по умолчанию 5 с, дальше они падают с ProcessExitError)
+  config.solid_queue.shutdown_timeout = ENV.fetch("JOB_SHUTDOWN_TIMEOUT", "600").to_i.seconds
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.

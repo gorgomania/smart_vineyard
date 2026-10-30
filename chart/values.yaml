@@ -29,6 +29,7 @@ logLevel: info            # RAILS_LOG_LEVEL: debug | info | warn | error
 web:
   threads: 3              # RAILS_MAX_THREADS — потоки Puma
   dbPool: 10              # DB_POOL — потоки Puma + Action Cable (worker_pool_size 4) + запас
+  drainDelaySeconds: 10   # preStop: время traefik убрать старый под из балансировки до SIGTERM
   resources:
     requests: { cpu: 200m, memory: 512Mi }
     limits: { cpu: "2", memory: 4Gi }
@@ -37,6 +38,9 @@ worker:
   concurrency: 3          # JOB_CONCURRENCY — процессы solid_queue: на 4 ядрах 3 под задачи, 1 под web и Postgres
   threads: 5              # JOB_THREADS — потоков на процесс; больше не нужно: процессорная работа упирается в GVL
   dbPool: 10              # DB_POOL и QUEUE_DB_POOL на процесс: потоки задач + служебные
+  # JOB_SHUTDOWN_TIMEOUT: сколько при деплое ждать начатые задачи (большой ZIP, превью видео).
+  # Штатные 5 с solid_queue: всё, что дольше, падает с ProcessExitError и само не перезапускается
+  shutdownTimeoutSeconds: 600
   resources:
     requests: { cpu: 200m, memory: 512Mi }
     limits: { cpu: "3", memory: 4Gi }   # 3 процесса по ~0.5–1 ГБ при декодировании больших фото

@@ -7,8 +7,13 @@ metadata:
     app.kubernetes.io/component: web
 spec:
   replicas: 1
+  # Новый под поднимается рядом со старым, старый гасится только когда новый готов. RWO не мешает:
+  # local-path привязывает том к узлу, а не к поду (его и так одновременно монтирует worker)
   strategy:
-    type: Recreate          # RWO volume is mounted by one pod at a time per rollout
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/instance: {{ .Release.Name }}
@@ -19,6 +24,9 @@ spec:
         {{- include "sv.labels" . | nindent 8 }}
         app.kubernetes.io/component: web
     spec:
+      # SIGTERM Puma дожидается текущих запросов, а Thruster проксирует, пока жива Puma:
+      # начатая загрузка до 1 ГБ успевает дойти, сколько бы она ни шла в пределах таймаута
+      terminationGracePeriodSeconds: {{ add .Values.web.drainDelaySeconds .Values.uploadTimeoutSeconds 30 }}
       securityContext:
         fsGroup: 1000
       {{- with .Values.imagePullSecrets }}
@@ -57,6 +65,12 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
+          # После SIGTERM Puma не принимает новые запросы (Thruster отвечает 502), поэтому сначала
+          # ждём, пока traefik уберёт под из балансировки и пустит новые запросы на новый под
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "{{ .Values.web.drainDelaySeconds }}"]
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
       volumes:

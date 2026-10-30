@@ -7,8 +7,12 @@ metadata:
     app.kubernetes.io/component: worker
 spec:
   replicas: 1
+  # Новый worker берёт задачи, пока старый доделывает начатые
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/instance: {{ .Release.Name }}
@@ -19,7 +23,8 @@ spec:
         {{- include "sv.labels" . | nindent 8 }}
         app.kubernetes.io/component: worker
     spec:
-      terminationGracePeriodSeconds: 90
+      # Запас поверх JOB_SHUTDOWN_TIMEOUT, чтобы solid_queue сам снял недоделанные задачи, а не получил SIGKILL
+      terminationGracePeriodSeconds: {{ add .Values.worker.shutdownTimeoutSeconds 30 }}
       securityContext:
         fsGroup: 1000
       {{- with .Values.imagePullSecrets }}
@@ -42,6 +47,8 @@ spec:
               value: {{ .Values.worker.dbPool | quote }}
             - name: QUEUE_DB_POOL
               value: {{ .Values.worker.dbPool | quote }}
+            - name: JOB_SHUTDOWN_TIMEOUT
+              value: {{ .Values.worker.shutdownTimeoutSeconds | quote }}
           volumeMounts:
             - name: storage
               mountPath: /rails/storage

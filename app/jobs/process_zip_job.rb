@@ -27,7 +27,7 @@ class ProcessZipJob < ApplicationJob
         end
       end
     end
-    return if blob_results.empty? # в архиве нет поддерживаемых файлов
+    return zip_blob.purge if blob_results.empty? # в архиве нет поддерживаемых файлов
 
     media_item_ids = ActiveRecord::Base.transaction do
       result = MediaItem.insert_all!(media_items_data, returning: [ :id ])
@@ -46,6 +46,8 @@ class ProcessZipJob < ApplicationJob
 
       ids
     end
+    # Файлы сохранены — архив больше не нужен, даже если дальше что-то упадёт
+    zip_blob.purge
 
     DistributeMediaToBushesJob.perform_later(media_item_ids)
 
@@ -65,10 +67,10 @@ class ProcessZipJob < ApplicationJob
   rescue => e
     Rails.logger.error "Ошибка обработки ZIP: #{e.message}"
     Rails.logger.error e.backtrace.first(5)
-    blob_results&.each { |b| b.purge rescue nil }
+    # Пока записи не сохранены, распакованные файлы — сироты. Архив не трогаем: задачу можно повторить,
+    # а иначе его уберёт CleanupOrphanedActiveStorageRecordsJob через сутки
+    blob_results.each { |b| b.purge rescue nil } unless media_item_ids
     raise e
-  ensure
-    zip_blob&.purge
   end
 
   private

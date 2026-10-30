@@ -48,7 +48,7 @@ RSpec.describe ProcessZipJob, type: :job do
     end
 
     context "when an error occurs" do
-      it "purges the zip blob and already stored files, and re-raises" do
+      it "purges already extracted files but keeps the archive for a retry, and re-raises" do
         zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake", "b.jpg" => "\xFF\xD8fake2")
         allow(MediaItem).to receive(:insert_all!).and_raise(StandardError, "db down")
 
@@ -56,7 +56,19 @@ RSpec.describe ProcessZipJob, type: :job do
           described_class.new.perform(folder, zip_blob)
         }.to raise_error(StandardError, "db down")
 
-        expect(ActiveStorage::Blob.count).to eq(0)
+        expect(ActiveStorage::Blob.pluck(:id)).to eq([ zip_blob.id ])
+      end
+
+      it "keeps saved files and removes the archive when enqueuing follow-up jobs fails" do
+        zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake")
+        allow(DistributeMediaToBushesJob).to receive(:perform_later).and_raise(StandardError, "queue down")
+
+        expect {
+          described_class.new.perform(folder, zip_blob)
+        }.to raise_error(StandardError, "queue down")
+
+        expect(folder.media_items.sole.media).to be_attached
+        expect(ActiveStorage::Blob.exists?(zip_blob.id)).to be false
       end
     end
   end
