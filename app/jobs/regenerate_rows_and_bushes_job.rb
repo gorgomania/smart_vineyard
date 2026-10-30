@@ -58,6 +58,10 @@ class RegenerateRowsAndBushesJob < ApplicationJob
       Bush.insert_numbered!(vineyard.id, new_bushes)
     end
 
+    # Число кустов поменялось, а файлы с удалённых кустов отвязал FK — мимо раскладки, которая сообщает
+    # только о своих изменениях. Открытые статистика и тепловая карта перечитывают данные
+    Vineyard.broadcast_diagnoses_changed(vineyard.id)
+
     if vineyard.folder.present?
       DistributeMediaToBushesJob.perform_later(vineyard.folder.id)
     end

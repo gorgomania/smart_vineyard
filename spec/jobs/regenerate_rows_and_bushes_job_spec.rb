@@ -15,6 +15,14 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
   end
 
   describe "#perform" do
+    it "refreshes open stats and heatmap of the vineyard" do
+      setup_rows([ 3 ])
+      allow(Vineyard).to receive(:broadcast_diagnoses_changed)
+
+      perform([ 2 ])
+      expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with(vineyard.id)
+    end
+
     context "adding bushes to an existing row" do
       before { setup_rows([ 3 ]) }
 

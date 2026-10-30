@@ -26,7 +26,7 @@ A web application for vineyard management with AI-based vine health classificati
 - **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place
 - **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`, or manually for any file). Uploaded files appear in the open folder as soon as they are processed, without a page reload; files are served only to their owner
 - **AI classification** — vine health from a photo (black rot, ESCA, leaf blight, healthy) with a local ONNX model
-- **Statistics** — disease breakdown charts and a per-bush health heatmap
+- **Statistics** — disease breakdown charts and a per-bush health heatmap. Both update live while photos are being classified: the heatmap repaints single bushes, the charts refresh in place (Turbo Streams over Solid Cable)
 - **Demo mode** — a "Demo account" button on the login page clones a master account into a temporary user that is deleted after 24 hours
 
 ## Stack
