@@ -40,6 +40,18 @@ RSpec.describe ClassifyMediaJob, type: :job do
                          attributes: { bush: "3-7", "media-item-id": item.id, "class-id": 2 })
         )
       end
+
+      it "refreshes the stats pages" do
+        vineyard = create(:vineyard)
+        item = create(:media_item, :with_image,
+                      bush: create(:bush, vineyard:, row: create(:row, vineyard:, row_number: 1), bush_number: 1))
+        allow(GrapeClassifier).to receive(:predict_from_media_item)
+          .and_return(class_id: 2, confidence: 0.99, predictions: [])
+        allow(Vineyard).to receive(:broadcast_stats_refresh)
+
+        described_class.new.perform(item.id)
+        expect(Vineyard).to have_received(:broadcast_stats_refresh).with(vineyard.id)
+      end
     end
 
     context "when the file lands on a bush while classification is running" do

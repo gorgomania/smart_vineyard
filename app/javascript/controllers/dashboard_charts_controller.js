@@ -6,22 +6,34 @@ export default class extends Controller {
   static values = {
     stats: Object  // ← принимаем JSON объект
   }
-  
-  connect() {
-    this.renderChart()
-  }
-  
-  renderChart() {
+
+  // Вызывается при подключении и каждый раз, когда refresh-морфинг меняет data-dashboard-charts-stats-value
+  statsValueChanged() {
     const stats = this.statsValue
-    
     if (!stats || !stats.labels) return
-    
+
+    if (this.chart) {
+      this.chart.data.labels = stats.labels
+      this.chart.data.datasets[0].data = stats.data
+      this.chart.data.datasets[0].backgroundColor = stats.colors
+      this.chart.update()
+    } else {
+      this.renderChart(stats)
+    }
+  }
+
+  disconnect() {
+    this.chart?.destroy()
+    this.chart = null
+  }
+
+  renderChart(stats) {
     const canvas = this.canvasTargets.find(c => c.id === "total-chart")
     if (!canvas) return
-    
+
     const ctx = canvas.getContext('2d')
-    
-    new Chart(ctx, {
+
+    this.chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: stats.labels,
@@ -39,7 +51,7 @@ export default class extends Controller {
           tooltip: {
             callbacks: {
               label: (context) => {
-                const total = stats.data.reduce((a, b) => a + b, 0)
+                const total = context.dataset.data.reduce((a, b) => a + b, 0)
                 const percent = ((context.raw / total) * 100).toFixed(1)
                 return `${context.label}: ${context.raw} (${percent}%)`
               }

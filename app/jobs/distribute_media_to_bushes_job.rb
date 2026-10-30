@@ -69,6 +69,6 @@ class DistributeMediaToBushesJob < ApplicationJob
 
     # Классификация идёт параллельно и могла закончиться раньше, чем файл попал на куст, — тогда её сообщение
     # карте ушло без куста. Перечитывание подхватит и такие файлы
-    Vineyard.broadcast_heatmap_refresh(vineyard_ids)
+    Vineyard.broadcast_diagnoses_changed(vineyard_ids)
   end
 end

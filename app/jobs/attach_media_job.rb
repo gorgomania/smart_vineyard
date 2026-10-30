@@ -46,6 +46,6 @@ class AttachMediaJob < ApplicationJob
 
     folder.broadcast_new_files
     # Классификация, поставленная выше, могла закончиться раньше привязки к кусту (см. DistributeMediaToBushesJob)
-    Vineyard.broadcast_heatmap_refresh(vineyard.id) if attached_to_bush
+    Vineyard.broadcast_diagnoses_changed(vineyard.id) if attached_to_bush
   end
 end

@@ -1,4 +1,7 @@
 <%= render template: "layouts/header" %>
+<%# Классификация и раскладка шлют сюда refresh (Vineyard.broadcast_stats_refresh): цифры и диаграмма обновляются без перезагрузки %>
+<% turbo_refreshes_with method: :morph, scroll: :preserve %>
+<%= turbo_stream_from (@total ? current_user : @vineyard), :stats %>
 <main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
   <div data-controller="dashboard-charts" data-dashboard-charts-stats-value="<%= @stats_data.to_json %>">
     <!-- Общая статистика -->
@@ -8,7 +11,8 @@
           <h2 class="text-xl font-bold text-[#69377c] mb-4"> <%= @total.nil? ? "Cостояние" : "Общее состояние" %> </h2>
         
           <div class="max-w-lg mx-auto">
-            <canvas id="total-chart" data-dashboard-charts-target="canvas"></canvas>
+            <%# Морфинг не трогает холст: Chart.js сам перерисует его по новым данным (statsValueChanged) %>
+            <canvas id="total-chart" data-turbo-permanent data-dashboard-charts-target="canvas"></canvas>
           </div>
         </div>
       <% end %>

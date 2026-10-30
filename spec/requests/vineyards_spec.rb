@@ -181,6 +181,12 @@ RSpec.describe "Vineyards", type: :request do
         get stats_vineyard_path(vineyard)
         expect(response).to have_http_status(:ok)
       end
+
+      it "subscribes to the vineyard's stats refreshes" do
+        get stats_vineyard_path(vineyard)
+        expect(response.body).to include("turbo-cable-stream-source")
+        expect(response.body).to include(Turbo::StreamsChannel.signed_stream_name([ vineyard, :stats ]))
+      end
     end
 
     context "when authenticated as another user" do
@@ -239,6 +245,11 @@ RSpec.describe "Vineyards", type: :request do
       it "returns 200" do
         get total_stats_vineyards_path
         expect(response).to have_http_status(:ok)
+      end
+
+      it "subscribes to the user's total stats refreshes" do
+        get total_stats_vineyards_path
+        expect(response.body).to include(Turbo::StreamsChannel.signed_stream_name([ user, :stats ]))
       end
     end
   end

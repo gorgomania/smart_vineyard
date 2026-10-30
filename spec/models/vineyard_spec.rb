@@ -68,6 +68,19 @@ RSpec.describe Vineyard, type: :model do
     end
   end
 
+  describe ".broadcast_stats_refresh" do
+    it "refreshes each vineyard's stats page and its owner's total stats once" do
+      user = create(:user)
+      first, second = create_list(:vineyard, 2, user:)
+      allow(Turbo::StreamsChannel).to receive(:broadcast_refresh_to)
+
+      described_class.broadcast_stats_refresh([ first.id, second.id ])
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_refresh_to).with(first, :stats)
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_refresh_to).with(second, :stats)
+      expect(Turbo::StreamsChannel).to have_received(:broadcast_refresh_to).with(user, :stats).once
+    end
+  end
+
   describe "#bushes_diagnoses" do
     it "maps 'row-bush' to [media item id, class] for bushes with a file only" do
       vineyard = create(:vineyard)

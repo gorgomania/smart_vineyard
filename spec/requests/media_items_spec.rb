@@ -209,10 +209,10 @@ RSpec.describe "MediaItems", type: :request do
       bush = create(:bush, vineyard: row.vineyard, row:, bush_number: 1)
       media_item.update!(bush:)
 
-      allow(Vineyard).to receive(:broadcast_heatmap_refresh)
+      allow(Vineyard).to receive(:broadcast_diagnoses_changed)
       delete detach_from_bush_media_item_path(media_item)
       expect(media_item.reload.bush_id).to be_nil
-      expect(Vineyard).to have_received(:broadcast_heatmap_refresh).with(row.vineyard_id)
+      expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with(row.vineyard_id)
       expect(response).to redirect_to(media_item_path(media_item))
     end
   end
