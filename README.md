@@ -24,7 +24,7 @@ A web application for vineyard management with AI-based vine health classificati
 
 - **Vineyard map** — draw and edit vineyard polygons on an interactive map (Yandex Maps)
 - **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place
-- **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`)
+- **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`). Uploaded files appear in the open folder as soon as they are processed, without a page reload; files are served only to their owner
 - **AI classification** — vine health from a photo (black rot, ESCA, leaf blight, healthy) with a local ONNX model
 - **Statistics** — disease breakdown charts and a per-bush health heatmap
 - **Demo mode** — a "Demo account" button on the login page clones a master account into a temporary user that is deleted after 24 hours
@@ -109,31 +109,39 @@ bin/setup     # bundle install + db:prepare (primary, queue and cable databases)
 
 `bin/dev` runs the web server, the Tailwind watcher and the Solid Queue worker (`Procfile.dev`). Use `bin/rails db:prepare` rather than `db:create db:migrate`: it also loads the `queue` and `cable` database schemas.
 
+Each worker process loads the whole app (~250 MB of RAM); set `JOB_CONCURRENCY` in `.env` to the number of heavy-job processes your machine can afford (see [Background Jobs](#background-jobs)). Restart `bin/dev` after changing `config/queue.yml` or `.env`.
+
 ## Tests
 
 ```bash
 bundle exec rspec
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 207 examples:
+RSpec + FactoryBot + Shoulda Matchers + Faker, 243 examples:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard)
 - `spec/jobs/` — every background job: row/bush generation and regeneration, ZIP processing, bush distribution, previews, classification, demo cloning and cleanup, storage cleanup and its schedule
 - `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model)
-- `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides, `/up`
+- `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, `/up`
 
-CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop.
+CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop. To check the Helm chart locally: `helm lint chart`.
 
 ## Background Jobs
 
-Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in production). Queues, in the order workers take them:
+Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in production) with two worker pools (`config/queue.yml`):
 
-- `default` — uploads and ZIP processing, image/video previews, filename normalization, distribution to bushes, row/bush generation, demo cloning, and classification started manually with the "Анализ" button
-- `low_priority` — bulk classification of uploaded photos, storage cleanup
+| Pool | Queues | Jobs | Processes × threads |
+|------|--------|------|---------------------|
+| heavy | `heavy` | ZIP extraction, AI classification, image and video previews | `JOB_CONCURRENCY` × 1 |
+| light | `default`, `low_priority` | attaching uploads, distribution to bushes, filename normalization, folder refresh broadcasts, row/bush generation, demo cloning and cleanup, storage cleanup | 1 × `JOB_THREADS` |
 
-Previews go first so thumbnails appear right after an upload; bulk classification catches up after them.
+Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each: two ZIP archives are extracted on two cores at once. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
 
-The work is CPU-bound (libvips, ONNX Runtime), and threads of one Ruby process don't run it in parallel (GVL), so parallelism comes from processes: `worker.concurrency` (`JOB_CONCURRENCY`, 3 by default for a 4-core node) with `worker.threads` (`JOB_THREADS`, 5) each, in `chart/values.yaml`.
+Within a queue, jobs run by priority (`ApplicationJob`): ZIP extraction and bush binding first, then classification, then previews and filename normalization. Classification started manually with the "Анализ" button jumps ahead of bulk classification. If a thumbnail isn't ready yet when a folder is opened, the web server generates it on the fly.
+
+In production (`chart/values.yaml`): `worker.concurrency` (`JOB_CONCURRENCY`, 3 for a 4-core node — the 4th core is left to the web server and Postgres) and `worker.threads` (`JOB_THREADS`, 5).
+
+Upload jobs broadcast a Turbo refresh to the open folder page (`Folder#broadcast_new_files`), so new files show up without a reload; a second refresh a few seconds later (`RefreshFolderJob`) covers a page that subscribed after the first one.
 
 Recurring tasks (`config/recurring.yml`, production only):
 
@@ -159,7 +167,12 @@ Pushing to `main` runs CI; when it passes, `.github/workflows/deploy.yml`:
 3. copies `chart/` to the server and runs `helm upgrade --install smart-vineyard ... --set image.tag=<sha>`;
 4. tags the deployed image as `latest`.
 
-Deploys run one at a time. A manual run is available via "Run workflow" (`workflow_dispatch`). Migrations run on pod start (`bin/docker-entrypoint` → `db:prepare`).
+Deploys run one at a time. A manual run is available via "Run workflow" (`workflow_dispatch`). Migrations run on pod start (`bin/docker-entrypoint` → `db:prepare`) while the old pod is still serving, so a migration that drops or renames a column should be split across two deploys.
+
+Deploys don't interrupt work in progress:
+
+- **web** — rolling update: the new pod starts next to the old one, traffic moves to it (a `preStop` pause lets traefik drop the old pod), and the old pod finishes in-flight requests, including uploads of up to 1 GB, within `uploadTimeoutSeconds`;
+- **worker** — rolling update: the new worker takes new jobs while the old one finishes started ones for up to `worker.shutdownTimeoutSeconds` (10 min; Solid Queue's default of 5 s would fail any longer job).
 
 Required repository secrets: `SSH_HOST`, `SSH_KEY`.
 
@@ -202,9 +215,11 @@ User
 ├── Vineyard (soft delete via deleted_at)
 │   └── Row
 │       └── Bush
-└── Folder (nested via parent_id)
+└── Folder (nested via parent_id; the root folder has none)
     └── MediaItem (photo/video, preview, AI classification)
 ```
+
+Deleting a vineyard hides it at once (`Vineyard#soft_destroy` sets `deleted_at`) and removes it in the background with `destroy`; rows, bushes and file-to-bush links are cleaned up by database foreign keys in a single `DELETE`. Each user has one root folder (the folder without a parent); it can be renamed but not deleted.
 
 Links between the two trees (both optional and unique):
 
