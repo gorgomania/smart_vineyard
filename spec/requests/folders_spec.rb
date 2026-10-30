@@ -137,6 +137,20 @@ RSpec.describe "Folders", type: :request do
     end
   end
 
+  describe "GET /folders/:id/attach" do
+    before { sign_in user }
+
+    it "offers only vineyards that are not being deleted" do
+      create(:vineyard, user:, name: "Живой")
+      create(:vineyard, user:, name: "Удаляемый", deleted_at: Time.current)
+
+      get attach_folder_path(folder)
+
+      expect(response.body).to include("Живой")
+      expect(response.body).not_to include("Удаляемый")
+    end
+  end
+
   describe "POST /folders/:id/attach_to_vineyard" do
     before { sign_in user }
 

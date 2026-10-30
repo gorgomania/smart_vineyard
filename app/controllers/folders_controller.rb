@@ -176,7 +176,7 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     authorize @folder
 
-    @vineyards = current_user.vineyards.order(:name)
+    @vineyards = current_user.vineyards.active.order(:name)
   end
 
   def attach_to_vineyard
@@ -199,7 +199,7 @@ class FoldersController < ApplicationController
     @folder = Folder.find(params[:id])
     authorize @folder
 
-    @vineyards = current_user.vineyards.order(:name)
+    @vineyards = current_user.vineyards.active.order(:name)
 
     if @folder.vineyard.present?
       @selected_vineyard_id = @folder.vineyard.id

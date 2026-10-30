@@ -127,7 +127,7 @@ class MediaItemsController < ApplicationController
     @media_item = MediaItem.find(params[:id])
     authorize @media_item
 
-    @vineyards = current_user.vineyards.order(:name)
+    @vineyards = current_user.vineyards.active.order(:name)
   end
 
   def attach_to_bush
@@ -149,7 +149,7 @@ class MediaItemsController < ApplicationController
     @media_item = MediaItem.find(params[:id])
     authorize @media_item
 
-    @vineyards = current_user.vineyards.order(:name)
+    @vineyards = current_user.vineyards.active.order(:name)
 
     if @media_item.bush.present?
       @selected_vineyard_id = @media_item.bush.vineyard_id

@@ -5,7 +5,7 @@ RSpec.describe Vineyard, type: :model do
 
   describe "associations" do
     it { is_expected.to belong_to(:user) }
-    it { is_expected.to have_many(:rows).dependent(:destroy) }
+    it { is_expected.to have_many(:rows).dependent(:delete_all) }
     it { is_expected.to have_many(:bushes).through(:rows) }
     it { is_expected.to have_one(:folder).dependent(:nullify) }
   end
@@ -43,11 +43,28 @@ RSpec.describe Vineyard, type: :model do
     end
   end
 
-  describe "#destroy" do
-    it "sets deleted_at instead of deleting the record" do
+  describe "#soft_destroy" do
+    it "sets deleted_at and leaves the actual deletion to the job" do
       vineyard = create(:vineyard)
-      expect { vineyard.destroy }.not_to change(Vineyard, :count)
+      expect { vineyard.soft_destroy }.not_to change(Vineyard, :count)
       expect(vineyard.reload.deleted_at).not_to be_nil
+      expect(DestroyVineyardJob).to have_been_enqueued.with(vineyard.id)
+    end
+  end
+
+  describe "#destroy" do
+    it "deletes the record with its rows and bushes, keeping the media and the folder" do
+      vineyard = create(:vineyard)
+      row = create(:row, vineyard:, row_number: 1)
+      bush = create(:bush, vineyard:, row:, bush_number: 1)
+      folder = create(:folder, user: vineyard.user, vineyard:)
+      media_item = create(:media_item, folder:, bush:)
+
+      expect { vineyard.destroy }.to change(Vineyard, :count).by(-1)
+      expect(Row.exists?(row.id)).to be false
+      expect(Bush.exists?(bush.id)).to be false
+      expect(media_item.reload.bush_id).to be_nil
+      expect(folder.reload.vineyard_id).to be_nil
     end
   end
 

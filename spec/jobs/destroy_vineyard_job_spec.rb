@@ -11,7 +11,7 @@ RSpec.describe DestroyVineyardJob, type: :job do
       }.to change(Vineyard, :count).by(-1)
     end
 
-    it "destroys all rows" do
+    it "deletes all rows" do
       create(:row, vineyard:, row_number: 1)
       create(:row, vineyard:, row_number: 2)
       described_class.new.perform(vineyard.id)

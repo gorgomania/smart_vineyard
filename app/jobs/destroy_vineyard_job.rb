@@ -3,10 +3,6 @@ class DestroyVineyardJob < ApplicationJob
   discard_on ActiveRecord::RecordNotFound
 
   def perform(vineyard_id)
-    vineyard = Vineyard.find(vineyard_id)
-
-    vineyard.folder&.update_column(:vineyard_id, nil)
-    vineyard.rows.destroy_all
-    vineyard.delete
+    Vineyard.find(vineyard_id).destroy!
   end
 end

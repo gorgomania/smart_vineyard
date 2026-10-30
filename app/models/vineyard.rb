@@ -1,6 +1,8 @@
 class Vineyard < ApplicationRecord
   belongs_to :user
-  has_many :rows, dependent: :destroy
+  # Кусты (FK bushes → rows ON DELETE CASCADE) и привязки файлов к ним (media_items → bushes ON DELETE SET NULL)
+  # убирает сама БД: один DELETE вместо destroy каждого из тысяч кустов
+  has_many :rows, dependent: :delete_all
   has_many :bushes, through: :rows
   has_many :media_items, through: :bushes
   has_one :folder, dependent: :nullify
@@ -27,7 +29,8 @@ class Vineyard < ApplicationRecord
     select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes).order(:name)
   }
 
-  def destroy
+  # Пользователь сразу перестаёт видеть виноградник (scope :active), а запись удаляет DestroyVineyardJob
+  def soft_destroy
     update(deleted_at: Time.current)
     DestroyVineyardJob.perform_later(id)
   end

@@ -95,7 +95,7 @@ class VineyardsController < ApplicationController
   def destroy
     vineyard = Vineyard.active.find(params[:id])
     authorize vineyard
-    vineyard.destroy
+    vineyard.soft_destroy
     redirect_to vineyards_path, notice: "Виноградник успешно удалён"
   end
 
