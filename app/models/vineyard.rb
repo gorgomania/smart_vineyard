@@ -25,6 +25,11 @@ class Vineyard < ApplicationRecord
 
   scope :active, -> { where(deleted_at: nil) }
 
+  # Виноградники без папки. keep_vineyard_id — текущий виноградник перекрепляемой папки: его тоже можно выбрать
+  scope :free, ->(keep_vineyard_id: nil) {
+    where.not(id: Folder.where.not(vineyard_id: [ nil, keep_vineyard_id ]).select(:vineyard_id))
+  }
+
   scope :for_index, -> {
     select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes).order(:name)
   }

@@ -221,6 +221,30 @@ RSpec.describe "Folders", type: :request do
       expect(response.body).to include("Живой")
       expect(response.body).not_to include("Удаляемый")
     end
+
+    it "hides vineyards already taken by another folder" do
+      create(:vineyard, user:, name: "Свободный")
+      create(:folder, user:, title: "Другая", vineyard: create(:vineyard, user:, name: "Занятый"))
+
+      get attach_folder_path(folder)
+
+      expect(response.body).to include("Свободный")
+      expect(response.body).not_to include("Занятый")
+    end
+  end
+
+  describe "GET /folders/:id/edit_attach" do
+    before { sign_in user }
+
+    it "offers the folder's own vineyard but not ones taken by other folders" do
+      folder.update!(vineyard: create(:vineyard, user:, name: "Свой"))
+      create(:folder, user:, title: "Другая", vineyard: create(:vineyard, user:, name: "Занятый"))
+
+      get edit_attach_folder_path(folder)
+
+      expect(response.body).to include("Свой")
+      expect(response.body).not_to include("Занятый")
+    end
   end
 
   describe "POST /folders/:id/attach_to_vineyard" do
