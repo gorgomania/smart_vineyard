@@ -24,7 +24,7 @@ A web application for vineyard management with AI-based vine health classificati
 
 - **Vineyard map** — draw and edit vineyard polygons on an interactive map (Yandex Maps)
 - **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place
-- **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`). Uploaded files appear in the open folder as soon as they are processed, without a page reload; files are served only to their owner
+- **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`, or manually for any file). Uploaded files appear in the open folder as soon as they are processed, without a page reload; files are served only to their owner
 - **AI classification** — vine health from a photo (black rot, ESCA, leaf blight, healthy) with a local ONNX model
 - **Statistics** — disease breakdown charts and a per-bush health heatmap
 - **Demo mode** — a "Demo account" button on the login page clones a master account into a temporary user that is deleted after 24 hours
@@ -225,3 +225,5 @@ Links between the two trees (both optional and unique):
 
 - `Folder.vineyard_id` — at most one folder per vineyard; files in it are distributed to the vineyard's bushes by name
 - `MediaItem.bush_id` — at most one file per bush
+
+Distribution by name (`DistributeMediaToBushesJob`) runs for the whole folder when it is attached, reattached or detached and when bushes are regenerated, and for the new files after a ZIP upload. It touches only files named `Ряд N Куст M`: each one ends up on its bush, or unassigned if the bush doesn't exist in the current vineyard, the folder is detached, or the bush is already taken (by a manually assigned file or by an earlier file with the same name, e.g. `Ряд 1 Куст 1(2).jpg`). Files with other names keep their manual assignment, and their bushes are never taken away. The job works in a fixed number of queries regardless of folder size.
