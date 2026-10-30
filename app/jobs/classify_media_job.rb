@@ -1,7 +1,7 @@
 class ClassifyMediaJob < ApplicationJob
-  # low_priority: массовая классификация (ZIP, пачки файлов) не должна задерживать превью и прочую быструю работу.
-  # Ручной «Анализ» ставится в default (MediaItemsController#classify)
-  queue_as :low_priority
+  # Сразу после привязки к кустам, раньше превью. Ручной «Анализ» идёт вне очереди (MediaItemsController#classify)
+  queue_as :default
+  queue_with_priority CLASSIFICATION_PRIORITY
 
   def perform(media_item_id)
     media_item = MediaItem.find_by(id: media_item_id)

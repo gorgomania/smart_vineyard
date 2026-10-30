@@ -23,9 +23,9 @@ RSpec.describe ProcessZipJob, type: :job do
         expect {
           described_class.new.perform(folder, zip_blob)
         }.to have_enqueued_job(DistributeMediaToBushesJob)
-           .and have_enqueued_job(NormalizeMediaFilenamesJob)
-           .and have_enqueued_job(GenerateImagePreviewJob)
-           .and have_enqueued_job(ClassifyMediaJob).on_queue("low_priority")
+           .and have_enqueued_job(ClassifyMediaJob).at_priority(ApplicationJob::CLASSIFICATION_PRIORITY)
+           .and have_enqueued_job(GenerateImagePreviewJob).at_priority(ApplicationJob::PREVIEW_PRIORITY)
+           .and have_enqueued_job(NormalizeMediaFilenamesJob).at_priority(ApplicationJob::PREVIEW_PRIORITY)
 
         item = folder.media_items.sole
         blob = item.media.blob

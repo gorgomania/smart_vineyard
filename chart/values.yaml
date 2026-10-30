@@ -36,7 +36,7 @@ web:
 
 worker:
   concurrency: 3          # JOB_CONCURRENCY — процессы solid_queue: на 4 ядрах 3 под задачи, 1 под web и Postgres
-  threads: 5              # JOB_THREADS — потоков на процесс; больше не нужно: процессорная работа упирается в GVL
+  threads: 1              # JOB_THREADS — потоков на процесс: одна задача на процесс, тяжёлые расходятся по разным ядрам (config/queue.yml)
   dbPool: 10              # DB_POOL и QUEUE_DB_POOL на процесс: потоки задач + служебные
   # JOB_SHUTDOWN_TIMEOUT: сколько при деплое ждать начатые задачи (большой ZIP, превью видео).
   # Штатные 5 с solid_queue: всё, что дольше, падает с ProcessExitError и само не перезапускается
