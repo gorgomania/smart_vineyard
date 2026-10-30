@@ -47,6 +47,24 @@ RSpec.describe ProcessZipJob, type: :job do
       end
     end
 
+    context "reading the archive" do
+      it "opens it in place on the Disk service, without a copy in tmp" do
+        zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake")
+        expect(zip_blob).not_to receive(:open)
+
+        expect { described_class.new.perform(folder, zip_blob) }.to change(MediaItem, :count).by(1)
+      end
+
+      it "downloads it to a temp file on services without local paths (S3 and the like)" do
+        zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake")
+        allow(zip_blob.service).to receive(:respond_to?).and_call_original
+        allow(zip_blob.service).to receive(:respond_to?).with(:path_for).and_return(false)
+        expect(zip_blob).to receive(:open).and_call_original
+
+        expect { described_class.new.perform(folder, zip_blob) }.to change(MediaItem, :count).by(1)
+      end
+    end
+
     context "when ZIP contains only unsupported file types" do
       it "creates nothing and still removes the archive" do
         zip_blob = create_zip_blob("document.pdf" => "pdf content")
