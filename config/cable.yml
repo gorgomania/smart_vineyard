@@ -12,6 +12,11 @@ development:
 
 test:
   adapter: test
+  # Рассылки в тестах идут через адаптер test, а модели Solid Cable — в свою базу, как в dev и production
+  # (нужно spec/initializers/solid_cable_ordered_writes_spec.rb)
+  connects_to:
+    database:
+      writing: cable
 
 production:
   adapter: solid_cable
