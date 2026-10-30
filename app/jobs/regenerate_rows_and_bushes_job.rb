@@ -59,7 +59,7 @@ class RegenerateRowsAndBushesJob < ApplicationJob
     end
 
     if vineyard.folder.present?
-      DistributeFolderToBushesJob.perform_later(vineyard.folder.id)
+      DistributeMediaToBushesJob.perform_later(vineyard.folder.id)
     end
   end
 end
