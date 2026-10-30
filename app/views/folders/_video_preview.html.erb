@@ -1,13 +1,12 @@
 <div id="video-preview-<%= file.id %>" class="relative flex flex-col items-center">
   <% if file.video_preview.attached? %>
-    <%# permanent: см. folders/show — морфинг не должен возвращать скелетон %>
-    <div id="video-thumb-<%= file.id %>" data-turbo-permanent class="w-33 h-22 relative">
-      <div id="skeleton-<%= file.id %>" class="absolute inset-0 bg-gray-200 animate-pulse skeleton"></div>
+    <%# Скелетон под картинкой, как в folders/show: загрузившаяся картинка закрывает его сама %>
+    <div class="w-33 h-22 relative">
+      <div class="absolute inset-0 bg-gray-200 animate-pulse"></div>
 
       <%= image_tag file.video_preview,
-        class: "w-33 h-22",
-        loading: "lazy",
-        data: { controller: "image-skeleton", action: "load->image-skeleton#hide" } %>
+        class: "relative w-33 h-22",
+        loading: "lazy" %>
     </div>
   <% else %>
     <div class="w-33 h-22 bg-gray-200 animate-pulse"></div>
