@@ -42,7 +42,10 @@ worker:
   # Штатные 5 с solid_queue: всё, что дольше, падает с ProcessExitError и само не перезапускается
   shutdownTimeoutSeconds: 600
   resources:
-    requests: { cpu: 200m, memory: 512Mi }
+    # ephemeral-storage — /tmp и tmp/ контейнера на диске ноды. Файлы читаются прямо с PVC (BlobPath), на ноду пишутся
+    # только распакованная запись ZIP (по одной на процесс) и кадр превью видео.
+    # Только request: при нехватке места на ноде воркер выселяют последним; limit убил бы под посреди задачи
+    requests: { cpu: 200m, memory: 512Mi, ephemeral-storage: 1Gi }
     limits: { cpu: "3", memory: 4Gi }   # 3 тяжёлых процесса по ~0.5–1 ГБ при декодировании больших фото + ~0.3 ГБ на мелочь
 
 storage:

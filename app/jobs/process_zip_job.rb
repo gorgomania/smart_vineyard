@@ -17,7 +17,7 @@ class ProcessZipJob < ApplicationJob
     media_items_data = []
     blob_results = []
 
-    with_zip_path(zip_blob) do |path|
+    BlobPath.open(zip_blob) do |path|
       Zip::File.open(path) do |zip_file|
         entries = zip_file.select { |e| e.file? && MIME_TYPES.key?(File.extname(e.name).downcase) }
 
@@ -76,17 +76,6 @@ class ProcessZipJob < ApplicationJob
   end
 
   private
-
-  # Disk-сервис: архив уже лежит файлом на PVC — открываем его на месте. blob.open скопировал бы его в /tmp
-  # (на диск ноды) и перечитал целиком ради MD5, а checksum и так сверен при загрузке.
-  # У остальных сервисов (S3 и т. п.) path_for нет — штатная выгрузка во временный файл
-  def with_zip_path(blob)
-    if blob.service.respond_to?(:path_for)
-      yield blob.service.path_for(blob.key)
-    else
-      blob.open { |file| yield file.path }
-    end
-  end
 
   # Распаковываем запись один раз, считая checksum на лету. create_and_upload! с потоком из архива
   # распаковывал бы её дважды: для checksum и для записи
