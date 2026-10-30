@@ -27,6 +27,18 @@ RSpec.describe "Rows", type: :request do
         expect(json.first).to include("id", "bush_number")
       end
 
+      it "skips bushes taken by other files, except keep_bush_id" do
+        free  = create(:bush, vineyard:, row:, bush_number: 1)
+        taken = create(:bush, vineyard:, row:, bush_number: 2)
+        create(:media_item, folder: create(:folder, user:), bush: taken)
+
+        get bushes_row_path(row)
+        expect(JSON.parse(response.body).pluck("id")).to eq([ free.id ])
+
+        get bushes_row_path(row), params: { keep_bush_id: taken.id }
+        expect(JSON.parse(response.body).pluck("id")).to eq([ free.id, taken.id ])
+      end
+
       it "returns empty array when row has no bushes" do
         get bushes_row_path(row)
         expect(JSON.parse(response.body)).to eq([])

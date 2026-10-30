@@ -138,13 +138,9 @@ class VineyardsController < ApplicationController
   def rows
     vineyard = Vineyard.active.find(params[:id])
     authorize vineyard
-    rows = vineyard.rows
-                  .left_joins(:bushes)
-                  .group(:id, :row_number)
-                  .order(:row_number)
-                  .pluck(:id, :row_number, "COUNT(bushes.id)")
+    rows = Row.with_free_bushes(vineyard, keep_bush_id: params[:keep_bush_id])
 
-    render json: rows.map { |id, row_number, count| { id:, row_number:, bushes_count: count } }
+    render json: rows.map { |row, free_count| { id: row.id, label: row.free_bushes_label(free_count) } }
   end
 
   private
