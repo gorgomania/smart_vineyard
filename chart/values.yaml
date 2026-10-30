@@ -35,15 +35,15 @@ web:
     limits: { cpu: "2", memory: 4Gi }
 
 worker:
-  concurrency: 3          # JOB_CONCURRENCY — процессы solid_queue: на 4 ядрах 3 под задачи, 1 под web и Postgres
-  threads: 1              # JOB_THREADS — потоков на процесс: одна задача на процесс, тяжёлые расходятся по разным ядрам (config/queue.yml)
+  concurrency: 3          # JOB_CONCURRENCY — процессы под тяжёлые задачи (по одной на процесс): на 4 ядрах 3 под них, 1 под web и Postgres
+  threads: 5              # JOB_THREADS — потоки отдельного процесса для мелочи (БД, рассылки); почти не нагружает процессор
   dbPool: 10              # DB_POOL и QUEUE_DB_POOL на процесс: потоки задач + служебные
   # JOB_SHUTDOWN_TIMEOUT: сколько при деплое ждать начатые задачи (большой ZIP, превью видео).
   # Штатные 5 с solid_queue: всё, что дольше, падает с ProcessExitError и само не перезапускается
   shutdownTimeoutSeconds: 600
   resources:
     requests: { cpu: 200m, memory: 512Mi }
-    limits: { cpu: "3", memory: 4Gi }   # 3 процесса по ~0.5–1 ГБ при декодировании больших фото
+    limits: { cpu: "3", memory: 4Gi }   # 3 тяжёлых процесса по ~0.5–1 ГБ при декодировании больших фото + ~0.3 ГБ на мелочь
 
 storage:
   size: 50Gi             # ActiveStorage uploads (photos, videos)

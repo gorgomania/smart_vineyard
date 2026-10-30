@@ -1,6 +1,6 @@
 class ClassifyMediaJob < ApplicationJob
   # Сразу после привязки к кустам, раньше превью. Ручной «Анализ» идёт вне очереди (MediaItemsController#classify)
-  queue_as :default
+  queue_as :heavy
   queue_with_priority CLASSIFICATION_PRIORITY
 
   def perform(media_item_id)

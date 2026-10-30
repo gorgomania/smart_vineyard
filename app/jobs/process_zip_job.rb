@@ -1,7 +1,7 @@
 require "zip"
 
 class ProcessZipJob < ApplicationJob
-  queue_as :default
+  queue_as :heavy
   discard_on ActiveRecord::RecordNotFound
 
   MIME_TYPES = {
