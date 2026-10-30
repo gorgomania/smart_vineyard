@@ -198,6 +198,15 @@ RSpec.describe "Folders", type: :request do
       expect(response.body).to include('<meta name="turbo-refresh-method" content="morph">')
       expect(response.body).to include('<meta name="turbo-refresh-scroll" content="preserve">')
     end
+
+    it "keeps thumbnails morphable, so a refresh that shifts files between cards doesn't stack two images in one" do
+      create(:media_item, :with_image, folder:)
+
+      get folder_path(folder)
+
+      expect(response.body).to include("animate-pulse")
+      expect(response.body).not_to include("data-turbo-permanent")
+    end
   end
 
   describe "GET /folders/:id/attach" do
