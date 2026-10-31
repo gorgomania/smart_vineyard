@@ -23,3 +23,11 @@ button {
     right:0;
     left:0;
 }
+
+/*flash в строке проводника: выезжает справа*/
+@keyframes flash-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
