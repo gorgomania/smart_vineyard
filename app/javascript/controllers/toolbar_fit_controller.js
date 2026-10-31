@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Строка над содержимым проводника: если всё не влезает по ширине,
-// прячем по очереди привязанный виноградник, путь, кнопку «Вперёд», кнопку «Назад»
+// Строка над содержимым проводника: если всё не влезает по ширине, по очереди
+// прячем привязанный виноградник, переносим путь на строку ниже, прячем «Вперёд», прячем «Назад»
 export default class extends Controller {
   static targets = ["vineyard", "path", "history"]
 
@@ -21,16 +21,24 @@ export default class extends Controller {
   }
 
   fit() {
-    // Свои же переключения hidden не должны снова запускать fit
+    // Свои же переключения не должны снова запускать fit
     this.mutationObserver.disconnect()
 
-    // Атрибут hidden, а не класс: классом «Назад/Вперёд» прячет history-nav, когда идти некуда
-    // в порядке скрытия; в разметке «Назад» идёт перед «Вперёд», а прятать «Вперёд» нужно раньше
-    const hideable = [...this.vineyardTargets, ...this.pathTargets, ...this.historyTargets.reverse()]
-    hideable.forEach(el => el.hidden = false)
-    for (const el of hideable) {
+    // Атрибут hidden, а не класс: классом «Назад/Вперёд» прячет history-nav, когда идти некуда.
+    // data-wrapped переносит путь на отдельную строку (классы data-[wrapped]: в разметке)
+    const hide = el => [() => el.hidden = false, () => el.hidden = true]
+    const wrap = el => [() => el.removeAttribute("data-wrapped"), () => el.setAttribute("data-wrapped", "")]
+    // В разметке «Назад» идёт перед «Вперёд», а прятать «Вперёд» нужно раньше
+    const steps = [
+      ...this.vineyardTargets.map(hide),
+      ...this.pathTargets.map(wrap),
+      ...this.historyTargets.reverse().map(hide)
+    ]
+
+    steps.forEach(([reset]) => reset())
+    for (const [, apply] of steps) {
       if (!this.overflows()) break
-      el.hidden = true
+      apply()
     }
 
     this.observeMutations()
@@ -45,6 +53,8 @@ export default class extends Controller {
   }
 
   observeMutations() {
-    this.mutationObserver.observe(this.element, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] })
+    this.mutationObserver.observe(this.element, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden", "data-wrapped"]
+    })
   }
 }
