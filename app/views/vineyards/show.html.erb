@@ -38,11 +38,11 @@
             <% end %>
 
             <%= link_to edit_vineyard_path(@vineyard.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Редактировать виноградник" do %>
-                <%= image_tag "/pencil_violet.png", alt: "Edit", class: "min-w-8 h-8" %>
+                <%= image_tag "/pencil.png", alt: "Edit", class: "min-w-8 h-8" %>
             <% end %>
             
             <%= button_to vineyard_path(@vineyard.id), method: :delete, data: { turbo_confirm: "Удалить виноградник \"#{@vineyard.name}\"?" }, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Удалить виноградник" do %>
-                <%= image_tag "/trash_violet.png", alt: "Del", class: "min-w-8 h-8" %>
+                <%= image_tag "/trash.png", alt: "Del", class: "min-w-8 h-8" %>
             <% end %>
         </div>
         <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[3] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">

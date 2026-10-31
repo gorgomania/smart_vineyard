@@ -152,7 +152,7 @@ export default class extends Controller {
         this.videoFrame(entry.file, url => { img.src = url })
         // По центру превью любого размера (inset-0 + m-auto); показывается после загрузки — см. renderEntry
         entry.playIcon = new Image()
-        entry.playIcon.src = "/video_play_violet.png"
+        entry.playIcon.src = "/circle-play.png"
         entry.playIcon.className = "hidden absolute inset-0 m-auto w-6 h-6 pointer-events-none"
         wrapper.appendChild(entry.playIcon)
       } else {
