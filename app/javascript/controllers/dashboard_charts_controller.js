@@ -22,6 +22,16 @@ export default class extends Controller {
     }
   }
 
+  // Холст data-turbo-permanent: при повторном заходе Turbo вставляет страницу с заглушкой на его месте
+  // и переносит холст позже, уже после connect — поэтому рисуем, когда холст действительно появился
+  canvasTargetConnected() {
+    this.statsValueChanged()
+  }
+
+  canvasTargetDisconnected(canvas) {
+    if (this.chart?.canvas === canvas) this.disconnect()
+  }
+
   disconnect() {
     this.chart?.destroy()
     this.chart = null
