@@ -1,4 +1,4 @@
-<div class = "mt-2 flex flex-col items-center">
+<div class="mt-2 flex flex-col items-center">
   <%- if controller_name != 'sessions' && !user_signed_in? %>
     <p><%= link_to t(".sign_in"), new_session_path(resource_name), class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %></p>
   <% end %>

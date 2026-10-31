@@ -1,7 +1,7 @@
 <%= render template: "layouts/header" %>
-<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto] overflow-hidden">
-  <div class = "group flex max-[1000px]:relative" data-controller="panel">
-    <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
+<main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto] overflow-hidden">
+  <div class="group flex max-[1000px]:relative" data-controller="panel">
+    <div class="flex flex-col min-w-[74px] items-center" data-controller="map-links">
       <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников",  data: { map_links_target: "link", link_type: "list" } do %>
           <%= image_tag "/vineyard_list.png", alt: "Create folder", class: "min-w-8 h-8" %>
       <% end %>
@@ -29,7 +29,7 @@
 
           <% if @vineyard.errors.any? %>
             <% @vineyard.errors.full_messages.each do |msg| %>
-              <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+              <div class="mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
                   <%= msg %>
               </div>
             <% end %>

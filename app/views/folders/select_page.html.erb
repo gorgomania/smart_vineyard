@@ -4,7 +4,7 @@
             <span>Выбор страницы</span>
         </div>
         <% flash.each do |type, msg| %>
-            <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+            <div class="mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
                 <%= msg %>
             </div>
         <% end %>
@@ -12,7 +12,7 @@
             <%= hidden_field_tag :id, @folder.id if @folder %>
             <%= hidden_field_tag :search_query, @search_query if @search_query.present? %>
 
-            <div class = "flex flex-col gap-5">
+            <div class="flex flex-col gap-5">
                 <div>
                     <%= select_tag :page, 
                         options_for_select((@range_start..@range_end).map { |p| ["Страница #{p}", p] }),
