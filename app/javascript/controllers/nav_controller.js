@@ -19,8 +19,7 @@ export default class extends Controller {
       this.burgerMenuTarget.classList.remove("hidden")
       if (!this.dropMenuTarget.classList.contains("hidden")) this._positionOverlay()
     } else {
-      this.dropMenuTarget.classList.add("hidden")
-      this.overlayTarget.classList.add("hidden")
+      this._closeMenu()
       this.burgerMenuTarget.classList.add("hidden")
       this.desktopMenuTarget.classList.remove("hidden")
     }
@@ -29,6 +28,7 @@ export default class extends Controller {
   toggleMenu() {
     if (this.dropMenuTarget.classList.contains("hidden")) {
       this.dropMenuTarget.classList.remove("hidden")
+      this.burgerMenuTarget.setAttribute("aria-expanded", "true")
       this._positionOverlay()
       this.overlayTarget.classList.remove("hidden", "opacity-0", "invisible", "pointer-events-none")
       this.overlayTarget.classList.add("opacity-50", "visible", "pointer-events-auto")
@@ -47,6 +47,7 @@ export default class extends Controller {
 
   _closeMenu() {
     this.dropMenuTarget.classList.add("hidden")
+    this.burgerMenuTarget.setAttribute("aria-expanded", "false")
     this.overlayTarget.classList.add("hidden", "opacity-0", "invisible", "pointer-events-none")
     this.overlayTarget.classList.remove("opacity-50", "visible", "pointer-events-auto")
   }

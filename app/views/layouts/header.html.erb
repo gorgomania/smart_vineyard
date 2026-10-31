@@ -27,11 +27,10 @@
             <%= image_tag "/circle-user.png", alt: "Profile", class: "min-w-[26px] h-[26px]" %>
         <%end%>
     </div>
-    <button id="burgerMenu" class="hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100 text-[#333]" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
-      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"></path>
-      </svg>
+    <%# Иконку меняет aria-expanded, который ставит nav_controller: закрыто — menu, открыто — x %>
+    <button id="burgerMenu" type="button" aria-label="Меню" aria-expanded="false" class="group hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
+      <%= image_tag "/menu.png", alt: "", class: "w-8 h-8 group-aria-expanded:hidden" %>
+      <%= image_tag "/x.png", alt: "", class: "w-8 h-8 hidden group-aria-expanded:block" %>
     </button>
     <div id="dropMenu" class="hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-[#333]" data-nav-target="dropMenu">
         <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex px-4 py-3 min-[634px]:hidden", data: { controller: "search" }) do |f| %>
