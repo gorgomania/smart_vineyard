@@ -55,7 +55,7 @@ export default class extends Controller {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false, // пропорции задаёт контейнер (aspect-square в stats.html.erb)
         plugins: {
           legend: { position: 'bottom' },
           tooltip: {

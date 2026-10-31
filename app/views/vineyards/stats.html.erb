@@ -10,7 +10,9 @@
         <div class="bg-white rounded-xl shadow-sm p-6">
           <h2 class="text-xl font-bold text-[#69377c] mb-4"> <%= @total.nil? ? "Cостояние" : "Общее состояние" %> </h2>
         
-          <div class="max-w-lg mx-auto">
+          <%# Высоту держит сам контейнер (квадрат), а не холст: иначе Chart.js при расширении окна
+              упирается в старую высоту холста и не растёт обратно %>
+          <div class="relative aspect-square min-h-0 max-w-lg mx-auto">
             <%# Морфинг не трогает холст: Chart.js сам перерисует его по новым данным (statsValueChanged) %>
             <canvas id="total-chart" data-turbo-permanent data-dashboard-charts-target="canvas"></canvas>
           </div>
