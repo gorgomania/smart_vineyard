@@ -4,7 +4,7 @@
     <% turbo_refreshes_with method: :morph, scroll: :preserve %>
     <%= turbo_stream_from @folder %>
 <% end %>
-<main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
+<main class = "mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
     <div class = "relative flex gap-1 justify-between [&_a]:shrink-0 has-[[data-wrapped]]:grid has-[[data-wrapped]]:grid-cols-[1fr_auto]" data-controller="toolbar-fit">
         <div class = "flex">
             <%# Иконки — неразрывной группой: при нехватке места прячутся «Вперёд/Назад», а не переносятся %>
