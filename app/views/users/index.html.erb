@@ -1,17 +1,29 @@
 <%= render template: "layouts/header"%>
 <main class = "mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
-  <div class = "flex justify-between">
-    <div class = "text-xl">
-      <h1 class = "text-2xl text-[#333] mb-4">Сведения о аккаунте</h1>
-      <h2 class = "text-[#69377c]">Email</h2>
-      <span><%= current_user.email %></span>
-      <% if current_user.demo_temp %>
-        <h2 class = "text-[#69377c]">Демо-аккаунт действителен до</h2>
-        <time datetime="<%= current_user.demo_expires_at.iso8601 %>" data-controller="local-time"></time>
-      <% end %>
-      <%= button_to 'Редактировать профиль', edit_user_registration_path, :method => :get, class: "text-[#0d61af] text-base leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
-      <%= button_to "Удалить аккаунт", registration_path(:user), data: { turbo_confirm: "Вы уверены, что хотите удалить аккаунт? После удаления восстановить его будет невозможно!" }, method: :delete, class: "text-[#0d61af] text-base leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+  <div class = "flex flex-col gap-3 text-xl ">
+    <div class = "flex items-center justify-between w-full min-w-0">
+      <h1 class = "text-2xl text-[#333]">Сведения об аккаунте</h1>
+
+      <div class = "flex shrink-0 self-start">
+        <%= button_to edit_user_registration_path, method: :get, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Редактировать профиль" do %>
+          <%= image_tag "/user-pen.png", alt: "Edit profile", class: "min-w-8 h-8" %>
+        <% end %>
+
+        <%= button_to registration_path(:user), method: :delete, data: { turbo_confirm: "Вы уверены, что хотите удалить аккаунт? После удаления восстановить его будет невозможно!" }, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Удалить аккаунт" do %>
+          <%= image_tag "/user-x.png", alt: "Delete account", class: "min-w-8 h-8" %>
+        <% end %>
+
+        <%= button_to destroy_user_session_path, method: :delete, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Выйти из аккаунта" do %>
+          <%= image_tag "/log-out.png", alt: "Log out", class: "min-w-8 h-8" %>
+        <% end %>
+      </div>
     </div>
-    <%= button_to 'Выйти из аккаунта', destroy_user_session_path, :method => :delete, class: "text-[#0d61af] text-base leading-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+    <h2 class = "text-[#69377c]">Email</h2>
+    <span class = "[overflow-wrap:anywhere]"><%= current_user.email %></span>
+
+    <% if current_user.demo_temp %>
+      <h2 class = "text-[#69377c]">Демо-аккаунт действителен до</h2>
+      <time datetime="<%= current_user.demo_expires_at.iso8601 %>" data-controller="local-time"></time>
+    <% end %>
   </div>
 </main>
