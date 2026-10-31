@@ -153,7 +153,7 @@ export default class extends Controller {
         // По центру превью любого размера (inset-0 + m-auto); показывается после загрузки — см. renderEntry
         entry.playIcon = new Image()
         entry.playIcon.src = "/circle-play.png"
-        entry.playIcon.className = "hidden absolute inset-0 m-auto w-6 h-6 pointer-events-none"
+        entry.playIcon.className = "hidden absolute inset-0 m-auto w-12 h-12 pointer-events-none"
         wrapper.appendChild(entry.playIcon)
       } else {
         img.src = URL.createObjectURL(entry.file)
