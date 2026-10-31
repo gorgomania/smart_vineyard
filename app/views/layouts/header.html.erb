@@ -12,7 +12,7 @@
     <% end %>
     <div id="desktopMenu" class="flex items-end ml-11" data-nav-target="desktopMenu">
         <%= link_to folders_path, title: "Проводник", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
-            <%= image_tag "/explorer.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>
+            <%= image_tag "/folder-open.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
         <%= link_to vineyards_path, title: "Виноградники", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
@@ -20,11 +20,11 @@
         <%end%>
 
         <%= link_to total_stats_vineyards_path, title: "Статистика", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
-            <%= image_tag "/stats.png", alt: "Stats", class: "min-w-[26px] h-[26px]" %>
+            <%= image_tag "/chart-column.png", alt: "Stats", class: "min-w-[26px] h-[26px]" %>
         <%end%>
 
         <%= link_to users_path, title: "Профиль", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-[#4e4e4e] hover:bg-[#f2f2f2]" do %>
-            <%= image_tag "/profile.png", alt: "Profile", class: "min-w-[26px] h-[26px]" %>
+            <%= image_tag "/circle-user.png", alt: "Profile", class: "min-w-[26px] h-[26px]" %>
         <%end%>
     </div>
     <button id="burgerMenu" class="hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100 text-[#333]" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
@@ -44,7 +44,7 @@
         <% end %>
         <nav class="flex flex-col">
             <%= link_to folders_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
-                <%= image_tag "/explorer.png", alt: "Explorer", class: "w-5 h-5" %>
+                <%= image_tag "/folder-open.png", alt: "Explorer", class: "w-5 h-5" %>
                 <span>Проводник</span>
             <% end %>
 
@@ -54,12 +54,12 @@
             <% end %>
 
             <%= link_to total_stats_vineyards_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do %>
-                <%= image_tag "/stats.png", alt: "Stats", class: "w-5 h-5" %>
+                <%= image_tag "/chart-column.png", alt: "Stats", class: "w-5 h-5" %>
                 <span>Статистика</span>
             <% end %>
 
             <%= link_to users_path, class: "px-4 py-3 hover:bg-[#f2f2f2] flex items-center gap-3" do%>
-                <%= image_tag "/profile.png", alt: "Profile", class: "w-5 h-5" %>
+                <%= image_tag "/circle-user.png", alt: "Profile", class: "w-5 h-5" %>
                 <span>Профиль</span>
             <%end%>
         </nav>
