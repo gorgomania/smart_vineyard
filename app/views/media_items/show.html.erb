@@ -1,12 +1,15 @@
 <%= render template: "layouts/header" %>
 <%= turbo_stream_from "media_item_#{@media_item.id}" %>
-<main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto] max-h-[84.5vh]">
-    <div class="flex gap-1">
-        <%= nav_buttons %>
-        <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
-            <%= image_tag "/download_file.png", alt: "Download file", class: "min-w-8 h-8" %>
-        <% end %>
-        <div class="flex items-center bg-white px-4 rounded-lg">
+<main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto] max-h-[84.5vh] max-[1000px]:max-h-none">
+    <%# Как в проводнике: не влезает — путь уходит на свою строку, затем прячутся «Вперёд/Назад» (toolbar-fit) %>
+    <div class="flex gap-1 [&_a]:shrink-0 has-[[data-wrapped]]:flex-wrap" data-controller="toolbar-fit">
+        <div class="flex shrink-0">
+            <%= nav_buttons %>
+            <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
+                <%= image_tag "/download_file.png", alt: "Download file", class: "min-w-8 h-8" %>
+            <% end %>
+        </div>
+        <div class="flex items-center bg-white px-4 rounded-lg whitespace-nowrap shrink-0 data-[wrapped]:basis-full data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
             <% (0...@title_path.length - 1).each do |i| %>
                 <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
                 <span class="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
@@ -14,15 +17,16 @@
             <span class="text-[#69377c]"> <%= @title_path.last %> </span>
         </div>
     </div>
-    <div class="flex justify-between items-start text-[#333] mt-4">
+    <%# 1000px+ — четыре колонки, 710–1000px — сетка 2×2, уже — одна колонка %>
+    <div class="flex justify-between items-start text-[#333] mt-4 max-[1000px]:grid max-[1000px]:grid-cols-2 max-[1000px]:gap-6 max-[710px]:grid-cols-1">
         <% if @media_item.media.image? %>
-            <div class="w-[30%]">
+            <div class="w-[30%] max-[1000px]:w-auto">
                 <%= image_tag @media_item.media, loading: "lazy", class: "w-full max-h-[calc(100vh-150px)] object-contain" %>
             </div>
             
             <%= render "analysis_panel", media_item: @media_item, class_names: @class_names %>
 
-            <div class="w-[20%] text-xl">
+            <div class="w-[20%] max-[1000px]:w-auto text-xl">
                 <h1 class="text-2xl text-[#333] text-center mb-4">Виноградник</h1>
                 <% if @media_item.bush.present? %>
                     <h2 class="text-[#69377c]">Название</h2>
@@ -60,11 +64,11 @@
             <%= video_tag rails_storage_redirect_path(@media_item.media.blob, disposition: 'inline'),
                 controls: true,
                 controlsList: "nodownload",
-                class: "max-w-[70%]",
+                class: "max-w-[70%] max-[1000px]:max-w-full",
                 data: { video_id: @media_item.id } %>
         <% end %>
 
-        <div class="w-[20%] text-xl">
+        <div class="w-[20%] max-[1000px]:w-auto text-xl">
             <h1 class="text-2xl text-[#333] text-center mb-4">Сведения о файле</h1>
             <h2 class="text-[#69377c]">Имя</h2>
             <span class="break-all"><%= @media_item.media.blob.filename.base%> </span>
