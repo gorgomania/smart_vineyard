@@ -1,6 +1,6 @@
 <%= render template: "layouts/header" %>
 <%= turbo_stream_from "media_item_#{@media_item.id}" %>
-<main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto] max-h-[84.5vh]">
+<main class = "mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto] max-h-[84.5vh]">
     <div class = "flex gap-1">
         <%= nav_buttons %>
         <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
