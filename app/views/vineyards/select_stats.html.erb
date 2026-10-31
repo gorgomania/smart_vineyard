@@ -4,12 +4,12 @@
             <span>Выбор виноградника</span>
         </div>
         <% flash.each do |type, msg| %>
-            <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+            <div class="mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
                 <%= msg %>
             </div>
         <% end %>
         <%= form_tag select_stats_vineyards_path, method: :post, class: "mt-5 w-70" do %>
-            <div class = "flex flex-col gap-5">
+            <div class="flex flex-col gap-5">
                 <div>
                     <%= select_tag :vineyard_id, 
                         options_for_select(@options, @selected_vineyard_id),

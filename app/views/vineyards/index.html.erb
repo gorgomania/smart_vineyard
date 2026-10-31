@@ -1,19 +1,19 @@
 <%= render template: "layouts/header" %>
-<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
+<main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
     <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
                 <%= msg %>
             </div>
         <% else %>
-            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
                 <%= msg %>
             </div>
         <% end %>
     <% end %>
     
-    <div class = "group flex max-[1000px]:relative" data-controller="panel">
-        <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
+    <div class="group flex max-[1000px]:relative" data-controller="panel">
+        <div class="flex flex-col min-w-[74px] items-center" data-controller="map-links">
             <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников", data: { map_links_target: "link", link_type: "list" } do %>
                 <%= image_tag "/vineyard_list.png", alt: "Vineyards", class: "min-w-8 h-8" %>
             <% end %>
@@ -27,18 +27,18 @@
         </div>
         <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:bg-[#f2f2f2] max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:pr-4.5 max-[1000px]:h-[84.5vh]">
             <% if @vineyards.empty? %>
-                 <div class = "w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
+                 <div class="w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
             <% end %>
             <% @vineyards.each do |vineyard| %>
-                <div class = "flex w-full justify-between bg-white rounded-2xl p-5">
-                    <div class = "flex flex-col text-[#333] text-m">
+                <div class="flex w-full justify-between bg-white rounded-2xl p-5">
+                    <div class="flex flex-col text-[#333] text-m">
                         <%= link_to vineyard_path(vineyard.id) do %>
                             <span class="text-[#69377c] text-xl font-bold hover:opacity-90"><%= vineyard.name %></span>
                         <% end %>
                         <span> Сорт: <%= vineyard.grape_variety %> </span>
                         <span> Площадь: <%= vineyard.area_hectares %> га </span>
                     </div>
-                    <div class = "flex max-w-33 h-fit">
+                    <div class="flex max-w-33 h-fit">
                         <button type="button" title="Скопировать структуру рядов"
                             class="rounded-lg p-2 hover:bg-[#f2f2f2]"
                             data-controller="copy-json"

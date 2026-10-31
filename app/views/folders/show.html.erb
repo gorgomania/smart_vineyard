@@ -4,11 +4,11 @@
     <% turbo_refreshes_with method: :morph, scroll: :preserve %>
     <%= turbo_stream_from @folder %>
 <% end %>
-<main class = "mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
-    <div class = "relative flex gap-1 justify-between [&_a]:shrink-0 has-[[data-wrapped]]:grid has-[[data-wrapped]]:grid-cols-[1fr_auto]" data-controller="toolbar-fit">
-        <div class = "flex">
+<main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
+    <div class="relative flex gap-1 justify-between [&_a]:shrink-0 has-[[data-wrapped]]:grid has-[[data-wrapped]]:grid-cols-[1fr_auto]" data-controller="toolbar-fit">
+        <div class="flex">
             <%# Иконки — неразрывной группой: при нехватке места прячутся «Вперёд/Назад», а не переносятся %>
-            <div class = "flex shrink-0">
+            <div class="flex shrink-0">
                 <%= nav_buttons %>
 
                 <% if @search_query.blank? %>
@@ -23,8 +23,8 @@
             </div>
 
             <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
-                <div class = "flex items-center bg-white px-4 rounded-lg text-[#69377c]">
-                    <span class = "">
+                <div class="flex items-center bg-white px-4 rounded-lg text-[#69377c]">
+                    <span class="">
                         <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
                         <%= ru_pluralize(@childrens_length, "папка", "папки", "папок") if @childrens_length > 0 %>
                         <%= " и " if @childrens_length > 0 && @media_length > 0 %>
@@ -36,14 +36,14 @@
             <%# Flash плавает у правого края строки кнопок (верхней, если путь перенесён) и не сдвигает раскладку.
                 Слой обрезает выезд по краю строки — иначе toolbar-fit примет его за переполнение %>
             <% if flash.any? %>
-                <div class = "absolute inset-x-0 top-0 h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
+                <div class="absolute inset-x-0 top-0 h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
                     <% flash.each do |type, msg| %>
                         <% if type == "alert" %>
-                            <div class = "pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
+                            <div class="pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
                                 <%= msg %>
                             </div>
                         <% else %>
-                            <div class = "flash pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
+                            <div class="flash pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
                                 <%= msg %>
                             </div>
                         <% end %>
@@ -53,17 +53,17 @@
         </div>
 
         <% if @title_path.present?%>
-            <div class = "flex items-center bg-white px-4 rounded-lg mx-1 whitespace-nowrap shrink-0 data-[wrapped]:col-span-full data-[wrapped]:row-start-2 data-[wrapped]:mx-0 data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
+            <div class="flex items-center bg-white px-4 rounded-lg mx-1 whitespace-nowrap shrink-0 data-[wrapped]:col-span-full data-[wrapped]:row-start-2 data-[wrapped]:mx-0 data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
                 <% (0...@title_path.length - 1).each do |i| %>
                     <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
-                    <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+                    <span class="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
                 <% end %>
 
-                <span class = "text-[#69377c]"> <%= @title_path.last %> </span>
+                <span class="text-[#69377c]"> <%= @title_path.last %> </span>
             </div>
         <% end %>
 
-        <div class = "flex self-start ml-auto">
+        <div class="flex self-start ml-auto">
             <% if @search_query.blank? %>
                 <% if @folder.vineyard.present? %>
                     <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c] whitespace-nowrap", title: "Привязанный виноградник", data: { toolbar_fit_target: "vineyard" } %>
@@ -79,10 +79,10 @@
         </div>
     </div>
 
-    <div class = "mt-4 grid grid-cols-[repeat(auto-fill,minmax(162.75px,1fr))] gap-[10px]">
+    <div class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(162.75px,1fr))] gap-[10px]">
         <% @childrens.each do |children| %>
-            <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
-                <div class = "flex justify-end w-full max-w-33">
+            <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
+                <div class="flex justify-end w-full max-w-33">
                     <%= link_to edit_folder_path(children.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                         <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
@@ -104,8 +104,8 @@
 
         <% @media.each do |file| %>
             <% if file.media.attached? %>
-                <div class = "bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
-                    <div class = "flex justify-end w-full max-w-33">
+                <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
+                    <div class="flex justify-end w-full max-w-33">
                         <%= link_to edit_media_item_path(file.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
                             <%= image_tag "/pencil.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>

@@ -1,19 +1,19 @@
 <%= render template: "layouts/header" %>
-<main class = "mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
+<main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
     <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
                 <%= msg %>
             </div>
         <% else %>
-            <div class = "flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
                 <%= msg %>
             </div>
         <% end %>
     <% end %>
     
-    <div class = "group flex max-[1000px]:relative" data-controller="panel">
-        <div class = "flex flex-col min-w-[74px] items-center" data-controller="map-links">
+    <div class="group flex max-[1000px]:relative" data-controller="panel">
+        <div class="flex flex-col min-w-[74px] items-center" data-controller="map-links">
             <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников", data: { map_links_target: "link", link_type: "list" } do %>
                 <%= image_tag "/vineyard_list.png", alt: "List", class: "min-w-8 h-8" %>
             <% end %>

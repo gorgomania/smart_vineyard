@@ -5,13 +5,13 @@
         </div>
 
         <% flash.each do |type, msg| %>
-            <div class = "mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+            <div class="mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
                 <%= msg %>
             </div>
         <% end %>
 
         <%= form_with model: @folder, url: update_attach_to_vineyard_folder_path(@folder), html: { method: :patch }, class: "mt-5 w-70" do |form| %>
-            <div class = "flex flex-col gap-5">
+            <div class="flex flex-col gap-5">
                 <div>
                     <%= select_tag :vineyard_id, 
                         options_from_collection_for_select(@vineyards, :id, :name, @selected_vineyard_id),

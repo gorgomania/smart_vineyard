@@ -2,7 +2,7 @@
 <%# Классификация и раскладка шлют сюда refresh (Vineyard.broadcast_stats_refresh): цифры и диаграмма обновляются без перезагрузки %>
 <% turbo_refreshes_with method: :morph, scroll: :preserve %>
 <%= turbo_stream_from (@total ? current_user : @vineyard), :stats %>
-<main class = "mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
+<main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
   <div data-controller="dashboard-charts" data-dashboard-charts-stats-value="<%= @stats_data.to_json %>">
     <!-- Общая статистика -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -64,7 +64,7 @@
         </div>
 
         <% if @total.nil? || @vineyards.count.nonzero? %>
-          <div class = "flex justify-center">
+          <div class="flex justify-center">
             <%= link_to "Выбрать виноградник", select_stats_vineyards_path, class: "flex items-center justify-center w-full max-w-70 h-16 bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
           </div>
         <% end %>
