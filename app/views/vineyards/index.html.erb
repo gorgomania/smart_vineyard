@@ -20,11 +20,12 @@
             <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
                 <%= image_tag "/create_vineyard.png", alt: "Create vineyard", class: "min-w-8 h-8" %>
             <% end %>
-            <button type="button" class="p-[10px] rounded-[12px] hover:bg-[white] min-[1000px]:hidden" title="Панель / карта" data-action="panel#toggle">
-                <%= image_tag "/map_mode.png", alt: "Map mode", class: "min-w-8 h-8" %>
+            <button type="button" class="p-[10px] rounded-[12px] hover:bg-[white] min-[1000px]:hidden" data-action="panel#toggle">
+                <%= image_tag "/panel-left-open.png", alt: "Open panel", title: "Открыть панель", class: "min-w-8 h-8 group-data-[open]:hidden" %>
+                <%= image_tag "/panel-left-close.png", alt: "Close panel", title: "Скрыть панель", class: "min-w-8 h-8 hidden group-data-[open]:block" %>
             </button>
         </div>
-        <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-85 max-[1000px]:max-w-[calc(100%-74px)]">
+        <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:bg-[#f2f2f2] max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:pr-4.5 max-[1000px]:h-[84.5vh]">
             <% if @vineyards.empty? %>
                  <div class = "w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
             <% end %>

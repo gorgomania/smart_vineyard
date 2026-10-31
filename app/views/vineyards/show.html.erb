@@ -17,9 +17,16 @@
             <%= link_to vineyards_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Список виноградников", data: { map_links_target: "link", link_type: "list" } do %>
                 <%= image_tag "/vineyard_list.png", alt: "List", class: "min-w-8 h-8" %>
             <% end %>
+
             <%= link_to new_vineyard_path, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать виноградник", data: { map_links_target: "link", link_type: "create" } do %>
                 <%= image_tag "/create_vineyard.png", alt: "Create", class: "min-w-8 h-8" %>
             <% end %>
+
+            <button type="button" class="p-[10px] rounded-[12px] hover:bg-[white] min-[1000px]:hidden" data-action="panel#toggle">
+              <%= image_tag "/panel-left-open.png", alt: "Open panel", title: "Открыть панель", class: "min-w-8 h-8 group-data-[open]:hidden" %>
+              <%= image_tag "/panel-left-close.png", alt: "Close panel", title: "Скрыть панель", class: "min-w-8 h-8 hidden group-data-[open]:block" %>
+            </button>
+
             <% if @bushes_vision %>
               <%= link_to vineyard_path(@vineyard.id, bushes_vision: false), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Скрыть тепловую карту" do %>
                   <%= image_tag "/vision_off.png", alt: "VisionOff", class: "w-8 h-8" %>
@@ -29,100 +36,101 @@
                   <%= image_tag "/vision_on.png", alt: "VisionOn", class: "w-8 h-8" %>
               <% end %>
             <% end %>
+
             <%= link_to edit_vineyard_path(@vineyard.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Редактировать виноградник" do %>
                 <%= image_tag "/pencil_violet.png", alt: "Edit", class: "min-w-8 h-8" %>
             <% end %>
+            
             <%= button_to vineyard_path(@vineyard.id), method: :delete, data: { turbo_confirm: "Удалить виноградник \"#{@vineyard.name}\"?" }, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Удалить виноградник" do %>
                 <%= image_tag "/trash_violet.png", alt: "Del", class: "min-w-8 h-8" %>
             <% end %>
-            <button type="button" class="p-[10px] rounded-[12px] hover:bg-[white] min-[1000px]:hidden" title="Панель / карта" data-action="panel#toggle">
-                <%= image_tag "/map_mode.png", alt: "Map mode", class: "min-w-8 h-8" %>
-            </button>
         </div>
-        <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-85 max-[1000px]:max-w-[calc(100%-74px)]">
-          <div class="text-[#333] text-[22px] font-bold">
-            <span>Виноградник</span>
-          </div>
-
-          <div class="w-[280px] mt-2">
-            <!-- Основная информация -->
-            <div class="field">
-              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Название</div>
-              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                <%= @vineyard.name %>
-              </div>
+        <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[2] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">
+          <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:min-w-0 max-[1000px]:max-w-none max-[1000px]:mr-0">
+            <div class="text-[#333] text-[22px] font-bold">
+              <span>Виноградник</span>
             </div>
 
-            <div class="field -mt-1">
-              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Сорт винограда</div>
-              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                <%= @vineyard.grape_variety.presence || "—" %>
+            <div class="w-[280px] mt-2">
+              <!-- Основная информация -->
+              <div class="field">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Название</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.name %>
+                </div>
               </div>
-            </div>
 
-            <div class="field -mt-1">
-              <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Год посадки</div>
-              <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                <%= @vineyard.planting_year.presence || "—" %>
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Сорт винограда</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.grape_variety.presence || "—" %>
+                </div>
               </div>
-            </div>
+
+              <div class="field -mt-1">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Год посадки</div>
+                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <%= @vineyard.planting_year.presence || "—" %>
+                </div>
+              </div>
             
-            <!-- Координаты вершин -->
-            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-              <div class="text-[#69377c] text-sm font-medium mb-5">Координаты вершин</div>
-                <% @vineyard.polygon.coordinates[0].each_with_index do |coord, index| %>
-                  <% next if index == @vineyard.polygon.coordinates[0].length - 1 %> <%# пропускаем замыкающую точку %>
-                  <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] ">
-                    <div class="text-[#8c8c8c] pointer-events-none leading-4">Вершина <%= index + 1 %></div>
-                    <div class=" flex flex-col items-center">
-                      <span>Широта: <%= "%.6f" % coord[1] %></span>
-                      <span>Долгота: <%= "%.6f" % coord[0] %></span>
+              <!-- Координаты вершин -->
+              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+                <div class="text-[#69377c] text-sm font-medium mb-5">Координаты вершин</div>
+                  <% @vineyard.polygon.coordinates[0].each_with_index do |coord, index| %>
+                    <% next if index == @vineyard.polygon.coordinates[0].length - 1 %> <%# пропускаем замыкающую точку %>
+                    <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] ">
+                      <div class="text-[#8c8c8c] pointer-events-none leading-4">Вершина <%= index + 1 %></div>
+                      <div class=" flex flex-col items-center">
+                        <span>Широта: <%= "%.6f" % coord[1] %></span>
+                        <span>Долгота: <%= "%.6f" % coord[0] %></span>
+                      </div>
                     </div>
+                  <% end %>
+              </div>
+
+              <!-- Параметры посадки -->
+              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+                <div class="text-[#69377c] text-sm font-medium mb-2">Параметры посадки</div>
+              
+                <div class="field -mt-1">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между рядами</div>
+                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                    <%= @vineyard.row_spacing %> м
                   </div>
-                <% end %>
-            </div>
-
-            <!-- Параметры посадки -->
-            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-              <div class="text-[#69377c] text-sm font-medium mb-2">Параметры посадки</div>
+                </div>
               
-              <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между рядами</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                  <%= @vineyard.row_spacing %> м
+                <div class="field -mt-1">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между кустами</div>
+                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                    <%= @vineyard.bush_spacing %> м
+                  </div>
                 </div>
               </div>
+
+              <!-- Статистика -->
+              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
+                <div class="text-[#69377c] text-sm font-medium mb-2">Статистика</div>
               
-              <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между кустами</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                  <%= @vineyard.bush_spacing %> м
+                <div class="field -mt-1">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Площадь</div>
+                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                    <%= @vineyard.area_hectares %> га
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Статистика -->
-            <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-              <div class="text-[#69377c] text-sm font-medium mb-2">Статистика</div>
-              
-              <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Площадь</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                  <%= @vineyard.area_hectares %> га
+                <div class="field -mt-1">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество рядов</div>
+                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                    <%= @vineyard.total_rows %>
+                  </div>
                 </div>
-              </div>
 
-              <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество рядов</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                  <%= @vineyard.total_rows %>
-                </div>
-              </div>
-
-              <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество кустов</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
-                  <%= @vineyard.total_bushes %>
+                <div class="field -mt-1">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество кустов</div>
+                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                    <%= @vineyard.total_bushes %>
+                  </div>
                 </div>
               </div>
             </div>
