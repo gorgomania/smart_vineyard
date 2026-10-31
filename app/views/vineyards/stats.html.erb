@@ -23,9 +23,9 @@
         <h2 class="text-xl font-bold text-[#69377c] mb-4"> Сводка </h2>
 
         <div class="space-y-3 text-[#333]">
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <span> <%= @total.nil? ? "Виноградник:" : "Виноградников:" %> </span>
-            <span class="font-bold text-[#69377c]"> <%= @total.nil? ? @vineyard.name : @vineyards.count %> </span>
+          <div class="flex justify-between items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <span class="shrink-0"> <%= @total.nil? ? "Виноградник:" : "Виноградников:" %> </span>
+            <span class="font-bold text-[#69377c] text-right [overflow-wrap:anywhere]"> <%= @total.nil? ? @vineyard.name : @vineyards.count %> </span>
           </div>
 
           <% if @total.nil? || @vineyards.count.nonzero? %>

@@ -2,7 +2,7 @@
     <%= link_to vineyards_path, class: "hover:opacity-[0.9]" do %>
         <%= image_tag "/logo.png", alt: "Logo", class: "h-[50px]" %>
     <%end%>
-    <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12 max-[694px]:hidden", data: { controller: "search" }) do |f| %>
+    <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12 max-[634px]:hidden", data: { controller: "search" }) do |f| %>
         <div class="field w-full">
         <%= f.text_field :title, class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-full min-w-61 outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов",  required: @search_query.blank?, data: { "search-target": "input" } %>
         </div>
@@ -34,7 +34,7 @@
       </svg>
     </button>
     <div id="dropMenu" class="hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-[#333]" data-nav-target="dropMenu">
-        <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex px-4 py-3 min-[694px]:hidden", data: { controller: "search" }) do |f| %>
+        <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex px-4 py-3 min-[634px]:hidden", data: { controller: "search" }) do |f| %>
             <div class="field w-full">
             <%= f.text_field :title, id: "folders_title_mobile", class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-[#f2f2f2] w-full outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", autocomplete: "name", value: @search_query, placeholder: "Поиск папок и файлов", required: @search_query.blank?, data: { "search-target": "input" } %>
             </div>
