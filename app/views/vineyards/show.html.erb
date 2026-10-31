@@ -45,13 +45,13 @@
                 <%= image_tag "/trash_violet.png", alt: "Del", class: "min-w-8 h-8" %>
             <% end %>
         </div>
-        <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[2] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">
+        <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[3] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">
           <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:min-w-0 max-[1000px]:max-w-none max-[1000px]:mr-0">
             <div class="text-[#333] text-[22px] font-bold">
               <span>Виноградник</span>
             </div>
 
-            <div class="w-[280px] mt-2">
+            <div class="w-full max-w-[280px] mt-2">
               <!-- Основная информация -->
               <div class="field">
                 <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Название</div>
@@ -140,7 +140,7 @@
         <% if @bushes_vision %>
           <%# ClassifyMediaJob шлёт сюда heatmap_bush (MediaItem#broadcast_diagnosis): точка куста перекрашивается без перезагрузки %>
           <%= turbo_stream_from @vineyard, :heatmap, id: "heatmap-stream" %>
-          <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-10">
+          <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-[2]">
             <div class="font-bold mb-3 text-[#69377c] flex items-center gap-2">
               <span>🔬</span> Состояние кустов
             </div>
