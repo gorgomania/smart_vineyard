@@ -110,7 +110,7 @@ export default class extends Controller {
           zoom: this.zoom,
           type: 'yandex#hybrid',
           controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
-        })
+        }, { autoFitToViewport: 'always' })
       }
       else {
         this.map = new ymaps.Map(this.element, {
@@ -118,7 +118,7 @@ export default class extends Controller {
           zoom: this.zoom,
           type: null, 
           controls: ['zoomControl', 'fullscreenControl'] 
-        });
+        }, { autoFitToViewport: 'always' });
       }
 
       if (this.mode == "new" || this.mode == "edit") {
