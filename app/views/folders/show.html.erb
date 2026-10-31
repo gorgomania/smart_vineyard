@@ -13,11 +13,11 @@
 
                 <% if @search_query.blank? %>
                     <%= link_to new_folder_path(parent_id: @folder.id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Создать папку" do %>
-                        <%= image_tag "/create_folder.png", alt: "Create folder", class: "min-w-8 h-8" %>
+                        <%= image_tag "/folder-plus.png", alt: "Create folder", class: "min-w-8 h-8" %>
                     <% end %>
 
                     <%= link_to new_media_item_path(folder_id: @folder.id), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Загрузить файлы" do %>
-                        <%= image_tag "/upload_file.png", alt: "Upload file", class: "min-w-8 h-8" %>
+                        <%= image_tag "/upload.png", alt: "Upload file", class: "min-w-8 h-8" %>
                     <% end %>
                 <% end %>
             </div>
@@ -68,11 +68,11 @@
                 <% if @folder.vineyard.present? %>
                     <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c] whitespace-nowrap", title: "Привязанный виноградник", data: { toolbar_fit_target: "vineyard" } %>
                     <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
-                        <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
+                        <%= image_tag "/link.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
                     <% end %>
                 <% else %>
                     <%= link_to attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Связать папку с виноградником" do %>
-                        <%= image_tag "/attach.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
+                        <%= image_tag "/link.png", alt: "Attach vineyard", class: "min-w-8 h-8" %>
                     <% end %>
                 <% end %>
             <% end %>
