@@ -5,7 +5,7 @@
     <%= turbo_stream_from @folder %>
 <% end %>
 <main class = "mt-[82px] py-4 px-[74px] flex-[1_0_auto]">
-    <div class = "flex gap-1 justify-between">
+    <div class = "flex gap-1 justify-between [&_a]:shrink-0" data-controller="toolbar-fit">
         <div class = "flex">
             <%= nav_buttons %>
 
@@ -31,7 +31,7 @@
             <% end %>
 
             <% if @title_path.present?%>
-                <div class = "flex items-center bg-white px-4 rounded-lg mx-1">
+                <div class = "flex items-center bg-white px-4 rounded-lg mx-1 whitespace-nowrap shrink-0" data-toolbar-fit-target="path">
                     <% (0...@title_path.length - 1).each do |i| %>
                         <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
                         <span class ="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
@@ -57,7 +57,7 @@
         <div class = "flex">
             <% if @search_query.blank? %>
                 <% if @folder.vineyard.present? %>
-                    <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c]", title: "Привязанный виноградник" %>
+                    <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c] whitespace-nowrap", title: "Привязанный виноградник", data: { toolbar_fit_target: "vineyard" } %>
                     <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
                         <%= image_tag "/attach.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
                     <% end %>
