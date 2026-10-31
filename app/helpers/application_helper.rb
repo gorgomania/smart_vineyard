@@ -9,19 +9,19 @@ module ApplicationHelper
         concat(
           link_to("#", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Назад",
                   data: { history_nav_target: "back", toolbar_fit_target: "history", controller: "history", action: "history#back" }) do
-            image_tag "/back.png", alt: "Back", class: "w-8 h-8"
+            image_tag "/arrow-left.png", alt: "Back", class: "w-8 h-8"
           end
         )
         concat(
           link_to("#", class: "p-[10px] rounded-[12px] hover:bg-[white] hidden", title: "Вперёд",
                   data: { history_nav_target: "forward", toolbar_fit_target: "history", controller: "history", action: "history#forward" }) do
-            image_tag "/back.png", alt: "Forward", class: "w-8 h-8 rotate-180"
+            image_tag "/arrow-left.png", alt: "Forward", class: "w-8 h-8 rotate-180"
           end
         )
         if @parent_id.present?
           concat(
             link_to(folder_path(@parent_id), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Вверх") do
-              image_tag "/back.png", alt: "Up", class: "w-8 h-8 rotate-90"
+              image_tag "/arrow-left.png", alt: "Up", class: "w-8 h-8 rotate-90"
             end
           )
         end
