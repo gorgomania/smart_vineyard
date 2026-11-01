@@ -44,6 +44,21 @@ jobs:
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/importmap audit
 
+  test_js:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # Без npm: встроенный раннер Node (glob в --test — с Node 21)
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run JavaScript unit tests
+        run: bin/test-js
+
   lint:
     runs-on: ubuntu-24.04
     steps:
