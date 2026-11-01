@@ -2,11 +2,11 @@
 <main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
     <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg z-10">
                 <%= msg %>
             </div>
         <% else %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg z-10">
                 <%= msg %>
             </div>
         <% end %>
@@ -45,42 +45,42 @@
                 <%= image_tag "/trash.png", alt: "Del", class: "min-w-8 h-8" %>
             <% end %>
         </div>
-        <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[3] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">
+        <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[3] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-surface">
           <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:min-w-0 max-[1000px]:max-w-none max-[1000px]:mr-0">
-            <div class="text-[#333] text-[22px] font-bold">
+            <div class="text-ink text-[22px] font-bold">
               <span>Виноградник</span>
             </div>
 
             <div class="w-full max-w-[280px] mt-2">
               <!-- Основная информация -->
               <div class="field">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Название</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Название</div>
+                <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                   <%= @vineyard.name %>
                 </div>
               </div>
 
               <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Сорт винограда</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Сорт винограда</div>
+                <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                   <%= @vineyard.grape_variety.presence || "—" %>
                 </div>
               </div>
 
               <div class="field -mt-1">
-                <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Год посадки</div>
-                <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Год посадки</div>
+                <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                   <%= @vineyard.planting_year.presence || "—" %>
                 </div>
               </div>
             
               <!-- Координаты вершин -->
-              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-                <div class="text-[#69377c] text-sm font-medium mb-5">Координаты вершин</div>
+              <div class="mt-4 pt-2 border-t border-line">
+                <div class="text-brand text-sm font-medium mb-5">Координаты вершин</div>
                   <% @vineyard.polygon.coordinates[0].each_with_index do |coord, index| %>
                     <% next if index == @vineyard.polygon.coordinates[0].length - 1 %> <%# пропускаем замыкающую точку %>
-                    <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] ">
-                      <div class="text-[#8c8c8c] pointer-events-none leading-4">Вершина <%= index + 1 %></div>
+                    <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt ">
+                      <div class="text-muted pointer-events-none leading-4">Вершина <%= index + 1 %></div>
                       <div class=" flex flex-col items-center">
                         <span>Широта: <%= "%.6f" % coord[1] %></span>
                         <span>Долгота: <%= "%.6f" % coord[0] %></span>
@@ -90,45 +90,45 @@
               </div>
 
               <!-- Параметры посадки -->
-              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-                <div class="text-[#69377c] text-sm font-medium mb-2">Параметры посадки</div>
+              <div class="mt-4 pt-2 border-t border-line">
+                <div class="text-brand text-sm font-medium mb-2">Параметры посадки</div>
               
                 <div class="field -mt-1">
-                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между рядами</div>
-                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Расстояние между рядами</div>
+                  <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                     <%= @vineyard.row_spacing %> м
                   </div>
                 </div>
               
                 <div class="field -mt-1">
-                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Расстояние между кустами</div>
-                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Расстояние между кустами</div>
+                  <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                     <%= @vineyard.bush_spacing %> м
                   </div>
                 </div>
               </div>
 
               <!-- Статистика -->
-              <div class="mt-4 pt-2 border-t border-[#e5e5e5]">
-                <div class="text-[#69377c] text-sm font-medium mb-2">Статистика</div>
+              <div class="mt-4 pt-2 border-t border-line">
+                <div class="text-brand text-sm font-medium mb-2">Статистика</div>
               
                 <div class="field -mt-1">
-                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Площадь</div>
-                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Площадь</div>
+                  <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                     <%= @vineyard.area_hectares %> га
                   </div>
                 </div>
 
                 <div class="field -mt-1">
-                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество рядов</div>
-                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Количество рядов</div>
+                  <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                     <%= @vineyard.total_rows %>
                   </div>
                 </div>
 
                 <div class="field -mt-1">
-                  <div class="relative top-[22px] left-[13px] text-[13px] text-[#8c8c8c] pointer-events-none leading-4">Количество кустов</div>
-                  <div class="w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#fafafa] flex items-center">
+                  <div class="relative top-[22px] left-[13px] text-[13px] text-muted pointer-events-none leading-4">Количество кустов</div>
+                  <div class="w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt flex items-center">
                     <%= @vineyard.total_bushes %>
                   </div>
                 </div>
@@ -141,7 +141,7 @@
           <%# ClassifyMediaJob шлёт сюда heatmap_bush (MediaItem#broadcast_diagnosis): точка куста перекрашивается без перезагрузки %>
           <%= turbo_stream_from @vineyard, :heatmap, id: "heatmap-stream" %>
           <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-[2]">
-            <div class="font-bold mb-3 text-[#69377c] flex items-center gap-2">
+            <div class="font-bold mb-3 text-brand flex items-center gap-2">
               <span>🔬</span> Состояние кустов
             </div>
             

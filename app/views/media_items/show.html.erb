@@ -11,14 +11,14 @@
         </div>
         <div class="flex items-center bg-white px-4 rounded-lg whitespace-nowrap shrink-0 data-[wrapped]:basis-full data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
             <% (0...@title_path.length - 1).each do |i| %>
-                <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
-                <span class="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+                <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-brand hover:text-brand-light hover:underline underline-offset-2"%>
+                <span class="whitespace-pre-wrap text-ink font-semibold"> / </span>
             <% end %>
-            <span class="text-[#69377c]"> <%= @title_path.last %> </span>
+            <span class="text-brand"> <%= @title_path.last %> </span>
         </div>
     </div>
     <%# 1000px+ — четыре колонки, 710–1000px — сетка 2×2, уже — одна колонка %>
-    <div class="flex justify-between items-start text-[#333] mt-4 max-[1000px]:grid max-[1000px]:grid-cols-2 max-[1000px]:gap-6 max-[710px]:grid-cols-1">
+    <div class="flex justify-between items-start text-ink mt-4 max-[1000px]:grid max-[1000px]:grid-cols-2 max-[1000px]:gap-6 max-[710px]:grid-cols-1">
         <% if @media_item.media.image? %>
             <div class="w-[30%] max-[1000px]:w-auto">
                 <%= image_tag @media_item.media, loading: "lazy", class: "w-full max-h-[calc(100vh-150px)] object-contain" %>
@@ -27,34 +27,34 @@
             <%= render "analysis_panel", media_item: @media_item, class_names: @class_names %>
 
             <div class="w-[20%] max-[1000px]:w-auto text-xl">
-                <h1 class="text-2xl text-[#333] text-center mb-4">Виноградник</h1>
+                <h1 class="text-2xl text-ink text-center mb-4">Виноградник</h1>
                 <% if @media_item.bush.present? %>
-                    <h2 class="text-[#69377c]">Название</h2>
+                    <h2 class="text-brand">Название</h2>
                     <span><%= @media_item.vineyard_name %> </span>                
-                    <h2 class="text-[#69377c]">
-                        Ряд <span class="text-[#333]"><%= @media_item.row_number %></span> 
-                        Куст <span class="text-[#333]"><%= @media_item.bush.bush_number %></span>
+                    <h2 class="text-brand">
+                        Ряд <span class="text-ink"><%= @media_item.row_number %></span> 
+                        Куст <span class="text-ink"><%= @media_item.bush.bush_number %></span>
                     </h2>
                 <% else %>
                     <span class="flex text-center"> Позиция на винограднике не определена </span>
                 <% end %>
                 <% if @media_item.bush.present? %>
-                        <%= link_to "Перекрепить к кусту", edit_attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                        <%= link_to "Перекрепить к кусту", edit_attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
                         <%= button_to "Открепить от куста", 
                                 detach_from_bush_media_item_path(@media_item), 
                                 method: :delete,
                                 data: { turbo_confirm: "Открепить файл от куста?" },
-                                class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                                class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
                 <% else %>
-                    <%= link_to "Прикрепить к кусту", attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
+                    <%= link_to "Прикрепить к кусту", attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
                 <% end %>
                 <% flash.each do |type, msg| %>
                     <% if type == "alert" %>
-                        <div class="h-16 mt-5 px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
+                        <div class="h-16 mt-5 px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
                             <%= msg %>
                         </div>
                     <% else %>
-                        <div class="flash h-16 mt-5  px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
+                        <div class="flash h-16 mt-5  px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg">
                             <%= msg %>
                         </div>
                     <% end %>
@@ -69,12 +69,12 @@
         <% end %>
 
         <div class="w-[20%] max-[1000px]:w-auto text-xl">
-            <h1 class="text-2xl text-[#333] text-center mb-4">Сведения о файле</h1>
-            <h2 class="text-[#69377c]">Имя</h2>
+            <h1 class="text-2xl text-ink text-center mb-4">Сведения о файле</h1>
+            <h2 class="text-brand">Имя</h2>
             <span class="break-all"><%= @media_item.media.blob.filename.base%> </span>
-            <h2 class="text-[#69377c]">Расширение</h2>
+            <h2 class="text-brand">Расширение</h2>
             <span><%= @media_item.media.blob.filename.extension%> </span>
-            <h2 class="text-[#69377c]">Размер</h2>
+            <h2 class="text-brand">Размер</h2>
             <span><%= number_to_human_size(@media_item.media.byte_size)%> </span>
         </div>
     </div>

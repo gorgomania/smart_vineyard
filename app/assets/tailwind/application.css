@@ -1,1 +1,35 @@
 @import "tailwindcss";
+
+/*
+  Палитра сайта. Классы: bg-brand, text-ink, border-line, hover:bg-brand-pale и т.д.
+  static — переменные попадают в CSS всегда: их читают application.css и map_controller.js
+*/
+@theme static {
+  /* фиолетовый, под цвет иконок и логотипа */
+  --color-brand: #78347f;
+  --color-brand-light: #9a55a2;  /* наведение, заливка полигонов */
+  --color-brand-bright: #a230b0; /* наведение на ссылки */
+  --color-brand-pale: #ebbbf7;   /* светлый фон при наведении, рамка зоны загрузки */
+  --color-brand-soft: #f6e7fd;
+  --color-brand-tint: #fbf5fe;
+
+  /* ссылки синие, чтобы не сливаться с фиолетовыми кнопками */
+  --color-link: #0d61af;
+
+  /* фоны и рамки */
+  --color-surface: #f2f2f2;       /* фон страницы, полей, кнопок */
+  --color-surface-alt: #fafafa;   /* поля только для чтения */
+  --color-surface-hover: #e8e8e8;
+  --color-line: #e5e5e5;
+
+  /* текст */
+  --color-ink: #333;
+  --color-ink-soft: #4e4e4e;
+  --color-muted: #8c8c8c;
+
+  /* сообщения */
+  --color-success: #0a9130;
+  --color-success-bg: #a0e7b1;
+  --color-danger: #9f0712;
+  --color-danger-bg: #ffc9c9;
+}

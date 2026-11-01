@@ -44,18 +44,18 @@ export default class extends Controller {
     vertices.slice(0, -1).forEach((vertex, index) => {
       const vertexHtml = `
         <div class="vertex-group" data-vertex-index="${index}">
-          <div class="text-[#69377c] text-sm my-1">Вершина ${index + 1}</div>
+          <div class="text-brand text-sm my-1">Вершина ${index + 1}</div>
           <div class="flex justify-between gap-2 -mt-6">
             <div class="field flex-1 min-w-0">
-              <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Широта</label>
+              <label class="relative text-[13px] top-[22px] left-[13px] text-muted pointer-events-none leading-4">Широта</label>
               <input type="text" name="vineyard[vertex_${index}_lat]" value="${vertex[0]}" 
-                    class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
+                    class="auth_input w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none hover:bg-surface-hover focus:bg-white"
                     data-vertex-lat="${index}">
             </div>
             <div class="field flex-1 min-w-0">
-              <label class="relative text-[13px] top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4">Долгота</label>
+              <label class="relative text-[13px] top-[22px] left-[13px] text-muted pointer-events-none leading-4">Долгота</label>
               <input type="text" name="vineyard[vertex_${index}_lng]" value="${vertex[1]}" 
-                    class="auth_input w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none hover:bg-[#e8e8e8] focus:bg-white"
+                    class="auth_input w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none hover:bg-surface-hover focus:bg-white"
                     data-vertex-lng="${index}">
             </div>
           </div>
@@ -212,15 +212,15 @@ export default class extends Controller {
     const startBtn = this.firstBushStartTarget
     const endBtn = this.firstBushEndTarget
     if (active === 'start') {
-      startBtn.classList.add('bg-[#69377c]', 'border-[#69377c]', 'text-white', 'pointer-events-none')
-      startBtn.classList.remove('bg-[#f2f2f2]', 'text-[#69377c]', 'border-[#e5e5e5]', 'hover:bg-[#e8e8e8]')
-      endBtn.classList.remove('bg-[#69377c]','border-[#69377c]', 'text-white', 'pointer-events-none')
-      endBtn.classList.add('bg-[#f2f2f2]', 'hover:bg-[#e8e8e8]', 'text-[#69377c]', 'border-[#e5e5e5]')
+      startBtn.classList.add('bg-brand', 'border-brand', 'text-white', 'pointer-events-none')
+      startBtn.classList.remove('bg-surface', 'text-brand', 'border-line', 'hover:bg-surface-hover')
+      endBtn.classList.remove('bg-brand','border-brand', 'text-white', 'pointer-events-none')
+      endBtn.classList.add('bg-surface', 'hover:bg-surface-hover', 'text-brand', 'border-line')
     } else {
-      endBtn.classList.add('bg-[#69377c]', 'border-[#69377c]', 'text-white', 'pointer-events-none')
-      endBtn.classList.remove('bg-[#f2f2f2]', 'text-[#69377c]', 'border-[#e5e5e5]', 'hover:bg-[#e8e8e8]')
-      startBtn.classList.remove('bg-[#69377c]','border-[#69377c]', 'text-white', 'pointer-events-none')
-      startBtn.classList.add('bg-[#f2f2f2]', 'hover:bg-[#e8e8e8]', 'text-[#69377c]', 'border-[#e5e5e5]')
+      endBtn.classList.add('bg-brand', 'border-brand', 'text-white', 'pointer-events-none')
+      endBtn.classList.remove('bg-surface', 'text-brand', 'border-line', 'hover:bg-surface-hover')
+      startBtn.classList.remove('bg-brand','border-brand', 'text-white', 'pointer-events-none')
+      startBtn.classList.add('bg-surface', 'hover:bg-surface-hover', 'text-brand', 'border-line')
     }
   }
 
