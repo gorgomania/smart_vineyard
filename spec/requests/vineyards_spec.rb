@@ -46,6 +46,7 @@ RSpec.describe "Vineyards", type: :request do
       it "returns 404" do
         get vineyard_path(vineyard)
         expect(response).to have_http_status(:not_found)
+        expect(response.body).to include("Страница не найдена")
       end
     end
   end
