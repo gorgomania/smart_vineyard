@@ -10,7 +10,8 @@
         <%= image_submit_tag("/search.png", name: "commit", class: "search_img relative right-[50px] top-[11px] w-[26px] h-[26px] rounded-[12px] hover:bg-surface hover:shadow-[0_0_0_10px_var(--color-surface)]", title: "Поиск", data: { action: "mouseenter->search#imgEnter mouseleave->search#imgLeave" }) %>
         </div>
     <% end %>
-    <div id="desktopMenu" class="flex items-end ml-11" data-nav-target="desktopMenu">
+    <%# Меню и бургер переключаются по ширине в CSS, не в JS: refresh-морфинг вернул бы классы из серверного HTML %>
+    <div id="desktopMenu" class="flex items-end ml-11 max-[1000px]:hidden">
         <%= link_to folders_path, title: "Проводник", class: "ml-1 p-3 flex flex-col justify-between items-center rounded-[12px] w-[80px] text-ink-soft hover:bg-surface" do %>
             <%= image_tag "/folder-open.png", alt: "Explorer", class: "min-w-[26px] h-[26px]" %>
         <%end%>
@@ -28,7 +29,7 @@
         <%end%>
     </div>
     <%# Иконку меняет aria-expanded, который ставит nav_controller: закрыто — menu, открыто — x %>
-    <button id="burgerMenu" type="button" aria-label="Меню" aria-expanded="false" class="group hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
+    <button id="burgerMenu" type="button" aria-label="Меню" aria-expanded="false" class="group min-[1000px]:hidden ml-[51px] p-[9px] rounded-lg hover:bg-gray-100" data-nav-target="burgerMenu" data-action="click->nav#toggleMenu">
       <%= image_tag "/menu.png", alt: "", class: "w-8 h-8 group-aria-expanded:hidden" %>
       <%= image_tag "/x.png", alt: "", class: "w-8 h-8 hidden group-aria-expanded:block" %>
     </button>

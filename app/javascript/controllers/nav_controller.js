@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["desktopMenu", "burgerMenu", "dropMenu", "overlay"]
+  static targets = ["burgerMenu", "dropMenu", "overlay"]
 
   connect() {
     this._handleResize = () => this.handleResize()
@@ -13,15 +13,12 @@ export default class extends Controller {
     window.removeEventListener("resize", this._handleResize)
   }
 
+  // Меню и бургер показывает CSS (max-[1000px]: в header), здесь только выпадающее меню
   handleResize() {
     if (window.innerWidth < 1000) {
-      this.desktopMenuTarget.classList.add("hidden")
-      this.burgerMenuTarget.classList.remove("hidden")
       if (!this.dropMenuTarget.classList.contains("hidden")) this._positionOverlay()
     } else {
       this._closeMenu()
-      this.burgerMenuTarget.classList.add("hidden")
-      this.desktopMenuTarget.classList.remove("hidden")
     }
   }
 
