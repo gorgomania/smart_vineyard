@@ -5,6 +5,10 @@ Rails.application.routes.draw do
   devise_for :users, controllers: {
     registrations: "users/registrations"
   }
+  # Страница подтверждения удаления аккаунта (паролем); само удаление — DELETE /users
+  devise_scope :user do
+    get "users/delete", to: "users/registrations#delete", as: :delete_user_registration
+  end
 
   resources :users, only: [ :index ]
 

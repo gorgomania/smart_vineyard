@@ -9,7 +9,7 @@
           <%= image_tag "/user-pen.png", alt: "Edit profile", class: "min-w-8 h-8" %>
         <% end %>
 
-        <%= button_to registration_path(:user), method: :delete, data: { turbo_confirm: "Вы уверены, что хотите удалить аккаунт? После удаления восстановить его будет невозможно!" }, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Удалить аккаунт" do %>
+        <%= button_to delete_user_registration_path, method: :get, class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Удалить аккаунт" do %>
           <%= image_tag "/user-x.png", alt: "Delete account", class: "min-w-8 h-8" %>
         <% end %>
 

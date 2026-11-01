@@ -14,4 +14,13 @@ class ApplicationController < ActionController::Base
     flash[:alert] = "В доступе отказано"
     redirect_to folders_path
   end
+
+  private
+
+  # После выхода и удаления аккаунта — сразу на вход. По умолчанию Devise ведёт на главную,
+  # та без входа перенаправляет ещё раз, и сообщение «Выход выполнен» / «Учётная запись удалена»
+  # подменяется на «Необходимо войти»
+  def after_sign_out_path_for(_scope)
+    new_user_session_path
+  end
 end
