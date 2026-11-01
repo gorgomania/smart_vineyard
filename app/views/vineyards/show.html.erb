@@ -143,18 +143,26 @@
         <% if @bushes_vision %>
           <%# ClassifyMediaJob шлёт сюда heatmap_bush (MediaItem#broadcast_diagnosis): точка куста перекрашивается без перезагрузки %>
           <%= turbo_stream_from @vineyard, :heatmap, id: "heatmap-stream" %>
-          <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-[2]">
-            <div class="font-bold mb-3 text-brand flex items-center gap-2">
-              <%= image_tag "/microscope.png", alt: "", class: "w-5 h-5" %> Состояние кустов
-            </div>
-            
+          <%# Числа кустов присылает map_controller (heatmap:counts), клик по строке прячет класс на карте (heatmap:filter).
+              Уже 710px легенда свёрнута в кнопку с микроскопом: data-open раскрывает её %>
+          <div class="map-legend group/legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 max-[710px]:p-2 max-[710px]:data-[open]:p-4 rounded-xl border border-gray-100 z-[2]"
+               data-controller="heatmap-legend" data-action="heatmap:counts@document->heatmap-legend#updateCounts">
+            <button type="button" class="font-bold text-brand flex items-center gap-2 min-[710px]:mb-3 min-[710px]:cursor-default max-[710px]:group-data-[open]/legend:mb-3"
+                    title="Состояние кустов" data-action="heatmap-legend#toggleOpen">
+              <%= image_tag "/microscope.png", alt: "", class: "w-5 h-5 max-[710px]:w-7 max-[710px]:h-7 max-[710px]:group-data-[open]/legend:w-5 max-[710px]:group-data-[open]/legend:h-5" %>
+              <span class="max-[710px]:hidden max-[710px]:group-data-[open]/legend:inline">Состояние кустов</span>
+            </button>
+
             <%# Порядок: здоровые, затем болезни; цвета — --color-diag-* из палитры, как у точек на карте %>
-            <div class="space-y-2">
+            <div class="-mx-2 max-[710px]:hidden max-[710px]:group-data-[open]/legend:block">
               <% (MediaItem::DIAGNOSES.values_at(2, 1, 0, 3) << MediaItem::NO_DIAGNOSIS).each do |diagnosis| %>
-                <div class="flex items-center gap-3">
+                <button type="button" class="flex items-center gap-3 w-full px-2 py-1 rounded-lg hover:bg-surface aria-[pressed=false]:opacity-40"
+                        aria-pressed="true" title="Скрыть или показать на карте"
+                        data-heatmap-legend-target="row" data-diagnosis="<%= diagnosis[:key] %>" data-action="heatmap-legend#toggle">
                   <div class="w-3.5 h-3.5 rounded-full" style="background: var(--color-diag-<%= diagnosis[:key] %>)"></div>
                   <span class="text-sm text-gray-700"><%= diagnosis[:name] %></span>
-                </div>
+                  <span class="ml-auto pl-4 text-sm text-ink-soft tabular-nums" data-heatmap-legend-target="count" data-diagnosis="<%= diagnosis[:key] %>"></span>
+                </button>
               <% end %>
             </div>
           </div>
