@@ -1,7 +1,9 @@
 <%# locals: (f:, name:, label:, type: :text_field, width: "w-[280px]", div_class: "", html: {}) %>
+<%# Поле с ошибкой валидации — красное, и при наведении и фокусе тоже %>
+<% error = f.object.respond_to?(:errors) && f.object.errors.include?(name) %>
 <div class="field relative mt-5 <%= div_class %>">
   <%= f.send(type, name,
-    class: "auth_input peer #{width} px-3 rounded-lg border border-line h-[64px] bg-surface outline-none hover:bg-surface-hover focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]",
+    class: "auth_input peer #{width} px-3 rounded-lg border border-line h-[64px] bg-surface outline-none hover:bg-surface-hover focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] #{'!border-danger !bg-danger-bg' if error}",
     placeholder: " ",
     **html
   ) %>
