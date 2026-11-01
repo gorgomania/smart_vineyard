@@ -61,6 +61,14 @@ export default class extends Controller {
     this.element.addEventListener('heatmap:refresh', this.boundHeatmapRefresh)
     this.watchHeatmapStream()
 
+    // Легенда (heatmap_legend_controller) прячет диагнозы с карты
+    this.hiddenDiagnoses = new Set()
+    this.boundHeatmapFilter = (e) => {
+      this.hiddenDiagnoses = new Set(e.detail.hidden)
+      this.applyBushFilter()
+    }
+    document.addEventListener('heatmap:filter', this.boundHeatmapFilter)
+
     this.loadMap()
   }
 
@@ -73,6 +81,8 @@ export default class extends Controller {
     document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
     this.element.removeEventListener('heatmap:bush', this.boundHeatmapBush)
     this.element.removeEventListener('heatmap:refresh', this.boundHeatmapRefresh)
+    document.removeEventListener('heatmap:filter', this.boundHeatmapFilter)
+    cancelAnimationFrame(this.legendFrame)
     this.heatmapStreamObserver?.disconnect()
     clearTimeout(this.heatmapFallback)
 
@@ -493,6 +503,7 @@ export default class extends Controller {
     }
     const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
     this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
+    if (this.bushesDiagnoses) this.scheduleLegendUpdate()
   }
 
   // Добавление ряда
@@ -598,7 +609,8 @@ export default class extends Controller {
               },
               "properties": {
                 "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`,
-                "bushUrl": mediaItemId ? `/media_items/${mediaItemId}` : null
+                "bushUrl": mediaItemId ? `/media_items/${mediaItemId}` : null,
+                "diagnosis": diagnosisKey(classId)
               },
               "options": this.bushIconOptions(classId)
             }
@@ -703,7 +715,30 @@ export default class extends Controller {
     if (!obj) return
 
     obj.properties.bushUrl = mediaItemId ? `/media_items/${mediaItemId}` : null
+    obj.properties.diagnosis = diagnosisKey(classId)
     this.objectManager.objects.setObjectOptions(bush, this.bushIconOptions(classId))
+    this.scheduleLegendUpdate()
+  }
+
+  // Числа в легенде и фильтр пересчитываем раз за кадр: при сверке кусты обновляются сотнями подряд
+  scheduleLegendUpdate() {
+    if (this.legendFrame) return
+
+    this.legendFrame = requestAnimationFrame(() => {
+      this.legendFrame = null
+      if (!this.objectManager) return
+
+      this.applyBushFilter()
+      const counts = {}
+      this.objectManager.objects.getAll().forEach(({ properties: { diagnosis } }) => {
+        counts[diagnosis] = (counts[diagnosis] || 0) + 1
+      })
+      document.dispatchEvent(new CustomEvent('heatmap:counts', { detail: { counts } }))
+    })
+  }
+
+  applyBushFilter() {
+    this.objectManager?.setFilter(obj => !this.hiddenDiagnoses.has(obj.properties.diagnosis))
   }
 
   getPolygonSide(points) {
