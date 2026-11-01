@@ -182,6 +182,18 @@ RSpec.describe "Vineyards", type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it "passes diagnosis names and palette keys to the chart" do
+        row = create(:row, vineyard:, row_number: 1)
+        create(:media_item, bush: create(:bush, vineyard:, row:, bush_number: 1), ai_class_id: 3)
+        create(:bush, vineyard:, row:, bush_number: 2)
+
+        get stats_vineyard_path(vineyard)
+        stats = JSON.parse(Nokogiri::HTML(response.body).at("[data-dashboard-charts-stats-value]")["data-dashboard-charts-stats-value"])
+        expect(stats.slice("labels", "diagnoses", "data")).to eq(
+          "labels" => [ "Листовой ожог", "Нет данных" ], "diagnoses" => [ "leaf-blight", "none" ], "data" => [ 1, 1 ]
+        )
+      end
+
       it "subscribes to the vineyard's stats refreshes" do
         get stats_vineyard_path(vineyard)
         expect(response.body).to include("turbo-cable-stream-source")
@@ -211,6 +223,17 @@ RSpec.describe "Vineyards", type: :request do
 
       get rows_vineyard_path(vineyard, format: :json)
       expect(JSON.parse(response.body)).to eq([ { "id" => open_row.id, "label" => "Ряд 2 (1 свободный куст)" } ])
+    end
+  end
+
+  describe "GET /vineyards/:id?bushes_vision=true" do
+    it "shows the legend with diagnosis names and palette colors" do
+      sign_in user
+      get vineyard_path(vineyard, bushes_vision: true)
+      MediaItem::DIAGNOSES.each_value do |diagnosis|
+        expect(response.body).to include(diagnosis[:name], "var(--color-diag-#{diagnosis[:key]})")
+      end
+      expect(response.body).to include("Нет данных", "var(--color-diag-none)")
     end
   end
 

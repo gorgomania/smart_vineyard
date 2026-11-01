@@ -1,6 +1,7 @@
 // app/javascript/controllers/map_controller.js
 import { Controller } from "@hotwired/stimulus"
 import { GeometryHelpers } from "utils/geometry_helpers"
+import { diagnosisKey, diagnosisColor } from "utils/diagnoses"
 
 // Цвета полигонов берём из палитры сайта (@theme в tailwind/application.css)
 const brandColor = (shade) => getComputedStyle(document.documentElement)
@@ -123,6 +124,10 @@ export default class extends Controller {
           type: null, 
           controls: ['zoomControl', 'fullscreenControl'] 
         }, { autoFitToViewport: 'always' });
+
+        this.map.events.add('boundschange', (e) => {
+          if (e.get('newZoom') !== e.get('oldZoom')) this.resizeBushes()
+        })
       }
 
       if (this.mode == "new" || this.mode == "edit") {
@@ -419,6 +424,7 @@ export default class extends Controller {
         clusterize: false
       });
       this.map.geoObjects.add(this.objectManager)
+      this.resizeBushes()
 
       this.objectManager.objects.events.add('click', (e) => {
         const objectId = e.get('objectId')
@@ -604,26 +610,34 @@ export default class extends Controller {
     }
   }
 
+  // Цвет и слой точки по диагнозу. Размер общий для всех точек, его задаёт resizeBushes
   bushIconOptions(classId) {
-    const colors = {
-      0: '#800000',  // Чёрная гниль
-      1: '#FF8C00',  // Эска
-      2: '#2ECC40',   // Здоровый
-      3: '#D63384'    // Антракноз
-    };
-
-    const color = colors[classId] || '#AAAAAA';
+    const key = diagnosisKey(classId)
 
     return {
       iconLayout: 'default#image',
+      // Белая обводка отделяет соседние точки и держит цвет на спутниковой подложке
       iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-        <svg width="12" height="12" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="6" cy="6" r="6" fill="${color}"/>
+        <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6" cy="6" r="5.25" fill="${diagnosisColor(key)}" stroke="white" stroke-width="1.5"/>
         </svg>
       `),
-      iconImageSize: [12, 12],
-      iconImageOffset: [-6, -6]
+      // Больные кусты поверх здоровых и кустов без данных: иначе соседняя точка их закрывает
+      zIndex: key === 'healthy' || key === 'none' ? 100 : 200
     }
+  }
+
+  // Размер точек по зуму: доля расстояния между кустами в пикселях, от 4 до 14px.
+  // На общем плане точки не сливаются в полосы, при приближении растут
+  resizeBushes() {
+    if (!this.objectManager) return
+
+    const lat = this.map.getCenter()[0]
+    const metersPerPixel = 156543.034 * Math.cos(lat * Math.PI / 180) / 2 ** this.map.getZoom()
+    const spacingPx = Math.min(this.rowSpacing, this.bushSpacing) / metersPerPixel
+    const size = Math.round(Math.min(14, Math.max(4, spacingPx * 0.9)))
+
+    this.objectManager.objects.options.set({ iconImageSize: [size, size], iconImageOffset: [-size / 2, -size / 2] })
   }
 
   // Диагнозы грузим, когда подписка на heatmap_bush подключилась (атрибут connected — и после обрыва связи тоже):

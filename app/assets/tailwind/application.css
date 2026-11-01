@@ -32,4 +32,11 @@
   --color-success-bg: #a0e7b1;
   --color-danger: #9f0712;
   --color-danger-bg: #ffc9c9;
+
+  /* диагнозы кустов: тепловая карта и график статистики (ключи — MediaItem::DIAGNOSES) */
+  --color-diag-healthy: #2ecc40;
+  --color-diag-esca: #ff8c00;
+  --color-diag-black-rot: #800000;
+  --color-diag-leaf-blight: #d63384;
+  --color-diag-none: #aaaaaa;    /* нет данных */
 }

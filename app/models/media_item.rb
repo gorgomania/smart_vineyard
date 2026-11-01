@@ -1,4 +1,14 @@
 class MediaItem < ApplicationRecord
+  # Диагнозы кустов: id — индекс класса модели (app/models/onnx/class_names.json).
+  # key — имя цвета в палитре (--color-diag-<key>) и в app/javascript/utils/diagnoses.js
+  DIAGNOSES = {
+    0 => { key: "black-rot", name: "Чёрная гниль" },
+    1 => { key: "esca", name: "Эска" },
+    2 => { key: "healthy", name: "Здоровый" },
+    3 => { key: "leaf-blight", name: "Листовой ожог" }
+  }.freeze
+  NO_DIAGNOSIS = { key: "none", name: "Нет данных" }.freeze
+
   belongs_to :folder
   belongs_to :bush, optional: true
 
