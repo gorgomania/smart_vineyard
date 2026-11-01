@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Юнит-тесты чистого JS (app/javascript/utils) встроенным раннером Node — без npm и package.json.
+# Модули импортируют друг друга по именам из importmap, их разрешает spec/javascript/support/register.mjs
+cd "$(dirname "$0")/.." || exit 1
+exec node --import ./spec/javascript/support/register.mjs --test "spec/javascript/**/*.test.mjs" "$@"
