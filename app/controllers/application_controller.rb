@@ -6,8 +6,9 @@ class ApplicationController < ActionController::Base
   allow_browser versions: :modern
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
 
+  # Та же страница, что Rails отдаёт сам при 404 вне контроллеров
   def not_found
-    render "/errors/404", status: :not_found, formats: [ :html ]
+    render file: Rails.public_path.join("404.html"), status: :not_found, layout: false, content_type: "text/html"
   end
 
   def user_not_authorized
