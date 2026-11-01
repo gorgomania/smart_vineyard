@@ -145,7 +145,7 @@
           <%= turbo_stream_from @vineyard, :heatmap, id: "heatmap-stream" %>
           <div class="map-legend absolute bottom-12 right-4 bg-white/95 backdrop-blur-sm p-4 rounded-xl border border-gray-100 z-[2]">
             <div class="font-bold mb-3 text-brand flex items-center gap-2">
-              <span>🔬</span> Состояние кустов
+              <%= image_tag "/microscope.png", alt: "", class: "w-5 h-5" %> Состояние кустов
             </div>
             
             <%# Порядок: здоровые, затем болезни; цвета — --color-diag-* из палитры, как у точек на карте %>
