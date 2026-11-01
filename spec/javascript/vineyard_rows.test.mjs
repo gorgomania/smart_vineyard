@@ -56,6 +56,34 @@ describe("layoutRows", () => {
     assert.ok(0.0005 - far < step, "до противоположной стороны поместился бы ещё ряд")
   })
 
+  // Неровный четырёхугольник, повёрнутый к сторонам света: ряды идут наискосок
+  const SKEWED = [[LAT, LNG], [LAT + 0.0002, LNG + 0.0009], [LAT + 0.0007, LNG + 0.0007], [LAT + 0.0005, LNG - 0.0001], [LAT, LNG]]
+
+  // Расстояние в метрах от точки до прямой через a и b — на местной плоскости вокруг a
+  const metersToLine = (p, a, b) => {
+    const k = Math.cos(a[0] * Math.PI / 180), m = 6371000 * Math.PI / 180
+    const [bx, by, px, py] = [(b[1] - a[1]) * k * m, (b[0] - a[0]) * m, (p[1] - a[1]) * k * m, (p[0] - a[0]) * m]
+    return Math.abs(bx * py - by * px) / Math.hypot(bx, by)
+  }
+
+  for (const [name, polygon] of [["прямоугольник", RECT], ["косой участок", SKEWED]]) {
+    for (const side of [0, 1, 2, 3]) {
+      for (const spacing of [2, 3]) {
+        test(`${name}, сторона ${side}: ряды ровно через ${spacing} м`, () => {
+          const rows = layoutRows(polygon, side, spacing)
+          assert.ok(rows.length > 2)
+          // Ряд k лежит в (k − 1) × spacing метрах от опорной стороны: и шаг тот, и ряды перпендикулярны ей в метрах
+          rows.forEach((row, i) => {
+            for (const end of [row.p1, row.p2]) {
+              const distance = metersToLine(end, rows[0].p1, rows[0].p2)
+              assert.ok(Math.abs(distance - i * spacing) < 0.01, `ряд ${row.number}: ${distance.toFixed(3)} м вместо ${i * spacing}`)
+            }
+          })
+        })
+      }
+    }
+  }
+
   test("нет опорной стороны — нет рядов", () => {
     assert.deepEqual(layoutRows(RECT, 7, 3), [])
   })

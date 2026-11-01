@@ -8,23 +8,30 @@ export function polygonSide(points, index) {
   return { p1: points[index], p2: points[index + 1] }
 }
 
+// Метров в градусе широты — на той же сфере, что GeometryHelpers.kmDistance (R = 6371 км)
+const METERS_PER_DEGREE = 6371000 * Math.PI / 180
+
 // Первый ряд — опорная сторона, остальные параллельно ей через rowSpacing метров: сначала в одну сторону,
-// потом в другую, пока линия пересекает полигон. Номер ряда — порядок обхода (так их считает и форма)
+// потом в другую, пока линия пересекает полигон. Номер ряда — порядок обхода (так их считает и форма).
+// Тот же расчёт на сервере — VineyardLayout (app/services/vineyard_layout.rb): меняя один, меняйте и другой
 export function layoutRows(polygonPoints, sideIndex, rowSpacing) {
   const first = polygonSide(polygonPoints, sideIndex)
   if (!first) return []
 
-  // Единичный перпендикуляр к первому ряду — направление смещения
-  const rowVector = [first.p2[0] - first.p1[0], first.p2[1] - first.p1[1]]
-  const perpVector = [-rowVector[1], rowVector[0]]
-  const perpLength = Math.sqrt(perpVector[0] ** 2 + perpVector[1] ** 2)
-  const perpUnit = [perpVector[0] / perpLength, perpVector[1] / perpLength]
-  const stepDeg = GeometryHelpers.metersToDegrees(rowSpacing, polygonPoints[0][0])
+  // Перпендикуляр считаем в метрах на местной плоскости: градус долготы короче градуса широты в cos(широты) раз,
+  // и перпендикуляр «в градусах» был бы и не перпендикулярен, и не той длины
+  const metersPerDegreeLat = METERS_PER_DEGREE
+  const metersPerDegreeLng = METERS_PER_DEGREE * Math.cos(polygonPoints[0][0] * Math.PI / 180)
+  const north = (first.p2[0] - first.p1[0]) * metersPerDegreeLat
+  const east = (first.p2[1] - first.p1[1]) * metersPerDegreeLng
+  const length = Math.sqrt(north * north + east * east)
+  // Сдвиг на один метр поперёк опорной стороны, в градусах [lat, lng]
+  const perpPerMeter = [-east / length / metersPerDegreeLat, north / length / metersPerDegreeLng]
 
   const rows = [{ number: 1, p1: first.p1, p2: first.p2 }]
   for (const direction of [1, -1]) {
-    for (let offset = direction * stepDeg; ; offset += direction * stepDeg) {
-      const shifted = GeometryHelpers.shiftLine(first.p1, first.p2, perpUnit, offset)
+    for (let offset = direction * rowSpacing; ; offset += direction * rowSpacing) {
+      const shifted = GeometryHelpers.shiftLine(first.p1, first.p2, perpPerMeter, offset)
       const intersections = GeometryHelpers.getIntersectionsWithPolygon(shifted.p1, shifted.p2, polygonPoints)
       if (intersections.length !== 2) break
 
