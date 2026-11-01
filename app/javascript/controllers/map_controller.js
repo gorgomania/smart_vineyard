@@ -145,9 +145,7 @@ export default class extends Controller {
   createPolygon(editable) {
     return new ymaps.Polygon(
       [[]],
-      editable
-        ? { hintContent: 'Виноградник' }
-        : { hintContent: 'Виноградник', balloonContent: 'Перетащите углы для изменения размера' },
+      { hintContent: 'Виноградник' },
       {
         draggable: editable,
         editable: editable,
