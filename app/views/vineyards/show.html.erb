@@ -148,31 +148,14 @@
               <span>🔬</span> Состояние кустов
             </div>
             
+            <%# Порядок: здоровые, затем болезни; цвета — --color-diag-* из палитры, как у точек на карте %>
             <div class="space-y-2">
-              <div class="flex items-center gap-3">
-                <div class="w-3.5 h-3.5 rounded-full bg-[#2ECC40] shadow-sm"></div>
-                <span class="text-sm text-gray-700">Здоровый</span>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <div class="w-3.5 h-3.5 rounded-full bg-[#FF8C00]"></div>
-                <span class="text-sm text-gray-700">Эска</span>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <div class="w-3.5 h-3.5 rounded-full bg-[#800000]"></div>
-                <span class="text-sm text-gray-700">Чёрная гниль</span>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <div class="w-3.5 h-3.5 rounded-full bg-[#D63384]"></div>
-                <span class="text-sm text-gray-700">Листовой ожог</span>
-              </div>
-
-              <div class="flex items-center gap-3">
-                <div class="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
-                <span class="text-sm text-gray-700">Нет данных</span>
-              </div>
+              <% (MediaItem::DIAGNOSES.values_at(2, 1, 0, 3) << MediaItem::NO_DIAGNOSIS).each do |diagnosis| %>
+                <div class="flex items-center gap-3">
+                  <div class="w-3.5 h-3.5 rounded-full" style="background: var(--color-diag-<%= diagnosis[:key] %>)"></div>
+                  <span class="text-sm text-gray-700"><%= diagnosis[:name] %></span>
+                </div>
+              <% end %>
             </div>
           </div>
         <% end %>

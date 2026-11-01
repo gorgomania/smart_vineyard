@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import "chart.js"
+import { diagnosisColor } from "utils/diagnoses"
 
 export default class extends Controller {
   static targets = ["canvas"]
@@ -15,7 +16,7 @@ export default class extends Controller {
     if (this.chart) {
       this.chart.data.labels = stats.labels
       this.chart.data.datasets[0].data = stats.data
-      this.chart.data.datasets[0].backgroundColor = stats.colors
+      this.chart.data.datasets[0].backgroundColor = stats.diagnoses.map(diagnosisColor)
       this.chart.update()
     } else {
       this.renderChart(stats)
@@ -49,7 +50,7 @@ export default class extends Controller {
         labels: stats.labels,
         datasets: [{
           data: stats.data,
-          backgroundColor: stats.colors,
+          backgroundColor: stats.diagnoses.map(diagnosisColor),
           borderWidth: 0
         }]
       },

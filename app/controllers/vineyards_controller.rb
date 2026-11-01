@@ -276,29 +276,16 @@ class VineyardsController < ApplicationController
       total = vineyard.bushes.count
     end
 
-    disease_names = {
-      0 => "Чёрная гниль",
-      1 => "Эска",
-      2 => "Здоровый",
-      3 => "Листовой ожог"
-    }
+    diagnoses = disease_stats.keys.map { |id| MediaItem::DIAGNOSES.fetch(id, MediaItem::NO_DIAGNOSIS) } + [ MediaItem::NO_DIAGNOSIS ]
 
     {
-      labels: disease_stats.keys.map { |id| disease_names[id] } + [ "Нет данных" ],
+      labels: diagnoses.pluck(:name),
       data: disease_stats.values + [ total - disease_stats.values.sum ],
-      colors: disease_stats.keys.map { |id| disease_color(id) } + [ "#AAAAAA" ],
+      # Ключи, а не цвета: цвет по ключу берёт из палитры dashboard_charts_controller
+      diagnoses: diagnoses.pluck(:key),
       total_bushes: total,
       analyzed_bushes: disease_stats.values.sum,
       healthy_count: disease_stats[2] || 0
     }
-  end
-
-  def disease_color(class_id)
-    {
-      0 => "#800000",  # Чёрная гниль
-      1 => "#FF8C00",  # Эска
-      2 => "#2ECC40",  # Здоровый
-      3 => "#D63384"   # Листовой ожог
-    } [class_id] || "#AAAAAA"
   end
 end
