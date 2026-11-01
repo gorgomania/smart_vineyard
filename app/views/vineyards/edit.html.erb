@@ -67,12 +67,14 @@
 
           <div class="field">
             <%= f.label "Первый ряд (сторона)", class: "text-brand text-sm" %>
-            <div class="flex gap-2 mt-1">
-              <button type="button" data-vineyard-form-target="prevSide" class="flex-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
-                ◀ Предыдущая
+            <%# Уже 410px «◀ Предыдущая» и «Следующая ▶» не помещаются в строку — кнопки становятся выше,
+                стрелка встаёт над словом у обеих; уже 360px кнопки идут друг под другом и снова в строку %>
+            <div class="flex gap-2 mt-1 max-[360px]:flex-col">
+              <button type="button" data-vineyard-form-target="prevSide" class="flex-1 flex items-center justify-center gap-1 max-[410px]:flex-col max-[410px]:gap-0 max-[360px]:flex-row max-[360px]:gap-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
+                <span>◀</span><span>Предыдущая</span>
               </button>
-              <button type="button" data-vineyard-form-target="nextSide" class="flex-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
-                Следующая ▶
+              <button type="button" data-vineyard-form-target="nextSide" class="flex-1 flex items-center justify-center gap-1 max-[410px]:flex-col max-[410px]:gap-0 max-[360px]:flex-row max-[360px]:gap-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
+                <span>Следующая</span><span class="max-[410px]:order-first max-[360px]:order-none">▶</span>
               </button>
             </div>
           </div>
