@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Users::RegistrationsController < Devise::RegistrationsController
+  # Тот же колбэк с новым only заменяет девайсовский, поэтому перечисляем и его действия
+  prepend_before_action :authenticate_scope!, only: [ :edit, :update, :destroy, :delete ]
   # before_action :configure_sign_up_params, only: [:create]
   # before_action :configure_account_update_params, only: [:update]
 
@@ -31,10 +33,22 @@ class Users::RegistrationsController < Devise::RegistrationsController
   #   super
   # end
 
+  # GET /users/delete — подтверждение удаления паролем
+  def delete
+  end
+
   # DELETE /resource
-  # def destroy
-  #   super
-  # end
+  # Удаляем только с верным текущим паролем. Демо-аккаунт без пароля: его пароль
+  # сгенерирован и пользователю неизвестен, а сам аккаунт и так временный
+  def destroy
+    return super if resource.demo_temp
+
+    password = params.dig(resource_name, :current_password)
+    return super if resource.valid_password?(password)
+
+    resource.errors.add(:current_password, password.blank? ? :blank : :invalid)
+    render :delete, status: :unprocessable_entity
+  end
 
   # GET /resource/cancel
   # Forces the session data which is usually expired after sign
