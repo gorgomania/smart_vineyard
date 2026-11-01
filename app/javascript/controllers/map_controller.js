@@ -1,7 +1,17 @@
 // app/javascript/controllers/map_controller.js
+// Карта виноградников на Яндекс Картах. Режимы (data-map-mode):
+//   index — все виноградники пользователя полигонами (data-map-multiple-polygons);
+//   show — один виноградник: линии рядов или, с data-map-heatmap-url, тепловая карта кустов (utils/heatmap_layer);
+//   new / edit — редактируемый полигон, ряды пересчитываются при каждом изменении и уходят в форму
+//                (vineyard_form_controller) событиями map:geometryChanged и map:statisticsUpdated
 import { Controller } from "@hotwired/stimulus"
 import { GeometryHelpers } from "utils/geometry_helpers"
-import { diagnosisKey, diagnosisColor } from "utils/diagnoses"
+import { HeatmapLayer } from "utils/heatmap_layer"
+import { layoutRows, bushCount } from "utils/vineyard_rows"
+import { parseWKT } from "utils/wkt"
+
+const DEFAULT_CENTER = [44.5947, 33.4756]
+const FIRST_ROW_COLOR = '#FFD700' // золотой: опорная сторона и первый куст
 
 // Цвета полигонов берём из палитры сайта (@theme в tailwind/application.css)
 const brandColor = (shade) => getComputedStyle(document.documentElement)
@@ -12,7 +22,7 @@ export default class extends Controller {
   connect() {
 
     this.element.innerHTML = ''
-    
+
     // Получаем данные напрямую из атрибутов
     this.apiKey = this.element.dataset.mapApiKey
     this.center = this.parseCenter(this.element.dataset.mapCenter)
@@ -20,12 +30,8 @@ export default class extends Controller {
     this.mode = this.element.dataset.mapMode
     this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
     this.multiplePolygons = this.element.dataset.mapMultiplePolygons
-    // Тепловая карта: диагнозы { "ряд-куст" => [id файла, класс] } приходят позже из syncHeatmap, до тех пор кусты серые
-    this.heatmapUrl = this.element.dataset.mapHeatmapUrl
-    this.bushesDiagnoses = this.heatmapUrl ? {} : null
     this.currentPolygon = null
     this.rowsCollection = null
-    this.objectManager = null
 
     // Устанавливаем параметры из данных виноградника или значения по умолчанию
     if (this.vineyardData) {
@@ -47,137 +53,62 @@ export default class extends Controller {
       return
     }
 
-    // Сверки могут идти одновременно (подключение, сигнал «перечитай», переподключение): у каждой свой список
-    // кустов, обновлённых сообщениями, пока она в пути
-    this.activeSyncs = new Set()
-    this.syncSeq = 0
-    this.appliedSyncSeq = 0
-    this.boundHeatmapBush = (e) => {
-      this.activeSyncs.forEach(liveBushes => liveBushes.add(e.detail.bush))
-      this.updateBush(e.detail)
-    }
-    this.element.addEventListener('heatmap:bush', this.boundHeatmapBush)
-    this.boundHeatmapRefresh = () => this.syncHeatmap()
-    this.element.addEventListener('heatmap:refresh', this.boundHeatmapRefresh)
-    this.watchHeatmapStream()
-
-    // Легенда (heatmap_legend_controller) прячет диагнозы с карты
-    this.hiddenDiagnoses = new Set()
-    this.boundHeatmapFilter = (e) => {
-      this.hiddenDiagnoses = new Set(e.detail.hidden)
-      this.applyBushFilter()
-    }
-    document.addEventListener('heatmap:filter', this.boundHeatmapFilter)
+    // Тепловая карта подписывается на диагнозы сразу, не дожидаясь Яндекс Карт: до отрисовки они копятся в слое
+    const heatmapUrl = this.element.dataset.mapHeatmapUrl
+    this.heatmap = heatmapUrl ? new HeatmapLayer(this.element, heatmapUrl) : null
 
     this.loadMap()
   }
 
   disconnect() {
-    // Очищаем обработчики при уничтожении контроллера
-    document.removeEventListener('vineyard:nextSide', this.boundNextSide)
-    document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
-    document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
-    document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
-    document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
-    this.element.removeEventListener('heatmap:bush', this.boundHeatmapBush)
-    this.element.removeEventListener('heatmap:refresh', this.boundHeatmapRefresh)
-    document.removeEventListener('heatmap:filter', this.boundHeatmapFilter)
-    cancelAnimationFrame(this.legendFrame)
-    this.heatmapStreamObserver?.disconnect()
-    clearTimeout(this.heatmapFallback)
+    this.stopListeningToForm()
+    this.heatmap?.destroy()
 
-    // Уничтожаем карту
     if (this.map) {
       this.map.destroy()
       this.map = null
     }
   }
-  
+
   parseCenter(centerStr) {
-    if (!centerStr) return [44.5947, 33.4756]
+    if (!centerStr) return DEFAULT_CENTER
     try {
       return JSON.parse(centerStr)
     } catch(e) {
-      return [44.5947, 33.4756]
+      return DEFAULT_CENTER
     }
   }
-  
+
   loadMap() {
-    // Проверяем, не загружено ли уже API
+    // API уже загружено другой страницей
     if (window.ymaps) {
       this.initMap()
       return
     }
-    
-    // Загружаем API
+
     const script = document.createElement('script')
     script.src = `https://api-maps.yandex.ru/2.1/?apikey=${this.apiKey}&lang=ru_RU`
     script.onload = () => this.initMap()
     script.onerror = () => console.error('Failed to load Yandex Maps API')
     document.head.appendChild(script)
   }
-  
+
   initMap() {
     ymaps.ready(() => {
-      if (!this.bushesDiagnoses) {
-        this.map = new ymaps.Map(this.element, {
-          center: this.center,
-          zoom: this.zoom,
-          type: 'yandex#hybrid',
-          controls: ['zoomControl', 'fullscreenControl', 'geolocationControl']
-        }, { autoFitToViewport: 'always' })
-      }
-      else {
-        this.map = new ymaps.Map(this.element, {
-          center: this.center,
-          zoom: this.zoom,
-          type: null, 
-          controls: ['zoomControl', 'fullscreenControl'] 
-        }, { autoFitToViewport: 'always' });
-
-        this.map.events.add('boundschange', (e) => {
-          if (e.get('newZoom') !== e.get('oldZoom')) this.resizeBushes()
-        })
-      }
+      // Под тепловой картой подложки нет: точки видно лучше на чистом фоне
+      this.map = new ymaps.Map(this.element, {
+        center: this.center,
+        zoom: this.zoom,
+        type: this.heatmap ? null : 'yandex#hybrid',
+        controls: this.heatmap ? ['zoomControl', 'fullscreenControl'] : ['zoomControl', 'fullscreenControl', 'geolocationControl']
+      }, { autoFitToViewport: 'always' })
+      this.heatmap?.attach(this.map)
 
       if (this.mode == "new" || this.mode == "edit") {
-        // Создаем объект прямоугольника
-        this.currentPolygon = new ymaps.Polygon(
-          [[]],
-          {
-            hintContent: 'Виноградник'
-          },
-          {
-            draggable: true,      // Можно перетаскивать
-            editable: true,       // Включает режим редактирования
-            fillColor: brandColor('light'),
-            fillOpacity: 0.1,
-            strokeColor: brandColor(),
-            strokeWidth: 3,
-            visible: false,             // Сначала скрыт
-            editorDrawing: false,      
-          }
-        )
+        this.currentPolygon = this.createPolygon(true)
       }
       else if (this.mode == "show") {
-        // Создаем объект прямоугольника
-        this.currentPolygon = new ymaps.Polygon(
-          [[]],
-          {
-            hintContent: 'Виноградник',
-            balloonContent: 'Перетащите углы для изменения размера'
-          },
-          {
-            draggable: false,      // Можно перетаскивать
-            editable: false,       // Включает режим редактирования
-            fillColor: brandColor('light'),
-            fillOpacity: 0.1,
-            strokeColor: brandColor(),
-            strokeWidth: 3,
-            visible: false,             // Сначала скрыт
-            editorDrawing: false,      
-          }
-        )
+        this.currentPolygon = this.createPolygon(false)
       }
 
       if (this.multiplePolygons) {
@@ -185,17 +116,15 @@ export default class extends Controller {
       }
 
       if (this.mode != "index") {
-        // Добавляем прямоугольник на карту
         this.map.geoObjects.add(this.currentPolygon)
-        // Создаем коллекции для рядов и кустов
         this.rowsCollection = new ymaps.GeoObjectCollection({}, {
           strokeColor: brandColor(),
           strokeWidth: 2,
           strokeOpacity: 0.8
         })
-
         this.map.geoObjects.add(this.rowsCollection)
-        // Слушаем изменения геометрии
+
+        // Полигон двигают или правят вершины (на карте или в форме) — пересчитываем ряды и отдаём координаты форме
         this.currentPolygon.geometry.events.add('change', () => {
           const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
           this.updateForm(coordinates)
@@ -204,83 +133,91 @@ export default class extends Controller {
         this.showPolygon()
       }
 
-      if (this.boundNextSide) {
-        document.removeEventListener('vineyard:nextSide', this.boundNextSide)
-        document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
-        document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
-        document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
-      }
-      
-      // Создаем новые привязанные функции
-      this.boundNextSide = () => {
-        if (!this.currentPolygon?.geometry) return
-        this.switchToNextSide()
-      }
+      this.listenToForm()
 
-      this.boundPrevSide = () => {
-        if (!this.currentPolygon?.geometry) return
-        this.switchToPreviousSide()
-      }
-
-      this.boundFirstBush = () => {
-        if (!this.currentPolygon?.geometry) return
-        this.referenceVertexIsFirst = !this.referenceVertexIsFirst
-        this.regenerateRows()
-      }
-
-      this.boundSpacing = (event) => {
-        if (!this.currentPolygon?.geometry) return
-        this.rowSpacing = event.detail.rowSpacing
-        this.bushSpacing = event.detail.bushSpacing
-        this.regenerateRows()
-      }
-
-      // Добавляем обработчики
-      document.addEventListener('vineyard:nextSide', this.boundNextSide)
-      document.addEventListener('vineyard:prevSide', this.boundPrevSide)
-      document.addEventListener('vineyard:firstBushChanged', this.boundFirstBush)
-      document.addEventListener('vineyard:spacingChanged', this.boundSpacing)
-
-      // Подписываемся на события от формы
-      this.boundPolygonUpdated = (event) => {
-        if (this.currentPolygon) {
-          this.currentPolygon.geometry.setCoordinates(event.detail.coordinates)
-        }
-      }
-      document.addEventListener('form:polygonUpdated', this.boundPolygonUpdated)
-
-      this.map.events.add('boundschange', () => {
-        this.dispatchMapUpdated()
-      })
-      
-      this.map.events.add('zoomchange', () => {
-        this.dispatchMapUpdated()
-      })
-      
-      // Отправляем начальное состояние
+      // Центр и зум — ссылкам «Список виноградников» и «Создать виноградник» (map_links_controller)
+      this.map.events.add('boundschange', () => this.dispatchMapUpdated())
+      this.map.events.add('zoomchange', () => this.dispatchMapUpdated())
       this.dispatchMapUpdated()
     })
   }
 
+  createPolygon(editable) {
+    return new ymaps.Polygon(
+      [[]],
+      editable
+        ? { hintContent: 'Виноградник' }
+        : { hintContent: 'Виноградник', balloonContent: 'Перетащите углы для изменения размера' },
+      {
+        draggable: editable,
+        editable: editable,
+        fillColor: brandColor('light'),
+        fillOpacity: 0.1,
+        strokeColor: brandColor(),
+        strokeWidth: 3,
+        visible: false, // показывает showPolygon, когда координаты уже заданы
+        editorDrawing: false,
+      }
+    )
+  }
+
+  // События от формы виноградника (vineyard_form_controller)
+  listenToForm() {
+    this.stopListeningToForm()
+
+    this.boundNextSide = () => {
+      if (!this.currentPolygon?.geometry) return
+      this.switchSide(+1)
+    }
+    this.boundPrevSide = () => {
+      if (!this.currentPolygon?.geometry) return
+      this.switchSide(-1)
+    }
+    this.boundFirstBush = () => {
+      if (!this.currentPolygon?.geometry) return
+      this.referenceVertexIsFirst = !this.referenceVertexIsFirst
+      this.regenerateRows()
+    }
+    this.boundSpacing = (event) => {
+      if (!this.currentPolygon?.geometry) return
+      this.rowSpacing = event.detail.rowSpacing
+      this.bushSpacing = event.detail.bushSpacing
+      this.regenerateRows()
+    }
+    this.boundPolygonUpdated = (event) => {
+      this.currentPolygon?.geometry.setCoordinates(event.detail.coordinates)
+    }
+
+    document.addEventListener('vineyard:nextSide', this.boundNextSide)
+    document.addEventListener('vineyard:prevSide', this.boundPrevSide)
+    document.addEventListener('vineyard:firstBushChanged', this.boundFirstBush)
+    document.addEventListener('vineyard:spacingChanged', this.boundSpacing)
+    document.addEventListener('form:polygonUpdated', this.boundPolygonUpdated)
+  }
+
+  stopListeningToForm() {
+    document.removeEventListener('vineyard:nextSide', this.boundNextSide)
+    document.removeEventListener('vineyard:prevSide', this.boundPrevSide)
+    document.removeEventListener('vineyard:firstBushChanged', this.boundFirstBush)
+    document.removeEventListener('vineyard:spacingChanged', this.boundSpacing)
+    document.removeEventListener('form:polygonUpdated', this.boundPolygonUpdated)
+  }
+
   dispatchMapUpdated() {
     if (!this.map) return
-    
-    const center = this.map.getCenter()
-    const zoom = this.map.getZoom()
-    
-    const event = new CustomEvent('map:updated', {
-      detail: { center, zoom }
-    })
-    document.dispatchEvent(event)
+
+    document.dispatchEvent(new CustomEvent('map:updated', {
+      detail: { center: this.map.getCenter(), zoom: this.map.getZoom() }
+    }))
   }
 
   updateForm(coordinates) {
-    const event = new CustomEvent('map:geometryChanged', {
+    document.dispatchEvent(new CustomEvent('map:geometryChanged', {
       detail: { coordinates: coordinates }
-    })
-    document.dispatchEvent(event)
+    }))
   }
 
+  // Нового виноградника ещё нет — квадрат в центре карты, размер по зуму
   setDefaultRectangle() {
     const size = this.getRectangleSize()
     const center = this.map.getCenter()
@@ -293,65 +230,58 @@ export default class extends Controller {
     ]])
   }
 
-  switchToPreviousSide() {
-    const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
-    if (this.referenceSideIndex - 1 >= 0) {
-      this.referenceSideIndex -= 1
+  getRectangleSize() {
+    const sizeMap = {
+      10: 0.05, 11: 0.03, 12: 0.02, 13: 0.01,
+      14: 0.005, 15: 0.003, 16: 0.002, 17: 0.001,
+      18: 0.0005, 19: 0.0002
     }
-    else {
-      this.referenceSideIndex = coordinates.length - 2
-    }
-    this.generateRows(coordinates)
+    const currentZoom = this.map ? this.map.getZoom() : this.zoom
+    return sizeMap[Math.round(currentZoom)] || 0.01
   }
 
-  switchToNextSide() {
+  // Опорная сторона по кругу: сторон столько, сколько вершин без замыкающей
+  switchSide(step) {
     const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
-    if (this.referenceSideIndex + 1 <= coordinates.length - 2) {
-      this.referenceSideIndex += 1
-    }
-    else {
-      this.referenceSideIndex = 0
-    }
+    const sides = coordinates.length - 1
+    this.referenceSideIndex = (this.referenceSideIndex + step + sides) % sides
     this.generateRows(coordinates)
   }
 
   loadMultiplePolygons() {
     try {
       const polygonsData = JSON.parse(this.multiplePolygons)
-      
+
       polygonsData.forEach(data => {
-        const coordinates = this.parseWKT(data.polygon)
-        
-        if (coordinates && coordinates.length >= 3) {
-          const polygon = new ymaps.Polygon(
-            [coordinates],
-            {
-              hintContent: `${data.name}\n🍇 ${data.grape_variety || '—'}\n📊 ${data.area} га`,
-              balloonContent: `
-                <div style="padding: 8px;">
-                  <b style="color: var(--color-brand);">${data.name}</b><br/>
-                  🍇 ${data.grape_variety || 'Сорт не указан'}<br/>
-                  📊 Площадь: ${data.area} га<br/>
-                  📏 Количество рядов: ${data.total_rows}<br/>
-                  🌿 Количество кустов: ${data.total_bushes}<br/>
-                  <hr style="margin: 8px 0;"/>
-                  <a href="/vineyards/${data.id}" style="color: var(--color-brand);">Подробнее →</a>
-                </div>
-              `
-            },
-            {
-              fillColor: brandColor('light'),
-              fillOpacity: 0.3,
-              strokeColor: brandColor(),
-              strokeWidth: 2,
-              cursor: 'pointer'
-            }
-          )
-          
-          this.map.geoObjects.add(polygon)
-        }
+        const coordinates = parseWKT(data.polygon)
+        if (!coordinates || coordinates.length < 3) return
+
+        this.map.geoObjects.add(new ymaps.Polygon(
+          [coordinates],
+          {
+            hintContent: `${data.name}\n🍇 ${data.grape_variety || '—'}\n📊 ${data.area} га`,
+            balloonContent: `
+              <div style="padding: 8px;">
+                <b style="color: var(--color-brand);">${data.name}</b><br/>
+                🍇 ${data.grape_variety || 'Сорт не указан'}<br/>
+                📊 Площадь: ${data.area} га<br/>
+                📏 Количество рядов: ${data.total_rows}<br/>
+                🌿 Количество кустов: ${data.total_bushes}<br/>
+                <hr style="margin: 8px 0;"/>
+                <a href="/vineyards/${data.id}" style="color: var(--color-brand);">Подробнее →</a>
+              </div>
+            `
+          },
+          {
+            fillColor: brandColor('light'),
+            fillOpacity: 0.3,
+            strokeColor: brandColor(),
+            strokeWidth: 2,
+            cursor: 'pointer'
+          }
+        ))
       })
-      
+
       // Центрируем карту на всех полигонах
       if (this.mode == "index" && polygonsData.length > 0) {
         this.map.setBounds(this.map.geoObjects.getBounds(), {
@@ -365,48 +295,40 @@ export default class extends Controller {
   }
 
   showPolygon() {
-    
     if (!this.currentPolygon) {
       console.error("Polygon not found")
       return
     }
-    
-    // Показываем прямоугольник
+
     this.currentPolygon.options.set('visible', true)
 
     if (this.mode === "show") {
       this.loadExistingPolygon()
+      return
+    }
+
+    if (this.vineyardData) {
+      this.loadExistingPolygon()
+      document.dispatchEvent(new CustomEvent('vineyard:initFormFromExistingPolygon', {
+        detail: {
+          rowSpacing: this.rowSpacing,
+          bushSpacing: this.bushSpacing,
+          referenceVertexIsFirst: this.referenceVertexIsFirst
+        }
+      }))
     }
     else {
-      if (this.vineyardData) {
-        this.loadExistingPolygon()
-        document.dispatchEvent(new CustomEvent('vineyard:initFormFromExistingPolygon', {
-          detail: {
-            rowSpacing: this.rowSpacing,
-            bushSpacing: this.bushSpacing,
-            referenceVertexIsFirst: this.referenceVertexIsFirst
-          }
-        }))
-      }
-      else {
-        this.setDefaultRectangle()
-      }
-      this.currentPolygon.editor.startEditing()
+      this.setDefaultRectangle()
     }
+    this.currentPolygon.editor.startEditing()
   }
 
   loadExistingPolygon() {
     try {
-      // Парсим JSON строку полигона
-      const polygonData = this.existingPolygon
-      // Извлекаем координаты из WKT или GeoJSON
-      let coordinates
-      coordinates = this.parseWKT(polygonData)
-      this.currentPolygon.geometry.setCoordinates([coordinates])
-      const bounds = this.currentPolygon.geometry.getBounds()
-      this.map.setBounds(bounds, {
+      this.currentPolygon.geometry.setCoordinates([parseWKT(this.existingPolygon)])
+      this.map.setBounds(this.currentPolygon.geometry.getBounds(), {
         checkZoomRange: true,  // проверить доступные зуммы
-        zoomMargin: 30          // отступ от краёв в пикселях
+        zoomMargin: 30         // отступ от краёв в пикселях
       })
     } catch (error) {
       console.error('Error loading existing polygon:', error)
@@ -415,377 +337,72 @@ export default class extends Controller {
 
   regenerateRows() {
     if (!this.currentPolygon) return
-  
+
     const coordinates = this.currentPolygon.geometry.getCoordinates()[0]
     if (coordinates && coordinates.length >= 3) {
       this.generateRows(coordinates)
     }
   }
 
+  // Ряды по полигону (utils/vineyard_rows): на тепловой карте — кусты точками, иначе — линии рядов.
+  // Числа рядов и кустов уходят в форму
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
-    //Если нужно отображать кусты
-    if (this.bushesDiagnoses) {
-      if (this.objectManager) {
-        this.map.geoObjects.remove(this.objectManager)
-      }
 
-      this.objectManager = new ymaps.ObjectManager({
-        clusterize: false
-      });
-      this.map.geoObjects.add(this.objectManager)
-      this.resizeBushes()
-
-      this.objectManager.objects.events.add('click', (e) => {
-        const objectId = e.get('objectId')
-        const obj = this.objectManager.objects.getById(objectId)
-        const url = obj.properties.bushUrl
-        if (url) window.location.href = url
-      })
-    }
-
+    this.heatmap?.reset({ rowSpacing: this.rowSpacing, bushSpacing: this.bushSpacing })
     this.rowsCollection.removeAll()
-    const bushesPerRow = []
 
-    // 1. Находим самую длинную сторону (первый ряд)
-    const firstRow = this.getPolygonSide(polygonPoints)
+    const rows = layoutRows(polygonPoints, this.referenceSideIndex, this.rowSpacing)
+    const bushesPerRow = rows.map(row => this.addRow(row))
+    const totalBushes = bushesPerRow.reduce((sum, count) => sum + count, 0)
 
-    // 2. Добавляем первый ряд
-    let totalBushes = this.addRow(firstRow.p1, firstRow.p2, 1, true)
-    bushesPerRow.push(totalBushes)
-
-    // 3. Направление перпендикуляра (смещение рядов)
-    const rowVector = [firstRow.p2[0] - firstRow.p1[0], firstRow.p2[1] - firstRow.p1[1]]
-    const perpVector = [-rowVector[1], rowVector[0]] // Поворот на 90°
-    
-    // Нормализуем перпендикуляр
-    const perpLength = Math.sqrt(perpVector[0]**2 + perpVector[1]**2)
-    const perpUnit = [perpVector[0] / perpLength, perpVector[1] / perpLength]
-    
-    // Шаг смещения в градусах
-    const stepDeg = GeometryHelpers.metersToDegrees(this.rowSpacing, polygonPoints[0][0])
-    
-    // 4. Генерируем ряды в обе стороны
-    let offset = stepDeg
-    let hasNextRow = true
-    let numRows = 1
-    
-    // В одну сторону
-    while (hasNextRow) {
-      const shiftedRow = GeometryHelpers.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
-      const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
-      if (intersections.length === 2) {
-        numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
-        bushesPerRow.push(numBushes)
-        totalBushes += numBushes
-        offset += stepDeg
-      } else {
-        hasNextRow = false
-      }
-    }
-    
-    // В другую сторону
-    offset = -stepDeg
-    hasNextRow = true
-    while (hasNextRow) {
-      const shiftedRow = GeometryHelpers.shiftLine(firstRow.p1, firstRow.p2, perpUnit, offset)
-      const intersections = GeometryHelpers.getIntersectionsWithPolygon(shiftedRow.p1, shiftedRow.p2, polygonPoints)
-      if (intersections.length === 2) {
-        numRows += 1
-        const numBushes = this.addRow(intersections[0], intersections[1], numRows)
-        bushesPerRow.push(numBushes)
-        totalBushes += numBushes
-        offset -= stepDeg
-      } else {
-        hasNextRow = false
-      }
-    }
-    const areaInHectares = GeometryHelpers.calculateArea(polygonPoints)
-    this.sendStatisticsToForm(numRows, totalBushes, areaInHectares, bushesPerRow)
-    if (this.bushesDiagnoses) this.scheduleLegendUpdate()
+    this.sendStatisticsToForm(rows.length, totalBushes, GeometryHelpers.calculateArea(polygonPoints), bushesPerRow)
+    this.heatmap?.rendered()
   }
 
-  // Добавление ряда
-  addRow(p1, p2, rowNumber, isFirstRow = false) {
-    // Вычисляем количество кустов
-    const rowLengthMeters = GeometryHelpers.kmDistance(p1, p2) * 1000
-    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing) + 1
-    //Вид рядов
-    if (!this.bushesDiagnoses) {
-      // Склонение слова "куст"
-      let bushesText = ''
-      if (numBushes % 10 === 1 && numBushes % 100 !== 11) {
-        bushesText = `${numBushes} куст`
-      } else if ([2, 3, 4].includes(numBushes % 10) && ![12, 13, 14].includes(numBushes % 100)) {
-        bushesText = `${numBushes} куста`
-      } else {
-        bushesText = `${numBushes} кустов`
-      }
-      let rowLine
-      if (!isFirstRow) {
-        rowLine = new ymaps.Polyline(
-        [[p1[0], p1[1]], [p2[0], p2[1]]],
-        { 
-          hintContent: `Ряд ${rowNumber} · ${bushesText}`,
-        }
-      )
-      }
-      else {
-        rowLine = new ymaps.Polyline(
-        [[p1[0], p1[1]], [p2[0], p2[1]]],
-        { 
-          hintContent: `Ряд ${rowNumber} · ${bushesText}`,
-        },
-        {
-          strokeColor: '#FFD700',  // Золотой для первого ряда
-          strokeWidth: 4,
-          strokeOpacity: 0.9
-        })
-        let p
-        if (this.referenceVertexIsFirst) {
-          p = p1
-        }
-        else {
-          p = p2
-        }
-        const startCircle = new ymaps.Circle(
-          [[p[0], p[1]], 3], // 5 метров
-          { hintContent: 'Первый куст' },
-          {
-            fillColor: '#FFD700',
-            fillOpacity: 0.8,
-            strokeColor: '#FFD700',
-            strokeWidth: 2,
-            strokeOpacity: 1
-          }
-        )
-        this.rowsCollection.add(startCircle)
-      }
-      this.rowsCollection.add(rowLine)
+  // Ряд на карте; возвращает число кустов в нём. Кусты нумеруются от опорной вершины
+  addRow({ number, p1, p2 }) {
+    const bushes = bushCount(p1, p2, this.bushSpacing)
+    const [start, end] = this.referenceVertexIsFirst ? [p1, p2] : [p2, p1]
+
+    if (this.heatmap) {
+      this.heatmap.addRow(number, start, end)
+      return bushes
     }
-    //Вид кустов
+
+    const hint = { hintContent: `Ряд ${number} · ${bushes} ${pluralizeBushes(bushes)}` }
+    if (number === 1) {
+      // Опорная сторона золотая, первый куст — золотой круг на опорной вершине
+      this.rowsCollection.add(new ymaps.Circle(
+        [[start[0], start[1]], 3],
+        { hintContent: 'Первый куст' },
+        { fillColor: FIRST_ROW_COLOR, fillOpacity: 0.8, strokeColor: FIRST_ROW_COLOR, strokeWidth: 2, strokeOpacity: 1 }
+      ))
+      this.rowsCollection.add(new ymaps.Polyline(
+        [[p1[0], p1[1]], [p2[0], p2[1]]], hint,
+        { strokeColor: FIRST_ROW_COLOR, strokeWidth: 4, strokeOpacity: 0.9 }
+      ))
+    }
     else {
-      if (this.referenceVertexIsFirst) {
-        this.generateBushesOnRow([p1, p2], rowNumber)
-      }
-      else {
-        this.generateBushesOnRow([p2, p1], rowNumber)
-      }
+      this.rowsCollection.add(new ymaps.Polyline([[p1[0], p1[1]], [p2[0], p2[1]]], hint))
     }
-    return numBushes
-  }
-
-  generateBushesOnRow(linePoints, rowIndex) {
-    if (linePoints.length < 2) return
-    
-    // Длина ряда в метрах
-    const rowLengthMeters = GeometryHelpers.kmDistance(linePoints[0], linePoints[linePoints.length-1]) * 1000
-    
-    // Количество кустов
-    const numBushes = Math.floor(rowLengthMeters / this.bushSpacing)
-    
-    for (let i = 0; i <= numBushes; i++) {
-      const t = i / numBushes // Пропорция вдоль ряда
-      
-      // Интерполяция позиции куста
-      const bushPoint = GeometryHelpers.interpolateOnLine(linePoints, t)
-
-      if (bushPoint) {
-        // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis
-        const bushKey = `${rowIndex}-${i + 1}`
-        const [mediaItemId, classId] = this.bushesDiagnoses[bushKey] || [null, null];
-
-        // Добавляем куст
-        const bushGeoJsonData = {
-          "type": "FeatureCollection",
-          "features": [
-            {
-              "type": "Feature",
-              "id": bushKey,
-              "geometry": {
-                "type": "Point",
-                "coordinates": [bushPoint[0], bushPoint[1]]
-              },
-              "properties": {
-                "hintContent": `Ряд ${rowIndex} Куст ${i + 1}`,
-                "bushUrl": mediaItemId ? `/media_items/${mediaItemId}` : null,
-                "diagnosis": diagnosisKey(classId)
-              },
-              "options": this.bushIconOptions(classId)
-            }
-          ]
-        }
-
-        this.objectManager.add(bushGeoJsonData)
-      }
-    }
-  }
-
-  // Цвет и слой точки по диагнозу. Размер общий для всех точек, его задаёт resizeBushes
-  bushIconOptions(classId) {
-    const key = diagnosisKey(classId)
-
-    return {
-      iconLayout: 'default#image',
-      // Белая обводка отделяет соседние точки и держит цвет на спутниковой подложке
-      iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-        <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="6" cy="6" r="5.25" fill="${diagnosisColor(key)}" stroke="white" stroke-width="1.5"/>
-        </svg>
-      `),
-      // Больные кусты поверх здоровых и кустов без данных: иначе соседняя точка их закрывает
-      zIndex: key === 'healthy' || key === 'none' ? 100 : 200
-    }
-  }
-
-  // Размер точек по зуму: доля расстояния между кустами в пикселях, от 4 до 14px.
-  // На общем плане точки не сливаются в полосы, при приближении растут
-  resizeBushes() {
-    if (!this.objectManager) return
-
-    const lat = this.map.getCenter()[0]
-    const metersPerPixel = 156543.034 * Math.cos(lat * Math.PI / 180) / 2 ** this.map.getZoom()
-    const spacingPx = Math.min(this.rowSpacing, this.bushSpacing) / metersPerPixel
-    const size = Math.round(Math.min(14, Math.max(4, spacingPx * 0.9)))
-
-    this.objectManager.objects.options.set({ iconImageSize: [size, size], iconImageOffset: [-size / 2, -size / 2] })
-  }
-
-  // Диагнозы грузим, когда подписка на heatmap_bush подключилась (атрибут connected — и после обрыва связи тоже):
-  // всё, что классифицируется позже, придёт сообщением. Обычно это раньше, чем загрузятся Яндекс Карты, так что запрос один
-  watchHeatmapStream() {
-    const stream = document.getElementById('heatmap-stream')
-    if (!stream || !this.heatmapUrl) return
-
-    this.heatmapStreamObserver = new MutationObserver(() => {
-      if (stream.hasAttribute('connected')) this.syncHeatmap()
-    })
-    this.heatmapStreamObserver.observe(stream, { attributes: true, attributeFilter: ['connected'] })
-    if (stream.hasAttribute('connected')) this.syncHeatmap()
-
-    // WebSocket не поднялся за секунду — грузим без подписки, чтобы карта не осталась серой; при подключении сверимся ещё раз
-    this.heatmapFallback = setTimeout(() => {
-      if (!this.heatmapRequested) this.syncHeatmap()
-    }, 1000)
-  }
-
-  async syncHeatmap() {
-    this.heatmapRequested = true
-    const seq = ++this.syncSeq
-    // Сообщение, пришедшее пока идёт запрос, новее ответа — ответ его не перетирает
-    const liveBushes = new Set()
-    this.activeSyncs.add(liveBushes)
-    let diagnoses
-    try {
-      const response = await fetch(this.heatmapUrl, { headers: { Accept: 'application/json' } })
-      if (!response.ok) return
-      diagnoses = await response.json()
-    } catch {
-      return // нет сети — сверимся после переподключения
-    } finally {
-      this.activeSyncs.delete(liveBushes)
-    }
-
-    // Ответ более ранней сверки пришёл после более поздней — он старее уже применённого
-    if (seq < this.appliedSyncSeq) return
-    this.appliedSyncSeq = seq
-
-    Object.entries(diagnoses).forEach(([bush, [mediaItemId, classId]]) => {
-      if (!liveBushes.has(bush)) this.updateBush({ bush, mediaItemId, classId })
-    })
-    // Куста нет в ответе — файл с него открепили: снова серый
-    Object.keys(this.bushesDiagnoses).forEach(bush => {
-      if (!(bush in diagnoses) && !liveBushes.has(bush)) this.updateBush({ bush, mediaItemId: null, classId: null })
-    })
-  }
-
-  // Пришёл результат классификации (heatmap:bush из application.js): перекрашиваем одну точку, карту не перерисовываем
-  updateBush({ bush, mediaItemId, classId }) {
-    if (!this.bushesDiagnoses) return
-
-    // Из сообщения id приходят строками, из JSON — числами
-    const current = this.bushesDiagnoses[bush]
-    if (current && String(current[0]) === String(mediaItemId) && String(current[1]) === String(classId)) return
-
-    // Запоминаем всегда: если карта ещё грузится, generateRows возьмёт цвет отсюда
-    this.bushesDiagnoses[bush] = [mediaItemId, classId]
-
-    const obj = this.objectManager?.objects.getById(bush)
-    if (!obj) return
-
-    obj.properties.bushUrl = mediaItemId ? `/media_items/${mediaItemId}` : null
-    obj.properties.diagnosis = diagnosisKey(classId)
-    this.objectManager.objects.setObjectOptions(bush, this.bushIconOptions(classId))
-    this.scheduleLegendUpdate()
-  }
-
-  // Числа в легенде и фильтр пересчитываем раз за кадр: при сверке кусты обновляются сотнями подряд
-  scheduleLegendUpdate() {
-    if (this.legendFrame) return
-
-    this.legendFrame = requestAnimationFrame(() => {
-      this.legendFrame = null
-      if (!this.objectManager) return
-
-      this.applyBushFilter()
-      const counts = {}
-      this.objectManager.objects.getAll().forEach(({ properties: { diagnosis } }) => {
-        counts[diagnosis] = (counts[diagnosis] || 0) + 1
-      })
-      document.dispatchEvent(new CustomEvent('heatmap:counts', { detail: { counts } }))
-    })
-  }
-
-  applyBushFilter() {
-    this.objectManager?.setFilter(obj => !this.hiddenDiagnoses.has(obj.properties.diagnosis))
-  }
-
-  getPolygonSide(points) {
-    if (!points || points.length < 2 || this.referenceSideIndex >= points.length - 1 || this.referenceSideIndex < 0)
-      return null
-    return {
-      p1: points[this.referenceSideIndex],
-      p2: points[this.referenceSideIndex + 1],
-    }
-  }
-
-  parseWKT(wkt) {
-    // Поддержка обоих форматов: "POLYGON((...))" и "POLYGON ((...))"
-    const match = wkt.match(/POLYGON\s*\(\((.+)\)\)/i)
-    if (!match) {
-      console.error('Invalid WKT format:', wkt)
-      return null
-    }
-    const points = match[1].split(', ')
-    const coordinates = points.map(point => {
-      const [lng, lat] = point.split(' ')
-      return [parseFloat(lat), parseFloat(lng)]
-    })
-    
-    return coordinates
-  }
-
-  getRectangleSize() {
-    const sizeMap = {
-      10: 0.05, 11: 0.03, 12: 0.02, 13: 0.01,
-      14: 0.005, 15: 0.003, 16: 0.002, 17: 0.001,
-      18: 0.0005, 19: 0.0002
-    }
-    const currentZoom = this.map ? this.map.getZoom() : this.zoom
-    return sizeMap[Math.round(currentZoom)] || 0.01
+    return bushes
   }
 
   sendStatisticsToForm(rowsCount, bushesCount, areaInHectares, bushesPerRow) {
-    // Отправляем событие с данными о рядах и кустах
-    const event = new CustomEvent('map:statisticsUpdated', {
-      detail: { 
+    document.dispatchEvent(new CustomEvent('map:statisticsUpdated', {
+      detail: {
         rows: rowsCount,
         bushes: bushesCount,
         area: areaInHectares.toFixed(2),
         bushesPerRow: bushesPerRow
       }
-    })
-    document.dispatchEvent(event)
+    }))
   }
+}
+
+function pluralizeBushes(count) {
+  if (count % 10 === 1 && count % 100 !== 11) return 'куст'
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'куста'
+  return 'кустов'
 }
