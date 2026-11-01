@@ -15,7 +15,7 @@
           <%= image_tag "/panel-left-close.png", alt: "Close panel", title: "Скрыть панель", class: "min-w-8 h-8 hidden group-data-[open]:block" %>
       </button>
 
-      <%= link_to "#", class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Назад", data: { controller: "history", action: "history#back" } do %>
+      <%= link_to vineyard_path(@vineyard), class: "p-[10px] rounded-[12px] hover:bg-[white]", title: "Назад", data: { controller: "history", action: "history#back" } do %>
           <%= image_tag "/arrow-left.png", alt: "Back", class: "min-w-8 h-8" %>
       <% end %>
     </div>

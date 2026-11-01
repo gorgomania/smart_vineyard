@@ -21,6 +21,6 @@
       </div>
     <% end %>
 
-    <%= link_to "Назад", "#", data: { controller: "history", action: "history#back" }, class: "text-link text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-brand-bright" %>
+    <%= link_to "Назад", folder_path(@folder.parent_id || @folder), data: { controller: "history", action: "history#back" }, class: "text-link text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-brand-bright" %>
   </div>
 </main>
