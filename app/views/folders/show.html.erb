@@ -5,7 +5,7 @@
     <%= turbo_stream_from @folder %>
 <% end %>
 <main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto]">
-    <div class="relative flex gap-1 justify-between [&_a]:shrink-0 has-[[data-wrapped]]:grid has-[[data-wrapped]]:grid-cols-[1fr_auto]" data-controller="toolbar-fit">
+    <div class="group/toolbar relative flex gap-1 justify-between [&_a]:shrink-0 has-[[data-wrapped]]:grid has-[[data-wrapped]]:grid-cols-[1fr_auto]" data-controller="toolbar-fit">
         <div class="flex">
             <%# Иконки — неразрывной группой: при нехватке места прячутся «Вперёд/Назад», а не переносятся %>
             <div class="flex shrink-0">
@@ -33,10 +33,10 @@
                 </div>
             <% end %>
 
-            <%# Flash плавает у правого края строки кнопок (верхней, если путь перенесён) и не сдвигает раскладку.
+            <%# Flash плавает у правого края строки кнопок, а если путь перенесён на свою строку — у края строки пути (56px = 52 + gap-1); раскладку не сдвигает.
                 Слой обрезает выезд по краю строки — иначе toolbar-fit примет его за переполнение %>
             <% if flash.any? %>
-                <div class="absolute inset-x-0 top-0 h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
+                <div class="absolute inset-x-0 top-0 group-has-[[data-wrapped]]/toolbar:top-[56px] h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
                     <% flash.each do |type, msg| %>
                         <% if type == "alert" %>
                             <div class="pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">

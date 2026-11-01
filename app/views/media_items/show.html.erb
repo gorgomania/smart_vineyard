@@ -2,11 +2,30 @@
 <%= turbo_stream_from "media_item_#{@media_item.id}" %>
 <main class="mt-[82px] py-4 px-[74px] max-[710px]:px-[37px] flex-[1_0_auto] max-h-[84.5vh] max-[1000px]:max-h-none">
     <%# Как в проводнике: не влезает — путь уходит на свою строку, затем прячутся «Вперёд/Назад» (toolbar-fit) %>
-    <div class="flex gap-1 [&_a]:shrink-0 has-[[data-wrapped]]:flex-wrap" data-controller="toolbar-fit">
+    <div class="group/toolbar relative flex gap-1 [&_a]:shrink-0 has-[[data-wrapped]]:flex-wrap" data-controller="toolbar-fit">
         <div class="flex shrink-0">
             <%= nav_buttons %>
             <%= link_to rails_blob_path(@media_item.media, disposition: "attachment"), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Скачать файл" do %>
                 <%= image_tag "/download.png", alt: "Download file", class: "min-w-8 h-8" %>
+            <% end %>
+
+            <%# Flash как в проводнике: плавает у правого края строки кнопок, а если путь перенесён на свою строку — у края строки пути; раскладку не сдвигает.
+                Слой внутри группы иконок, а не прямым потомком строки: toolbar-fit проверяет переполнение прямых потомков
+                и принял бы выезд за нехватку места. Слой обрезает выезд по краю строки %>
+            <% if flash.any? %>
+                <div class="absolute inset-x-0 top-0 group-has-[[data-wrapped]]/toolbar:top-[56px] h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
+                    <% flash.each do |type, msg| %>
+                        <% if type == "alert" %>
+                            <div class="pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
+                                <%= msg %>
+                            </div>
+                        <% else %>
+                            <div class="flash pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg">
+                                <%= msg %>
+                            </div>
+                        <% end %>
+                    <% end %>
+                </div>
             <% end %>
         </div>
         <div class="flex items-center bg-white px-4 rounded-lg whitespace-nowrap shrink-0 data-[wrapped]:basis-full data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
@@ -47,17 +66,6 @@
                                 class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
                 <% else %>
                     <%= link_to "Прикрепить к кусту", attach_media_item_path(@media_item), class: "h-16 mt-5 w-full text-base bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg border-0 cursor-pointer hover:opacity-90 flex items-center justify-center" %>
-                <% end %>
-                <% flash.each do |type, msg| %>
-                    <% if type == "alert" %>
-                        <div class="h-16 mt-5 px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
-                            <%= msg %>
-                        </div>
-                    <% else %>
-                        <div class="flash h-16 mt-5  px-3 w-fit border rounded-lg flex items-center text-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg">
-                            <%= msg %>
-                        </div>
-                    <% end %>
                 <% end %>
             </div>
         <% else %>
