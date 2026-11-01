@@ -79,11 +79,14 @@
                 <div class="text-brand text-sm font-medium mb-5">Координаты вершин</div>
                   <% @vineyard.polygon.coordinates[0].each_with_index do |coord, index| %>
                     <% next if index == @vineyard.polygon.coordinates[0].length - 1 %> <%# пропускаем замыкающую точку %>
-                    <div class="field mt-3 flex items-center justify-between w-full px-3 rounded-lg border border-line h-[64px] bg-surface-alt ">
-                      <div class="text-muted pointer-events-none leading-4">Вершина <%= index + 1 %></div>
-                      <div class=" flex flex-col items-center">
-                        <span>Широта: <%= "%.6f" % coord[1] %></span>
-                        <span>Долгота: <%= "%.6f" % coord[0] %></span>
+                    <%# На узкой панели строки не переносим внутри: подпись и пары «Широта: …» целиком,
+                        а если не влезают рядом, координаты уходят под подпись и поле растёт по высоте %>
+                    <div class="field mt-3 flex flex-wrap items-center justify-between gap-x-3 w-full px-3 py-2 rounded-lg border border-line min-h-[64px] bg-surface-alt">
+                      <div class="text-muted pointer-events-none leading-4 whitespace-nowrap">Вершина <%= index + 1 %></div>
+                      <%# Сетка из двух колонок: числа начинаются ровно друг под другом, цифры одной ширины %>
+                      <div class="grid grid-cols-[auto_auto] gap-x-1 whitespace-nowrap tabular-nums">
+                        <span>Широта:</span><span><%= "%.6f" % coord[1] %></span>
+                        <span>Долгота:</span><span><%= "%.6f" % coord[0] %></span>
                       </div>
                     </div>
                   <% end %>
