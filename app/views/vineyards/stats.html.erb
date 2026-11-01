@@ -8,7 +8,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <% if @total.nil? || @vineyards.count.nonzero? %>
         <div class="bg-white rounded-xl shadow-sm p-6">
-          <h2 class="text-xl font-bold text-[#69377c] mb-4"> <%= @total.nil? ? "Cостояние" : "Общее состояние" %> </h2>
+          <h2 class="text-xl font-bold text-brand mb-4"> <%= @total.nil? ? "Cостояние" : "Общее состояние" %> </h2>
         
           <%# Высоту держит сам контейнер (квадрат), а не холст: иначе Chart.js при расширении окна
               упирается в старую высоту холста и не растёт обратно %>
@@ -20,44 +20,44 @@
       <% end %>
       
       <div class="bg-white rounded-xl shadow-sm p-6">
-        <h2 class="text-xl font-bold text-[#69377c] mb-4"> Сводка </h2>
+        <h2 class="text-xl font-bold text-brand mb-4"> Сводка </h2>
 
-        <div class="space-y-3 text-[#333]">
+        <div class="space-y-3 text-ink">
           <div class="flex justify-between items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <span class="shrink-0"> <%= @total.nil? ? "Виноградник:" : "Виноградников:" %> </span>
-            <span class="font-bold text-[#69377c] text-right [overflow-wrap:anywhere]"> <%= @total.nil? ? @vineyard.name : @vineyards.count %> </span>
+            <span class="font-bold text-brand text-right [overflow-wrap:anywhere]"> <%= @total.nil? ? @vineyard.name : @vineyards.count %> </span>
           </div>
 
           <% if @total.nil? || @vineyards.count.nonzero? %>
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Всего кустов:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= @stats_data[:total_bushes] %> </span>
+              <span class="font-bold text-brand"> <%= @stats_data[:total_bushes] %> </span>
             </div>
 
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Проанализировано:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= @stats_data[:analyzed_bushes] %> </span>
+              <span class="font-bold text-brand"> <%= @stats_data[:analyzed_bushes] %> </span>
             </div>
 
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Процент анализа:</span>
 
-              <span class="font-bold text-[#69377c]"> <%= number_to_percentage(@stats_data[:total_bushes].nonzero? ? (@stats_data[:analyzed_bushes].to_f / @stats_data[:total_bushes]) * 100 : 0, precision: 1, format: "%n %", separator: ".") %> </span>
+              <span class="font-bold text-brand"> <%= number_to_percentage(@stats_data[:total_bushes].nonzero? ? (@stats_data[:analyzed_bushes].to_f / @stats_data[:total_bushes]) * 100 : 0, precision: 1, format: "%n %", separator: ".") %> </span>
             </div>
 
             <% if @stats_data[:analyzed_bushes].nonzero? %>
               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span>Здоровых кустов:</span>
 
-                <span class="font-bold text-[#69377c]"> <%= @stats_data[:healthy_count] %> </span>
+                <span class="font-bold text-brand"> <%= @stats_data[:healthy_count] %> </span>
               </div>
 
               <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span>Процент здоровых:</span>
 
-                <span class="font-bold text-[#69377c]"> <%= number_to_percentage((@stats_data[:healthy_count].to_f / @stats_data[:analyzed_bushes]) * 100, precision: 1, format: "%n %", separator: ".") %> </span>
+                <span class="font-bold text-brand"> <%= number_to_percentage((@stats_data[:healthy_count].to_f / @stats_data[:analyzed_bushes]) * 100, precision: 1, format: "%n %", separator: ".") %> </span>
               </div>
             <% end %>
           <% end %>
@@ -65,7 +65,7 @@
 
         <% if @total.nil? || @vineyards.count.nonzero? %>
           <div class="flex justify-center">
-            <%= link_to "Выбрать виноградник", select_stats_vineyards_path, class: "flex items-center justify-center w-full max-w-70 h-16 bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+            <%= link_to "Выбрать виноградник", select_stats_vineyards_path, class: "flex items-center justify-center w-full max-w-70 h-16 bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
           </div>
         <% end %>
       </div>

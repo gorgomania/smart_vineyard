@@ -16,9 +16,9 @@
       </button>
     </div>
 
-    <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[2] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-[#f2f2f2]">
+    <div class="contents max-[1000px]:hidden max-[1000px]:group-data-[open]:block max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:z-[2] max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:h-[84.5vh] max-[1000px]:pr-4.5 max-[1000px]:bg-surface">
       <div class="min-w-85 max-w-85 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:min-w-0 max-[1000px]:max-w-none max-[1000px]:mr-0" data-controller="vineyard-form">
-        <div class="text-[#333] text-[22px] font-bold">
+        <div class="text-ink text-[22px] font-bold">
             <span>Создание виноградника</span>
         </div>
         
@@ -29,7 +29,7 @@
 
           <% if @vineyard.errors.any? %>
             <% @vineyard.errors.full_messages.each do |msg| %>
-              <div class="mt-5 px-3 h-16 w-full border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center">
+              <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
                   <%= msg %>
               </div>
             <% end %>
@@ -42,70 +42,70 @@
           <div id="vertices-container"></div>
 
           <div class="field mt-1">
-            <%= f.label "Расстояние между рядами (м)", class: "text-[#69377c] text-sm" %>
+            <%= f.label "Расстояние между рядами (м)", class: "text-brand text-sm" %>
             <div class="flex justify-between gap-3">
               <%= f.range_field :row_spacing, in: 2.0..3.0, step: 0.1, value: 3.0, 
-                  class: "flex-1 accent-[#69377c]", 
+                  class: "flex-1 accent-brand", 
                   data: { vineyard_form_target: "rowSpacing" } %>
-              <span data-vineyard-form-target="rowSpacingValue" class="text-[#69377c] font-bold w-12 text-center">3.0</span>
+              <span data-vineyard-form-target="rowSpacingValue" class="text-brand font-bold w-12 text-center">3.0</span>
             </div>
           </div>
         
           <div class="field -mt-1">
-            <%= f.label "Расстояние между кустами (м)", class: "text-[#69377c] text-sm" %>
+            <%= f.label "Расстояние между кустами (м)", class: "text-brand text-sm" %>
             <div class="flex justify-between gap-3">
               <%= f.range_field :bush_spacing, in: 1.2..1.8, step: 0.1, value: 1.5, 
-                  class: "flex-1 accent-[#69377c]", 
+                  class: "flex-1 accent-brand", 
                   data: { vineyard_form_target: "bushSpacing" } %>
-              <span data-vineyard-form-target="bushSpacingValue" class="text-[#69377c] font-bold w-12 text-center">1.5</span>
+              <span data-vineyard-form-target="bushSpacingValue" class="text-brand font-bold w-12 text-center">1.5</span>
             </div>
           </div>
 
           <div class="field">
-            <%= f.label "Первый ряд (сторона)", class: "text-[#69377c] text-sm" %>
+            <%= f.label "Первый ряд (сторона)", class: "text-brand text-sm" %>
             <div class="flex gap-2 mt-1">
-              <button type="button" data-vineyard-form-target="prevSide" class="flex-1 bg-[#f2f2f2] hover:bg-[#e8e8e8] border border-[#e5e5e5] rounded-lg py-2 text-[#69377c] font-medium transition">
+              <button type="button" data-vineyard-form-target="prevSide" class="flex-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
                 ◀ Предыдущая
               </button>
-              <button type="button" data-vineyard-form-target="nextSide" class="flex-1 bg-[#f2f2f2] hover:bg-[#e8e8e8] border border-[#e5e5e5] rounded-lg py-2 text-[#69377c] font-medium transition">
+              <button type="button" data-vineyard-form-target="nextSide" class="flex-1 bg-surface hover:bg-surface-hover border border-line rounded-lg py-2 text-brand font-medium transition">
                 Следующая ▶
               </button>
             </div>
           </div>
 
           <div class="field mt-1">
-            <%= f.label "Первый куст (вершина)", class: "text-[#69377c] text-sm" %>
+            <%= f.label "Первый куст (вершина)", class: "text-brand text-sm" %>
             <div class="flex gap-2 mt-1">
-              <button type="button" data-vineyard-form-target="firstBushStart" class="flex-1 bg-[#69377c] border border-[#69377c] text-white rounded-lg py-2 font-medium pointer-events-none transition">
+              <button type="button" data-vineyard-form-target="firstBushStart" class="flex-1 bg-brand border border-brand text-white rounded-lg py-2 font-medium pointer-events-none transition">
                 Начальная
               </button>
-              <button type="button" data-vineyard-form-target="firstBushEnd" class="flex-1 bg-[#f2f2f2] hover:bg-[#e8e8e8] border border-[#e5e5e5] text-[#69377c] rounded-lg py-2 font-medium transition">
+              <button type="button" data-vineyard-form-target="firstBushEnd" class="flex-1 bg-surface hover:bg-surface-hover border border-line text-brand rounded-lg py-2 font-medium transition">
                 Конечная
               </button>
             </div>
           </div>
 
           <div class="field flex-1 min-w-0 -mt-1">
-            <%= f.label "Площадь", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :area_hectares, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.label "Площадь", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
+            <%= f.text_field :area_hectares, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
           </div>
 
           <div class="field flex-1 min-w-0 -mt-1">
-            <%= f.label "Количество рядов", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :total_rows, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.label "Количество рядов", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
+            <%= f.text_field :total_rows, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
           </div>
 
           <div class="field flex-1 min-w-0 -mt-1">
-            <%= f.label "Количество кустов", class: "text-[13px] relative top-[22px] left-[13px] text-[#8c8c8c] pointer-events-none leading-4" %>
-            <%= f.text_field :total_bushes, class: "w-full px-3 rounded-lg border border-[#e5e5e5] h-[64px] bg-[#f2f2f2] outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.label "Количество кустов", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
+            <%= f.text_field :total_bushes, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
           </div>
 
           <div class="actions">
-            <%= f.submit "Создать", class: "h-16 w-full bg-gradient-to-b from-[#69377c] to-[#8a579f] text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+            <%= f.submit "Создать", class: "h-16 w-full bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
           </div>
         <% end %>
 
-        <%= link_to "Назад", "#", data: { controller: "history", action: "history#back" }, class: "text-[#0d61af] text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-[#9330b7]" %>
+        <%= link_to "Назад", "#", data: { controller: "history", action: "history#back" }, class: "text-link text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-brand-bright" %>
       </div>
     </div>
 

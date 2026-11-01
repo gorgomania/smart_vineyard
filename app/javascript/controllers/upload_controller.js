@@ -35,18 +35,18 @@ export default class extends Controller {
   dragOver(event) {
     event.preventDefault()
     event.stopPropagation()
-    this.dropZoneTarget.classList.add("border-purple-500", "bg-purple-100")
+    this.dropZoneTarget.classList.add("border-brand-light", "bg-brand-soft")
   }
 
   dragLeave() {
-    this.dropZoneTarget.classList.remove("border-purple-500", "bg-purple-100")
+    this.dropZoneTarget.classList.remove("border-brand-light", "bg-brand-soft")
   }
 
   drop(event) {
     event.preventDefault()
     event.stopPropagation()
     this.errorContainerTarget.innerHTML = ""
-    this.dropZoneTarget.classList.remove("border-purple-500", "bg-purple-100")
+    this.dropZoneTarget.classList.remove("border-brand-light", "bg-brand-soft")
     this.addFiles(event.dataTransfer.files)
   }
 
@@ -138,9 +138,9 @@ export default class extends Controller {
 
     if (entry.isZip) {
       const tile = document.createElement("div")
-      tile.className = "w-full aspect-square bg-purple-50 rounded-lg border-2 border-purple-300 flex flex-col items-center justify-center"
+      tile.className = "w-full aspect-square bg-brand-tint rounded-lg border-2 border-brand-pale flex flex-col items-center justify-center"
       tile.innerHTML = `
-        <span class="text-xs text-[#4e4e4e] mt-2">ZIP архив</span>
+        <span class="text-xs text-ink-soft mt-2">ZIP архив</span>
         <span class="text-xs text-slate-500">${this.formatMb(entry.file.size)} МБ</span>
       `
       wrapper.appendChild(tile)
@@ -167,7 +167,7 @@ export default class extends Controller {
 
     const removeBtn = document.createElement("button")
     removeBtn.type = "button"
-    removeBtn.className = "absolute -top-3 -right-3 z-10 w-6 h-6 bg-[#8a579f] rounded-full text-white hover:bg-[#69377c]"
+    removeBtn.className = "absolute -top-3 -right-3 z-10 w-6 h-6 bg-brand-light rounded-full text-white hover:bg-brand"
     removeBtn.innerHTML = "&times;"
     removeBtn.addEventListener("click", (e) => {
       e.preventDefault()
@@ -311,7 +311,7 @@ export default class extends Controller {
 
   showError(message) {
     const errorWrapper = document.createElement("div")
-    errorWrapper.className = "mt-5 px-3 h-16 w-70 border border-red-800 text-red-800 bg-red-200 rounded-lg flex items-center justify-center text-center"
+    errorWrapper.className = "mt-5 px-3 h-16 w-70 border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center"
     errorWrapper.textContent = message
     this.errorContainerTarget.appendChild(errorWrapper)
   }

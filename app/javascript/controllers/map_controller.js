@@ -2,6 +2,10 @@
 import { Controller } from "@hotwired/stimulus"
 import { GeometryHelpers } from "utils/geometry_helpers"
 
+// Цвета полигонов берём из палитры сайта (@theme в tailwind/application.css)
+const brandColor = (shade) => getComputedStyle(document.documentElement)
+  .getPropertyValue(shade ? `--color-brand-${shade}` : "--color-brand").trim()
+
 export default class extends Controller {
 
   connect() {
@@ -131,9 +135,9 @@ export default class extends Controller {
           {
             draggable: true,      // Можно перетаскивать
             editable: true,       // Включает режим редактирования
-            fillColor: '#8a579f',
+            fillColor: brandColor('light'),
             fillOpacity: 0.1,
-            strokeColor: '#69377c',
+            strokeColor: brandColor(),
             strokeWidth: 3,
             visible: false,             // Сначала скрыт
             editorDrawing: false,      
@@ -151,9 +155,9 @@ export default class extends Controller {
           {
             draggable: false,      // Можно перетаскивать
             editable: false,       // Включает режим редактирования
-            fillColor: '#8a579f',
+            fillColor: brandColor('light'),
             fillOpacity: 0.1,
-            strokeColor: '#69377c',
+            strokeColor: brandColor(),
             strokeWidth: 3,
             visible: false,             // Сначала скрыт
             editorDrawing: false,      
@@ -170,7 +174,7 @@ export default class extends Controller {
         this.map.geoObjects.add(this.currentPolygon)
         // Создаем коллекции для рядов и кустов
         this.rowsCollection = new ymaps.GeoObjectCollection({}, {
-          strokeColor: '#69377c',
+          strokeColor: brandColor(),
           strokeWidth: 2,
           strokeOpacity: 0.8
         })
@@ -310,20 +314,20 @@ export default class extends Controller {
               hintContent: `${data.name}\n🍇 ${data.grape_variety || '—'}\n📊 ${data.area} га`,
               balloonContent: `
                 <div style="padding: 8px;">
-                  <b style="color: #69377c;">${data.name}</b><br/>
+                  <b style="color: var(--color-brand);">${data.name}</b><br/>
                   🍇 ${data.grape_variety || 'Сорт не указан'}<br/>
                   📊 Площадь: ${data.area} га<br/>
                   📏 Количество рядов: ${data.total_rows}<br/>
                   🌿 Количество кустов: ${data.total_bushes}<br/>
                   <hr style="margin: 8px 0;"/>
-                  <a href="/vineyards/${data.id}" style="color: #69377c;">Подробнее →</a>
+                  <a href="/vineyards/${data.id}" style="color: var(--color-brand);">Подробнее →</a>
                 </div>
               `
             },
             {
-              fillColor: '#8a579f',
+              fillColor: brandColor('light'),
               fillOpacity: 0.3,
-              strokeColor: '#69377c',
+              strokeColor: brandColor(),
               strokeWidth: 2,
               cursor: 'pointer'
             }

@@ -2,11 +2,11 @@
 <main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
     <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200 z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg z-10">
                 <%= msg %>
             </div>
         <% else %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1] z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg z-10">
                 <%= msg %>
             </div>
         <% end %>
@@ -25,31 +25,31 @@
                 <%= image_tag "/panel-left-close.png", alt: "Close panel", title: "Скрыть панель", class: "min-w-8 h-8 hidden group-data-[open]:block" %>
             </button>
         </div>
-        <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:bg-[#f2f2f2] max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:pr-4.5 max-[1000px]:h-[84.5vh]">
+        <div class="min-w-85 max-w-85  z-[2] flex flex-col gap-2 items-center mr-4.5 max-h-[84.5vh] overflow-y-auto max-[1000px]:bg-surface max-[1000px]:hidden max-[1000px]:group-data-[open]:flex max-[1000px]:absolute max-[1000px]:top-0 max-[1000px]:left-[74px] max-[1000px]:min-w-0 max-[1000px]:w-[358px] max-[1000px]:max-w-[calc(100%-74px)] max-[1000px]:pr-4.5 max-[1000px]:h-[84.5vh]">
             <% if @vineyards.empty? %>
-                 <div class="w-full text-center text-[#69377c] bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
+                 <div class="w-full text-center text-brand bg-white rounded-2xl p-5"> Для начала работы нужно создать виноградник </div>
             <% end %>
             <% @vineyards.each do |vineyard| %>
                 <div class="flex w-full justify-between bg-white rounded-2xl p-5">
-                    <div class="flex flex-col text-[#333] text-m">
+                    <div class="flex flex-col text-ink text-m">
                         <%= link_to vineyard_path(vineyard.id) do %>
-                            <span class="text-[#69377c] text-xl font-bold hover:opacity-90"><%= vineyard.name %></span>
+                            <span class="text-brand text-xl font-bold hover:opacity-90"><%= vineyard.name %></span>
                         <% end %>
                         <span> Сорт: <%= vineyard.grape_variety %> </span>
                         <span> Площадь: <%= vineyard.area_hectares %> га </span>
                     </div>
                     <div class="flex max-w-33 h-fit">
                         <button type="button" title="Скопировать структуру рядов"
-                            class="rounded-lg p-2 hover:bg-[#f2f2f2]"
+                            class="rounded-lg p-2 hover:bg-surface"
                             data-controller="copy-json"
                             data-copy-json-url-value="<%= bushes_per_row_vineyard_path(vineyard.id) %>"
                             data-action="copy-json#copy">
                             <%= image_tag "/copy.png", alt: "Copy", class: "w-4 h-4" %>
                         </button>
-                        <%= link_to edit_vineyard_path(vineyard.id), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                        <%= link_to edit_vineyard_path(vineyard.id), class: "rounded-lg p-2 hover:bg-surface", title: "Переименовать" do %>
                             <%= image_tag "/pencil-gray.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>
-                        <%= button_to vineyard_path(vineyard.id), method: :delete, data: { turbo_confirm: "Удалить виноградник \"#{vineyard.name}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
+                        <%= button_to vineyard_path(vineyard.id), method: :delete, data: { turbo_confirm: "Удалить виноградник \"#{vineyard.name}\"?" }, class: "rounded-lg p-2 hover:bg-surface", title: "Удалить" do %>
                             <%= image_tag "/trash-gray.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     </div>

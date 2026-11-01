@@ -23,7 +23,7 @@
             </div>
 
             <% if @search_query.present? && (flash.empty? || flash[:notice].present?) %>
-                <div class="flex items-center bg-white px-4 rounded-lg text-[#69377c]">
+                <div class="flex items-center bg-white px-4 rounded-lg text-brand">
                     <span class="">
                         <%= ru_pluralize(@childrens_length, @media_length, "Найдена", "Найден", "Найдено") %>
                         <%= ru_pluralize(@childrens_length, "папка", "папки", "папок") if @childrens_length > 0 %>
@@ -39,11 +39,11 @@
                 <div class="absolute inset-x-0 top-0 h-[52px] z-[3] overflow-hidden pointer-events-none flex flex-col items-end">
                     <% flash.each do |type, msg| %>
                         <% if type == "alert" %>
-                            <div class="pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-red-800 text-red-800 bg-red-200">
+                            <div class="pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
                                 <%= msg %>
                             </div>
                         <% else %>
-                            <div class="flash pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-[#0a9130] text-[#0a9130] bg-[#a0e7b1]">
+                            <div class="flash pointer-events-auto max-w-full min-h-[52px] py-2 animate-[flash-in_0.3s_ease-out] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg">
                                 <%= msg %>
                             </div>
                         <% end %>
@@ -55,18 +55,18 @@
         <% if @title_path.present?%>
             <div class="flex items-center bg-white px-4 rounded-lg mx-1 whitespace-nowrap shrink-0 data-[wrapped]:col-span-full data-[wrapped]:row-start-2 data-[wrapped]:mx-0 data-[wrapped]:min-h-[52px] data-[wrapped]:flex-wrap data-[wrapped]:whitespace-normal data-[wrapped]:[overflow-wrap:anywhere]" data-toolbar-fit-target="path">
                 <% (0...@title_path.length - 1).each do |i| %>
-                    <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-[#69377c] hover:text-[#8a579f] hover:underline underline-offset-2"%>
-                    <span class="whitespace-pre-wrap text-[#333] font-semibold"> / </span>
+                    <%= link_to @title_path[i], folder_path(@id_path[i]), class: "text-brand hover:text-brand-light hover:underline underline-offset-2"%>
+                    <span class="whitespace-pre-wrap text-ink font-semibold"> / </span>
                 <% end %>
 
-                <span class="text-[#69377c]"> <%= @title_path.last %> </span>
+                <span class="text-brand"> <%= @title_path.last %> </span>
             </div>
         <% end %>
 
         <div class="flex self-start ml-auto">
             <% if @search_query.blank? %>
                 <% if @folder.vineyard.present? %>
-                    <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-[#69377c] whitespace-nowrap", title: "Привязанный виноградник", data: { toolbar_fit_target: "vineyard" } %>
+                    <%= link_to @folder.vineyard.name, vineyard_path(@folder.vineyard), class: "flex items-center bg-white px-4 mr-1 rounded-lg text-brand whitespace-nowrap", title: "Привязанный виноградник", data: { toolbar_fit_target: "vineyard" } %>
                     <%= link_to edit_attach_folder_path(@folder), class: "p-[10px] flex flex-col justify-between items-center rounded-[12px] hover:bg-[white]", title: "Изменить привязанный виноградник" do %>
                         <%= image_tag "/link.png", alt: "Edit attach vineyard", class: "min-w-8 h-8" %>
                     <% end %>
@@ -81,15 +81,15 @@
 
     <div class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(162.75px,1fr))] gap-[10px]">
         <% @childrens.each do |children| %>
-            <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
+            <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-ink gap-1 py-1">
                 <div class="flex justify-end w-full max-w-33">
-                    <%= link_to edit_folder_path(children.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                    <%= link_to edit_folder_path(children.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-surface", title: "Переименовать" do %>
                         <%= image_tag "/pencil-gray.png", alt: "Edit", class: "w-4 h-4" %>
                     <%end%>
 
                     <%# Корень попадает сюда через поиск, а удалять его нельзя (FolderPolicy#destroy?) %>
                     <% if policy(children).destroy? %>
-                        <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить"  do %>
+                        <%= button_to folder_path(children.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить папку \"#{children.title}\" вместе с содержимым?" }, class: "rounded-lg p-2 hover:bg-surface", title: "Удалить"  do %>
                             <%= image_tag "/trash-gray.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     <% end %>
@@ -104,13 +104,13 @@
 
         <% @media.each do |file| %>
             <% if file.media.attached? %>
-                <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-[#333] gap-1 py-1">
+                <div class="bg-white rounded-2xl flex flex-col px-4 items-center text-ink gap-1 py-1">
                     <div class="flex justify-end w-full max-w-33">
-                        <%= link_to edit_media_item_path(file.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Переименовать" do %>
+                        <%= link_to edit_media_item_path(file.id, page: @page, search_query: @search_query), class: "rounded-lg p-2 hover:bg-surface", title: "Переименовать" do %>
                             <%= image_tag "/pencil-gray.png", alt: "Edit", class: "w-4 h-4" %>
                         <%end%>
 
-                        <%= button_to media_item_path(file.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-[#f2f2f2]", title: "Удалить" do %>
+                        <%= button_to media_item_path(file.id, page: @page, search_query: @search_query), method: :delete, data: { turbo_confirm: "Удалить файл \"#{file.media.filename}\"?" }, class: "rounded-lg p-2 hover:bg-surface", title: "Удалить" do %>
                             <%= image_tag "/trash-gray.png", alt: "Del", class: "w-4 h-4" %>
                         <%end%>
                     </div>
@@ -148,7 +148,7 @@
         <!-- Кнопка "Назад" (всегда есть) -->
         <% prev_page = @page == 1 ? @page_limit : @page - 1 %>
         <%= link_to "←", @search_query.present? ? folders_path(folders: { title: @search_query }, page: prev_page) : folder_path(@folder.id, page: prev_page), 
-            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
 
         <!-- Всегда показываем 5 страниц: текущая + 2 слева + 2 справа -->
         <% 
@@ -179,7 +179,7 @@
         <!-- Первая страница и многоточие -->
         <% if start_page > 1 %>
             <%= link_to 1, @search_query.present? ? folders_path(folders: { title: @search_query }, page: 1) : folder_path(@folder.id, page: 1), 
-                class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+                class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
             <% if start_page > 2 %>
                 <%= link_to "...", select_page_folders_path(
                     id: @folder,
@@ -187,19 +187,19 @@
                     range_start: 2,                 
                     range_end: start_page - 1),
                     title: "Выбор страницы",
-                    class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+                    class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
             <% end %>
         <% end %>
         
         <!-- Страницы -->
         <% (start_page..end_page).each do |i| %>
             <% if i == @page %>
-                <button class="bg-white w-12 h-12 rounded-none text-[#69377c] font-bold border-b-[3px] border-solid border-[#69377c]">
+                <button class="bg-white w-12 h-12 rounded-none text-brand font-bold border-b-[3px] border-solid border-brand">
                 <span class="block mt-[3px]"><%= i %></span>
                 </button>
             <% else %>
                 <%= link_to i, @search_query.present? ? folders_path(folders: { title: @search_query }, page: i) : folder_path(@folder.id, page: i), 
-                    class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+                    class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
             <% end %>
         <% end %>
         
@@ -212,15 +212,15 @@
                 range_start: end_page + 1,
                 range_end: @page_limit - 1),
                 title: "Выбор страницы",
-                class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+                class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
         <% end %>
         <%= link_to @page_limit, @search_query.present? ? folders_path(folders: { title: @search_query }, page: @page_limit) : folder_path(@folder.id, page: @page_limit), 
-            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
         <% end %>
         
         <!-- Кнопка "Вперёд" (всегда есть) -->
         <% next_page = @page == @page_limit ? 1 : @page + 1 %>
         <%= link_to "→", @search_query.present? ? folders_path(folders: { title: @search_query }, page: next_page) : folder_path(@folder.id, page: next_page), 
-            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-[#4e4e4e] font-bold hover:bg-[#dcbaf2] hover:text-[#69377c]" %>
+            class: "flex justify-center items-center bg-white w-12 h-12 rounded-none text-ink-soft font-bold hover:bg-brand-pale hover:text-brand" %>
     </div>
 <% end %>
