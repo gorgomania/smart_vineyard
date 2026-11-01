@@ -42,5 +42,9 @@ module SmartVineyard
     # а <link> и так в начале <head>. Зато ответы Turbo (переходы и prefetch при наведении) снова несут
     # этот заголовок, а стили уже применены — Chrome сыплет «preloaded but not used»
     config.action_view.preload_links_header = false
+
+    # Без обёртки div.field_with_errors вокруг поля и подписи с ошибкой: она ломала ширину поля
+    # и плавающую подпись (peer-*). Подсветку ошибки рисует shared/_float_field
+    config.action_view.field_error_proc = proc { |html_tag, _instance| html_tag }
   end
 end
