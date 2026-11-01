@@ -38,11 +38,8 @@ class Users::RegistrationsController < Devise::RegistrationsController
   end
 
   # DELETE /resource
-  # Удаляем только с верным текущим паролем. Демо-аккаунт без пароля: его пароль
-  # сгенерирован и пользователю неизвестен, а сам аккаунт и так временный
+  # Удаляем только с верным текущим паролем, демо-аккаунт тоже
   def destroy
-    return super if resource.demo_temp
-
     password = params.dig(resource_name, :current_password)
     return super if resource.valid_password?(password)
 

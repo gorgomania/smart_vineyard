@@ -87,17 +87,18 @@ RSpec.describe "Users::Registrations", type: :request do
     context "demo account" do
       let(:user) { create(:user, demo_temp: true, demo_expires_at: 1.hour.from_now) }
 
-      it "shows no password field" do
+      it "shows the password field too" do
         sign_in user
         get delete_user_registration_path
-        expect(response.body).not_to include("user[current_password]")
+        expect(response.body).to include("user[current_password]")
       end
 
-      it "deletes without a password" do
+      it "keeps the account without a password" do
         sign_in user
         expect {
           delete user_registration_path
-        }.to change(User, :count).by(-1)
+        }.not_to change(User, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
     end
   end
