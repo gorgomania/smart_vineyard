@@ -99,4 +99,56 @@ RSpec.describe ProcessZipJob, type: :job do
       end
     end
   end
+
+  describe "file names" do
+    # «Сжатая ZIP-папка» Windows пишет русские имена в CP866 без флага UTF-8
+    it "reads Russian names written by Windows Explorer in CP866" do
+      zip_blob = create_zip_blob("Ряд 1 Куст 1.jpg".encode("CP866").b => "\xFF\xD8fake")
+      described_class.new.perform(folder, zip_blob)
+
+      expect(folder.media_items.sole.media.blob.filename.to_s).to eq("Ряд 1 Куст 1.jpg")
+    end
+
+    it "keeps UTF-8 names written without the UTF-8 flag (macOS, 7-Zip)" do
+      zip_blob = create_zip_blob("Ряд 2 Куст 3.jpg".b => "\xFF\xD8fake")
+      described_class.new.perform(folder, zip_blob)
+
+      expect(folder.media_items.sole.media.blob.filename.to_s).to eq("Ряд 2 Куст 3.jpg")
+    end
+  end
+
+  describe "limits" do
+    # ZIP-бомба: архив отклоняется целиком, распакованное и сам архив убираются, повторять нечего
+    def expect_rejected(zip_blob)
+      expect { described_class.new.perform(folder, zip_blob) }.not_to raise_error
+      expect(MediaItem.count).to eq(0)
+      expect(ActiveStorage::Blob.count).to eq(0)
+    end
+
+    it "rejects an archive with too many files" do
+      stub_const("#{described_class}::MAX_ENTRIES", 2)
+      expect_rejected(create_zip_blob("a.jpg" => "1", "b.jpg" => "2", "c.jpg" => "3"))
+    end
+
+    it "rejects an archive that unpacks too large" do
+      stub_const("#{described_class}::MAX_TOTAL_SIZE", 5.kilobytes)
+      expect_rejected(create_zip_blob("a.jpg" => "a" * 4.kilobytes, "b.jpg" => "b" * 4.kilobytes))
+    end
+
+    it "stops extracting when an entry turns out bigger than its header said" do
+      zip_blob = create_zip_blob("a.jpg" => "a" * 4.kilobytes)
+      allow_any_instance_of(Zip::Entry).to receive(:size).and_return(1) # подделанный заголовок
+      stub_const("#{described_class}::CHUNK_SIZE", 1.kilobyte)
+      stub_const("#{described_class}::MAX_ENTRY_SIZE", 2.kilobytes)
+      expect_rejected(zip_blob)
+    end
+
+    it "is discarded when the folder was deleted before it started" do
+      zip_blob = create_zip_blob("a.jpg" => "\xFF\xD8fake")
+      described_class.perform_later(folder, zip_blob)
+      folder.delete
+
+      expect { perform_enqueued_jobs(only: described_class) }.not_to raise_error
+    end
+  end
 end

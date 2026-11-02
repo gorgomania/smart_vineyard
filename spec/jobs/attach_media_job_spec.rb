@@ -42,10 +42,38 @@ RSpec.describe AttachMediaJob, type: :job do
         bush = create(:bush, vineyard:, row:, bush_number: 2)
 
         blob = upload_blob(filename: "Ряд 1 Куст 2.jpg")
-        described_class.new.perform(folder_with_vineyard, [ blob.signed_id ])
+        # Привязку делает общая DistributeMediaToBushesJob — та же, что для файлов из архива
+        perform_enqueued_jobs(only: DistributeMediaToBushesJob) do
+          described_class.new.perform(folder_with_vineyard, [ blob.signed_id ])
+        end
 
         expect(MediaItem.last.bush_id).to eq(bush.id)
       end
+    end
+  end
+
+  describe "edge cases" do
+    # Повторная отправка формы шлёт те же блобы: два файла на одном блобе переименовывались бы вместе
+    it "skips a blob that is already attached" do
+      blob = upload_blob
+      described_class.new.perform(folder, [ blob.signed_id ])
+
+      expect { described_class.new.perform(folder, [ blob.signed_id ]) }.not_to change(MediaItem, :count)
+      expect(ActiveStorage::Attachment.where(blob_id: blob.id).count).to eq(1)
+    end
+
+    it "does not distribute when the folder has no vineyard" do
+      expect {
+        described_class.new.perform(folder, [ upload_blob.signed_id ])
+      }.not_to have_enqueued_job(DistributeMediaToBushesJob)
+    end
+
+    it "is discarded when the folder was deleted before it started" do
+      described_class.perform_later(folder, [ upload_blob.signed_id ])
+      folder.delete
+
+      expect { perform_enqueued_jobs(only: described_class) }.not_to raise_error
+      expect(MediaItem.count).to eq(0)
     end
   end
 end

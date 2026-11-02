@@ -8,6 +8,14 @@ class ApplicationJob < ActiveJob::Base
   # Automatically retry jobs that encountered a deadlock
   # retry_on ActiveRecord::Deadlocked
 
-  # Most jobs are safe to ignore if the underlying records are no longer available
-  # discard_on ActiveJob::DeserializationError
+  # Записи в аргументах передаются GlobalID: если запись удалили до начала задачи, ActiveJob падает
+  # с DeserializationError ещё до perform, и discard_on ActiveRecord::RecordNotFound его не ловит.
+  # Отбрасываем только этот случай — другие причины (нет связи с БД) пусть падают как обычно
+  def self.discard_on_deleted_arguments
+    rescue_from ActiveJob::DeserializationError do |error|
+      raise error unless error.cause.is_a?(ActiveRecord::RecordNotFound)
+
+      Rails.logger.info "#{self.class.name}: запись из аргументов уже удалена, задача отброшена"
+    end
+  end
 end

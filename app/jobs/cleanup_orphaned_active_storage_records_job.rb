@@ -1,8 +1,10 @@
 class CleanupOrphanedActiveStorageRecordsJob < ApplicationJob
   queue_as :low_priority
 
-  # ZIP-архив живёт блобом без привязки, пока его не обработает ProcessZipJob
-  ZIP_GRACE_PERIOD = 1.day
+  # Блоб без привязки удаляем не сразу: загруженный файл ждёт AttachMediaJob, архив — ProcessZipJob,
+  # а большая загрузка и забитая очередь легко растягиваются за час (ссылка на загрузку живёт 2 часа).
+  # Удалённый раньше файл пропал бы молча: find_signed вернёт nil, и задача его просто пропустит
+  GRACE_PERIOD = 1.day
 
   # Сначала удаляем осиротевшие attachments, тогда их blob'ы уйдут в этом же прогоне
   def perform
@@ -17,12 +19,7 @@ private
     orphaned_ids = ActiveStorage::Blob
       .left_joins(:attachments)
       .where(active_storage_attachments: { id: nil })
-      .where("active_storage_blobs.created_at < ?", 1.hour.ago)
-      # По расширению, а не content_type: его задаёт браузер (application/x-zip-compressed в Windows, иногда пусто)
-      .where.not(
-        "active_storage_blobs.filename ILIKE ? AND active_storage_blobs.created_at >= ?",
-        "%.zip", ZIP_GRACE_PERIOD.ago
-      )
+      .where("active_storage_blobs.created_at < ?", GRACE_PERIOD.ago)
       .pluck(:id)
 
     count = orphaned_ids.each_slice(PurgeUnattachedBlobsJob::BATCH_SIZE).sum { |ids| PurgeUnattachedBlobsJob.purge(ids) }
