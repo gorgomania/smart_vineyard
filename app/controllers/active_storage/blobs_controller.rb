@@ -7,7 +7,7 @@ class ActiveStorage::BlobsController < ApplicationController
       blob.purge
       head :ok
     else
-      head :unprocessable_entity
+      head :unprocessable_content
     end
   end
 end

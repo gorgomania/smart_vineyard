@@ -249,7 +249,7 @@ RSpec.describe "MediaItems", type: :request do
 
     it "keeps the page and search in the form when the name is blank" do
       patch media_item_path(media_item), params: { media_item: { filename: "" }, page: 3, search_query: "куст" }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('name="page" id="page" value="3"', 'name="search_query" id="search_query" value="куст"')
     end
 
@@ -260,7 +260,7 @@ RSpec.describe "MediaItems", type: :request do
         false
       end
       patch media_item_path(media_item), params: { media_item: { filename: "new" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("занято")
     end
 

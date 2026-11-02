@@ -41,7 +41,7 @@ class Users::RegistrationsController < Devise::RegistrationsController
     return super if resource.valid_password?(password)
 
     resource.errors.add(:current_password, password.blank? ? :blank : :invalid)
-    render :delete, status: :unprocessable_entity
+    render :delete, status: :unprocessable_content
   end
 
   # GET /resource/cancel

@@ -53,7 +53,7 @@ class VineyardsController < ApplicationController
       redirect_to @vineyard, notice: "Виноградник создан"
     else
       setup_new_form_data
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -78,7 +78,7 @@ class VineyardsController < ApplicationController
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
       setup_edit_form_data
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

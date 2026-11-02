@@ -103,20 +103,20 @@ RSpec.describe "Vineyards", type: :request do
         params = { vineyard: valid_params[:vineyard].reject { |key, _| key.start_with?("vertex_") }
                                                     .merge(polygon: "POLYGON((33 44, 34 44, 34 45, 33 45, 33 44))") }
         expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "rejects a plot over 10 ha, measured on the server" do
         huge = [ [ 44.59, 33.47 ], [ 44.59, 33.48 ], [ 44.60, 33.48 ], [ 44.60, 33.47 ] ] # ~87 га
         params = valid_params.deep_merge(vineyard: vertex_params(huge).merge(area_hectares: 1))
         expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "reports when the rows cannot be laid out from the reference side" do
         params = valid_params.deep_merge(vineyard: { reference_side_index: 9 })
         expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include("Не удалось разложить ряды")
       end
 
@@ -131,7 +131,7 @@ RSpec.describe "Vineyards", type: :request do
         same_point = Array.new(4) { [ 44.744, 33.56 ] }
         params = valid_params.deep_merge(vineyard: vertex_params(same_point))
         expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "does not create with invalid params" do
@@ -172,7 +172,7 @@ RSpec.describe "Vineyards", type: :request do
         expect {
           patch vineyard_path(vineyard), params: { vineyard: { reference_side_index: 9 } }
         }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(vineyard.reload.reference_side_index).to eq(0)
       end
     end

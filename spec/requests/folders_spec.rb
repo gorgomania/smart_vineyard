@@ -292,8 +292,11 @@ RSpec.describe "Folders", type: :request do
   describe "GET /folders/:id pagination" do
     before { sign_in user }
 
-    # 24 на странице: P01–P24 на первой, P25–P30 на второй
-    let!(:children) { (1..30).map { |n| create(:folder, user:, parent: folder, title: format("P%02d", n)) } }
+    # 24 на странице: P01–P24 на первой, P25–P30 на второй. Время создания задаём явно: страницы
+    # сортируются по created_at, а часы машины (например, WSL2) могут прыгнуть назад между созданиями
+    let!(:children) do
+      (1..30).map { |n| create(:folder, user:, parent: folder, title: format("P%02d", n), created_at: 1.day.ago + n.seconds) }
+    end
 
     def shown_titles
       response.body.scan(/P\d\d/).uniq

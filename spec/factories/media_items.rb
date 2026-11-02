@@ -1,3 +1,7 @@
+# Настоящая картинка 1×1: ActiveStorage анализирует вложение через libvips, и на поддельных байтах
+# тот сыплет VIPS-WARNING «Premature end of JPEG file» в вывод тестов
+PIXEL_JPEG = Rails.root.join("spec/fixtures/files/pixel.jpg")
+
 FactoryBot.define do
   factory :media_item do
     association :folder
@@ -5,7 +9,7 @@ FactoryBot.define do
     trait :with_image do
       after(:create) do |item|
         item.media.attach(
-          io: StringIO.new("\xFF\xD8\xFF\xE0fake jpeg content"),
+          io: File.open(PIXEL_JPEG),
           filename: "test.jpg",
           content_type: "image/jpeg"
         )
@@ -17,7 +21,7 @@ FactoryBot.define do
 
       after(:create) do |item, evaluator|
         item.media.attach(
-          io: StringIO.new("\xFF\xD8\xFF\xE0fake jpeg content"),
+          io: File.open(PIXEL_JPEG),
           filename: evaluator.image_filename,
           content_type: "image/jpeg"
         )
