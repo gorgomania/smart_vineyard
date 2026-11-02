@@ -345,6 +345,22 @@ RSpec.describe "Folders", type: :request do
     end
   end
 
+  describe "GET /folders/:id video previews" do
+    before { sign_in user }
+
+    def attach_video(item)
+      item.media.attach(io: StringIO.new("fake mp4"), filename: "clip.mp4", content_type: "video/mp4")
+    end
+
+    # Готовое превью приходит в канал папки: одна подписка на папку, а не на каждое видео
+    it "subscribes to the folder's preview stream once, however many videos it shows" do
+      3.times { attach_video(create(:media_item, folder:)) }
+
+      get folder_path(folder)
+      expect(response.body.scan("<turbo-cable-stream-source").size).to eq(2) # refresh папки + превью
+    end
+  end
+
   describe "GET /folders/select_page range" do
     before { sign_in user }
 

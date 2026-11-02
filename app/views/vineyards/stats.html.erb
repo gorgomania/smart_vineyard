@@ -6,7 +6,7 @@
   <div data-controller="dashboard-charts" data-dashboard-charts-stats-value="<%= @stats_data.to_json %>">
     <!-- Общая статистика -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <% if @total.nil? || @vineyards.count.nonzero? %>
+      <% if @total.nil? || @vineyards_count.nonzero? %>
         <div class="bg-white rounded-xl shadow-sm p-6">
           <h2 class="text-xl font-bold text-brand mb-4"> <%= @total.nil? ? "Cостояние" : "Общее состояние" %> </h2>
         
@@ -25,10 +25,10 @@
         <div class="space-y-3 text-ink">
           <div class="flex justify-between items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <span class="shrink-0"> <%= @total.nil? ? "Виноградник:" : "Виноградников:" %> </span>
-            <span class="font-bold text-brand text-right [overflow-wrap:anywhere]"> <%= @total.nil? ? @vineyard.name : @vineyards.count %> </span>
+            <span class="font-bold text-brand text-right [overflow-wrap:anywhere]"> <%= @total.nil? ? @vineyard.name : @vineyards_count %> </span>
           </div>
 
-          <% if @total.nil? || @vineyards.count.nonzero? %>
+          <% if @total.nil? || @vineyards_count.nonzero? %>
             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
               <span>Всего кустов:</span>
 
@@ -63,7 +63,7 @@
           <% end %>
         </div>
 
-        <% if @total.nil? || @vineyards.count.nonzero? %>
+        <% if @total.nil? || @vineyards_count.nonzero? %>
           <div class="flex justify-center">
             <%= link_to "Выбрать виноградник", select_stats_vineyards_path, class: "flex items-center justify-center w-full max-w-70 h-16 bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
           </div>

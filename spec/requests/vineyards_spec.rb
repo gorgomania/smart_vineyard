@@ -325,6 +325,23 @@ RSpec.describe "Vineyards", type: :request do
     end
   end
 
+  describe "GET /vineyards/new and /vineyards/:id/edit" do
+    before { sign_in user }
+
+    # Общий шаблон _form: заголовок, кнопка и «Назад» зависят от того, новый ли виноградник
+    it "renders the create form" do
+      get new_vineyard_path
+      expect(response.body).to include("Создание виноградника", 'value="Создать"')
+      expect(response.body).to match(/<a[^>]*title="Назад"[^>]*href="#{vineyards_path}"/)
+    end
+
+    it "renders the edit form" do
+      get edit_vineyard_path(vineyard)
+      expect(response.body).to include("Редактирование", 'value="Сохранить"')
+      expect(response.body).to match(/<a[^>]*title="Назад"[^>]*href="#{vineyard_path(vineyard)}"/)
+    end
+  end
+
   describe "GET /vineyards/:id/edit spacing" do
     before { sign_in user }
 

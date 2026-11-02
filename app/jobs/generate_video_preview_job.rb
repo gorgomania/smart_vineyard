@@ -35,7 +35,7 @@ class GenerateVideoPreviewJob < ApplicationJob
     end
 
     Turbo::StreamsChannel.broadcast_replace_to(
-      "media_item_#{id}",
+      MediaItem.preview_stream(media_item.folder_id),
       target: "video-preview-#{id}",
       partial: "folders/video_preview",
       locals: { file: media_item }

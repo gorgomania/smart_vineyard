@@ -138,10 +138,10 @@
     </div>
 </main>
 
-<% @media.each do |file| %>
-  <% unless file.media.image? %>
-    <%= turbo_stream_from "media_item_#{file.id}" %>
-  <% end %>
+<%# Превью видео готовится в фоне (GenerateVideoPreviewJob) и приходит в канал своей папки: одна подписка
+    на папку, а не на каждое видео. В поиске видео бывают из разных папок — подписываемся на каждую %>
+<% @media.reject { |file| file.media.image? }.map(&:folder_id).uniq.each do |folder_id| %>
+  <%= turbo_stream_from MediaItem.preview_stream(folder_id) %>
 <% end %>
 
 <% if @page_limit > 1 %>

@@ -1,44 +1,6 @@
-<main class="flex justify-center">
-    <div class="my-28 w-80 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center">
-        <div class="text-ink text-[22px] font-bold">
-            <span>Перекрепление куста</span>
-        </div>
-        <%= render "shared/form_flash" %>
-        <%= form_with model: @media_item, url: update_attach_to_bush_media_item_path(@media_item), html: { method: :patch }, class: "mt-5 w-70", data: { controller: "bush-select", bush_select_keep_bush_id_value: @media_item.bush_id } do |form| %>
-            <div class="flex flex-col gap-5">
-                <div>
-                    <%= select_tag :vineyard_id, 
-                        options_from_collection_for_select(@vineyards, :id, :name, @selected_vineyard_id),
-                        include_blank: "- Выберите виноградник -",
-                        required: true,
-                        class: "w-full px-4 py-3 border border-line rounded-lg outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white",
-                        data: { action: "change->bush-select#loadRows" }
-                    %>
-                </div>
-                
-                <!-- Выбор ряда (появляется после выбора виноградника) -->
-                <div id="rows-container" style="display: <%= (@selected_vineyard_id) ? 'block' : 'none' %>">
-                    <%= select_tag :row_id,
-                        options_for_select(@rows.map { |row, free_count| [row.free_bushes_label(free_count), row.id] }, @selected_row_id),
-                        include_blank: "- Выберите ряд -",
-                        required: true,
-                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white",
-                        data: { action: "change->bush-select#loadBushes" }
-                    %>
-                </div>
-                
-                <!-- Выбор куста (появляется после выбора ряда) -->
-                <div id="bushes-container" style="display: <%= (@selected_row_id) ? 'block' : 'none' %>">
-                    <%= select_tag :bush_id,
-                        options_from_collection_for_select(@bushes || [], :id, :display_name, @selected_bush_id),
-                        include_blank: "- Выберите куст -",
-                        required: true,
-                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white"
-                    %>
-                </div>
-            </div>
-            <%= form.submit 'Сохранить', class: "h-16 w-full bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
-        <% end %>
-        <%= link_to "Назад", media_item_path(@media_item), data: { controller: "history", action: "history#back" }, class: "text-link text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-brand-bright" %>
-    </div>
-</main>
+<%= render "bush_form", media_item: @media_item, vineyards: @vineyards,
+      title: "Перекрепление куста", submit: "Сохранить",
+      url: update_attach_to_bush_media_item_path(@media_item), method: :patch,
+      keep_bush_id: @media_item.bush_id,
+      selected_vineyard_id: @selected_vineyard_id, selected_row_id: @selected_row_id, selected_bush_id: @selected_bush_id,
+      rows: @rows, bushes: @bushes %>

@@ -1,0 +1,51 @@
+<%# Общая форма прикрепления (attach) и перекрепления (edit_attach) файла к кусту. Ряды и кусты подгружает
+    bush-select по выбору виноградника; при перекреплении контроллер заранее выбирает текущий куст и передаёт
+    rows/bushes, а keep_bush_id оставляет этот куст в списке свободных %>
+<% rows = local_assigns.fetch(:rows, []) %>
+<% bushes = local_assigns.fetch(:bushes, []) %>
+<% selected_vineyard_id = local_assigns[:selected_vineyard_id] %>
+<% selected_row_id = local_assigns[:selected_row_id] %>
+<main class="flex justify-center">
+    <div class="my-28 w-80 bg-white rounded-2xl z-[2] p-5 flex flex-col items-center">
+        <div class="text-ink text-[22px] font-bold">
+            <span><%= title %></span>
+        </div>
+        <%= render "shared/form_flash" %>
+        <%= form_with model: media_item, url: url, method: method, class: "mt-5 w-70", data: { controller: "bush-select", bush_select_keep_bush_id_value: local_assigns[:keep_bush_id] } do |form| %>
+            <div class="flex flex-col gap-5">
+                <div>
+                    <%= select_tag :vineyard_id,
+                        options_from_collection_for_select(vineyards, :id, :name, selected_vineyard_id),
+                        include_blank: "- Выберите виноградник -",
+                        required: true,
+                        class: "w-full px-4 py-3 border border-line rounded-lg outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white",
+                        data: { action: "change->bush-select#loadRows" }
+                    %>
+                </div>
+
+                <!-- Выбор ряда (появляется после выбора виноградника) -->
+                <div id="rows-container" style="display: <%= selected_vineyard_id ? 'block' : 'none' %>">
+                    <%= select_tag :row_id,
+                        options_for_select(rows.map { |row, free_count| [row.free_bushes_label(free_count), row.id] }, selected_row_id),
+                        include_blank: "- Выберите ряд -",
+                        required: true,
+                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white",
+                        data: { action: "change->bush-select#loadBushes" }
+                    %>
+                </div>
+
+                <!-- Выбор куста (появляется после выбора ряда) -->
+                <div id="bushes-container" style="display: <%= selected_row_id ? 'block' : 'none' %>">
+                    <%= select_tag :bush_id,
+                        options_from_collection_for_select(bushes, :id, :display_name, local_assigns[:selected_bush_id]),
+                        include_blank: "- Выберите куст -",
+                        required: true,
+                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white"
+                    %>
+                </div>
+            </div>
+            <%= form.submit submit, class: "h-16 w-full bg-gradient-to-b from-brand to-brand-light text-white font-bold rounded-lg mt-5 border-0 cursor-pointer hover:opacity-90" %>
+        <% end %>
+        <%= link_to "Назад", media_item_path(media_item), data: { controller: "history", action: "history#back" }, class: "text-link text-sm leading-5 mt-5 w-fit cursor-pointer hover:text-brand-bright" %>
+    </div>
+</main>

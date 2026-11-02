@@ -202,6 +202,21 @@ RSpec.describe "MediaItems", type: :request do
     end
   end
 
+  describe "GET /media_items/:id/attach" do
+    before { sign_in user }
+
+    it "renders an empty selection: rows and bushes load after a vineyard is picked" do
+      vineyard = create(:vineyard, user:, name: "Северный")
+
+      get attach_media_item_path(media_item)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Прикрепление куста", "Северный", 'value="Прикрепить"')
+      expect(response.body).to include('id="rows-container" style="display: none"')
+      expect(response.body).not_to include("bush-select-keep-bush-id-value")
+      expect(vineyard).to be_persisted
+    end
+  end
+
   describe "GET /media_items/:id/edit_attach" do
     before { sign_in user }
 
