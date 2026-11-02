@@ -5,13 +5,21 @@ import assert from "node:assert/strict"
 // но индекс кустов, поиск под курсором, размер точек и диагнозы от canvas не зависят
 const documentListeners = {}
 const dispatched = []
+// Canvas без рисования: картинка тайла — уникальная строка, по ней видно, нарисован тайл заново или взят из кэша
+let canvasCount = 0
+const fakeCanvas = () => ({
+  getContext: () => ({ drawImage() {}, beginPath() {}, arc() {}, fill() {}, stroke() {} }),
+  toDataURL: () => `data:image/png;base64,tile${++canvasCount}`
+})
 globalThis.document = {
+  createElement: fakeCanvas,
   getElementById: () => null, // нет turbo-stream подписки — слой не ходит за диагнозами сам
   addEventListener: (type, fn) => { documentListeners[type] = fn },
   removeEventListener: (type) => { delete documentListeners[type] },
   dispatchEvent: (event) => dispatched.push(event)
 }
 globalThis.window = { location: { href: "" }, devicePixelRatio: 1 }
+globalThis.getComputedStyle = () => ({ getPropertyValue: () => "#000" }) // цвета диагнозов — из CSS-переменных
 
 let frames = []
 globalThis.requestAnimationFrame = (fn) => frames.push(fn)
@@ -51,7 +59,10 @@ function fakeMap(zoom) {
   }
 }
 
-const { HeatmapLayer } = await import("utils/heatmap_layer")
+const { HeatmapLayer, REDRAW_INTERVAL } = await import("utils/heatmap_layer")
+
+// Часы слоя: перерисовка не чаще REDRAW_INTERVAL, время двигаем вручную
+const clock = { now: 0 }
 
 const element = { addEventListener() {}, removeEventListener() {} }
 const LAT = 44.744, LNG = 33.56
@@ -60,6 +71,7 @@ const ROW = [[[LAT, LNG], [LAT, LNG + 0.0003]]]
 
 function layout({ zoom = 17, rowSpacing = 2, bushSpacing = 1.2, rows = [ROW], before } = {}) {
   const heatmap = new HeatmapLayer(element, "/vineyards/1/heatmap.json")
+  heatmap.now = () => clock.now
   const map = fakeMap(zoom)
   heatmap.attach(map)
   before?.(heatmap)
@@ -72,6 +84,7 @@ function layout({ zoom = 17, rowSpacing = 2, bushSpacing = 1.2, rows = [ROW], be
 const pixelsOf = (heatmap, id, zoom) => projection.toGlobalPixels(heatmap.bushById.get(id).coords, zoom)
 
 beforeEach(() => {
+  clock.now = 0
   frames = []
   dispatched.length = 0
   window.location.href = ""
@@ -102,6 +115,7 @@ describe("HeatmapLayer: кусты и диагнозы", () => {
     dispatched.length = 0
 
     heatmap.updateBush({ bush: "1-5", mediaItemId: "9", classId: "0" })
+    clock.now += REDRAW_INTERVAL
     flushFrames()
 
     assert.equal(heatmap.bushById.get("1-5").key, "black-rot")
@@ -203,5 +217,58 @@ describe("HeatmapLayer#drawTile", () => {
 
     documentListeners["heatmap:filter"]({ detail: { hidden: ["none"] } })
     assert.equal(heatmap.drawTile(tile, 17), empty)
+  })
+})
+
+describe("HeatmapLayer: перерисовка при классификации", () => {
+  // На 22-м зуме ряд ~23.7 м — около 900 px: первый и последний куст на разных тайлах
+  const tileOf = (heatmap, id) => {
+    const [x, y] = pixelsOf(heatmap, id, 22)
+    return [Math.floor(x / 256), Math.floor(y / 256)]
+  }
+
+  test("перекрашенный куст — заново только его тайл, остальные берутся готовыми", () => {
+    const { heatmap } = layout({ zoom: 22 })
+    const first = tileOf(heatmap, "1-1"), last = tileOf(heatmap, "1-20")
+    assert.notDeepEqual(first, last)
+    const before = [heatmap.drawTile(first, 22), heatmap.drawTile(last, 22)]
+
+    heatmap.updateBush({ bush: "1-1", mediaItemId: "9", classId: "0" })
+    clock.now += REDRAW_INTERVAL
+    flushFrames()
+
+    assert.notEqual(heatmap.drawTile(first, 22), before[0])
+    assert.equal(heatmap.drawTile(last, 22), before[1])
+  })
+
+  test("фильтр легенды перерисовывает все тайлы", () => {
+    const { heatmap } = layout({ zoom: 22 })
+    const last = tileOf(heatmap, "1-20")
+    const before = heatmap.drawTile(last, 22)
+
+    documentListeners["heatmap:filter"]({ detail: { hidden: ["healthy"] } })
+    clock.now += REDRAW_INTERVAL
+    flushFrames()
+
+    assert.notEqual(heatmap.drawTile(last, 22), before)
+  })
+
+  test("поток результатов — слой меняется не чаще REDRAW_INTERVAL, все изменения попадают в одну перерисовку", () => {
+    const { heatmap } = layout({ zoom: 22 })
+    const first = tileOf(heatmap, "1-1"), last = tileOf(heatmap, "1-20")
+    const before = [heatmap.drawTile(first, 22), heatmap.drawTile(last, 22)]
+    const layer = heatmap.layer
+
+    heatmap.updateBush({ bush: "1-1", mediaItemId: "9", classId: "0" })
+    flushFrames()
+    heatmap.updateBush({ bush: "1-20", mediaItemId: "10", classId: "1" })
+    flushFrames()
+    assert.equal(heatmap.layer, layer) // интервал не прошёл — ждём
+
+    clock.now += REDRAW_INTERVAL
+    flushFrames()
+    assert.notEqual(heatmap.layer, layer)
+    assert.notEqual(heatmap.drawTile(first, 22), before[0])
+    assert.notEqual(heatmap.drawTile(last, 22), before[1])
   })
 })

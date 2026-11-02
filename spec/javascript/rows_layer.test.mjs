@@ -52,7 +52,7 @@ function recordingContext() {
 }
 
 const { RowsLayer, distanceToSegment } = await import("utils/rows_layer")
-const { CanvasTileLayer, EMPTY_TILE } = await import("utils/canvas_tile_layer")
+const { CanvasTileLayer, EMPTY_TILE, CACHE_LIMIT } = await import("utils/canvas_tile_layer")
 
 const LAT = 44.744, LNG = 33.56
 // Два ряда вдоль параллели ~24 м, между ними ~2.2 м; второй ряд из двух кусков (выемка)
@@ -165,6 +165,30 @@ describe("CanvasTileLayer", () => {
     let seen
     new CanvasTileLayer(fakeMap(10), (ctx, tile) => { seen = tile; return false }).tile([3, 4], 12)
     assert.deepEqual(seen, { left: 768, top: 1024, zoom: 12, ratio: 1 })
+  })
+
+  test("готовый тайл берётся из кэша; redraw рисует заново, redrawTiles — только задетые", () => {
+    let draws = 0
+    const tiles = new CanvasTileLayer(fakeMap(10), () => { draws++; return false })
+    tiles.tile([1, 2], 10); tiles.tile([5, 2], 10); tiles.tile([1, 2], 10)
+    assert.equal(draws, 2)
+
+    tiles.redrawTiles((zoom, left) => left === 256) // задет только тайл x=1
+    tiles.tile([1, 2], 10); tiles.tile([5, 2], 10)
+    assert.equal(draws, 3)
+
+    tiles.redraw()
+    tiles.tile([1, 2], 10); tiles.tile([5, 2], 10)
+    assert.equal(draws, 5)
+  })
+
+  test("кэш ограничен: давно не нужные тайлы вытесняются", () => {
+    let draws = 0
+    const tiles = new CanvasTileLayer(fakeMap(10), () => { draws++; return false })
+    for (let x = 0; x <= CACHE_LIMIT; x++) tiles.tile([x, 0], 10)
+    assert.equal(tiles.cache.size, CACHE_LIMIT)
+    tiles.tile([0, 0], 10) // самый давний — вытеснен, рисуется снова
+    assert.equal(draws, CACHE_LIMIT + 2)
   })
 
   test("старый слой снимается, когда новый догрузил тайлы; remove снимает и ждущие", () => {
