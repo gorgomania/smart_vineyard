@@ -43,11 +43,13 @@ class CloneDemoMediaJob < ApplicationJob
   def demo_bush_map(bush_ids, vineyard_map)
     return {} if bush_ids.empty? || vineyard_map.empty?
 
-    sql = ActiveRecord::Base.sanitize_sql_array([ <<~SQL, bush_ids ])
+    old_ids = vineyard_map.keys.map(&:to_i)
+    new_ids = vineyard_map.values.map(&:to_i)
+    sql = ActiveRecord::Base.sanitize_sql_array([ <<~SQL, old_ids, new_ids, bush_ids ])
       SELECT b.id, nb.id
       FROM bushes b
       JOIN rows r ON r.id = b.row_id
-      JOIN #{DemoCloneService.id_map_sql(vineyard_map, as: "m")} ON m.old_id = b.vineyard_id
+      JOIN unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS m(old_id, new_id) ON m.old_id = b.vineyard_id
       JOIN rows nr ON nr.vineyard_id = m.new_id AND nr.row_number = r.row_number
       JOIN bushes nb ON nb.row_id = nr.id AND nb.bush_number = b.bush_number
       WHERE b.id IN (?)
