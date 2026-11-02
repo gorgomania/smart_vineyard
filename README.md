@@ -164,12 +164,12 @@ Demo creation is rate limited: 10 per hour per IP and 100 per hour overall.
 
 Pushing to `main` runs CI; when it passes, `.github/workflows/deploy.yml`:
 
-1. checks that the commit is newer than the one in production (an older CI run finishing late never rolls production back);
+1. picks the newest `main` commit with passing CI and checks that it is newer than the one in production (taken from the last *deployed* Helm revision, not a failed one), so an older CI run finishing late never rolls production back and a deploy pushed out of the queue loses nothing;
 2. builds an arm64 image and pushes `ghcr.io/gorgomania/smart_vineyard:<sha>`;
 3. copies `chart/` to the server and runs `helm upgrade --install smart-vineyard ... --set image.tag=<sha>`;
 4. tags the deployed image as `latest`.
 
-Deploys run one at a time. A manual run is available via "Run workflow" (`workflow_dispatch`). Migrations run on pod start (`bin/docker-entrypoint` → `db:prepare`) while the old pod is still serving, so a migration that drops or renames a column should be split across two deploys.
+Deploys run one at a time. A manual run from `main` ("Run workflow", `workflow_dispatch`) redeploys the newest commit with passing CI. Migrations run on pod start (`bin/docker-entrypoint` → `db:prepare`) while the old pod is still serving, so a migration that drops or renames a column should be split across two deploys; a `startupProbe` gives them up to 10 minutes. The chart has no default `image.tag`: a manual `helm upgrade` needs `--set image.tag=<sha>` or `--reuse-values`.
 
 Deploys don't interrupt work in progress:
 

@@ -2,7 +2,9 @@ host: smartvineyard.duckdns.org
 
 image:
   repository: ghcr.io/gorgomania/smart_vineyard
-  tag: latest            # CI passes --set image.tag=<commit sha>
+  # Обязателен: CI передаёт --set image.tag=<commit sha>. Без значения по умолчанию: ручной helm upgrade
+  # без тега взял бы закэшированный на узле latest (IfNotPresent) и тихо откатил бы прод
+  tag: ""
   pullPolicy: IfNotPresent
 imagePullSecrets: []     # e.g. [{name: ghcr-pull}] if the package is private
 
