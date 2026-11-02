@@ -1,6 +1,6 @@
 # Раскладка рядов и кустов по полигону виноградника — серверная копия app/javascript/utils/vineyard_rows.js
-# (и нужных ей GeometryHelpers). Обычно раскладку считает карта в браузере и присылает форма (bushes_per_row);
-# здесь — когда пересчитать нужно без браузера, например все виноградники после исправления расчёта.
+# (и нужных ей GeometryHelpers). Карта считает её, чтобы показать ряды и числа в форме; по этой копии сервер
+# создаёт ряды и кусты при сохранении (числам из браузера не верит) и пересчитывает виноградники без браузера.
 # Повторяет JS операция в операцию, чтобы числа совпадали до куста: общие эталоны —
 # spec/fixtures/files/vineyard_layouts.json, их проверяют и spec/services/vineyard_layout_spec.rb, и spec/javascript
 class VineyardLayout
@@ -21,7 +21,7 @@ class VineyardLayout
     @bush_spacing = bush_spacing
   end
 
-  # Число кустов в каждом ряду по порядку номеров — как bushes_per_row из формы
+  # Число кустов в каждом ряду по порядку номеров
   def bushes_per_row
     rows.map { |p1, p2| bush_count(p1, p2) }
   end

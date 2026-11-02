@@ -29,7 +29,6 @@
         <%= form_with model: @vineyard, local: false, html: {class: "w-full max-w-[280px]" } do |f| %>
           <%= f.hidden_field :reference_side_index, data: { vineyard_form_target: "referenceSideIndex" } %>
           <%= f.hidden_field :reference_vertex_is_first, data: { vineyard_form_target: "referenceVertexIsFirst" } %>
-          <%= f.hidden_field :bushes_per_row, value: "[]" %>
 
           <% if @vineyard.errors.any? %>
             <% @vineyard.errors.full_messages.each do |msg| %>

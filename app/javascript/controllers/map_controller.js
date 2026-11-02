@@ -343,7 +343,7 @@ export default class extends Controller {
   }
 
   // Ряды по полигону (utils/vineyard_rows): на тепловой карте — кусты точками, иначе — линии рядов.
-  // Числа рядов и кустов уходят в форму
+  // Числа рядов, кустов и площадь уходят в форму — показать до сохранения
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
 
@@ -354,7 +354,7 @@ export default class extends Controller {
     const bushesPerRow = rows.map(row => this.addRow(row))
     const totalBushes = bushesPerRow.reduce((sum, count) => sum + count, 0)
 
-    this.sendStatisticsToForm(rows.length, totalBushes, GeometryHelpers.calculateArea(polygonPoints), bushesPerRow)
+    this.sendStatisticsToForm(rows.length, totalBushes, GeometryHelpers.calculateArea(polygonPoints))
     this.heatmap?.rendered()
   }
 
@@ -387,13 +387,12 @@ export default class extends Controller {
     return bushes
   }
 
-  sendStatisticsToForm(rowsCount, bushesCount, areaInHectares, bushesPerRow) {
+  sendStatisticsToForm(rowsCount, bushesCount, areaInHectares) {
     document.dispatchEvent(new CustomEvent('map:statisticsUpdated', {
       detail: {
         rows: rowsCount,
         bushes: bushesCount,
-        area: areaInHectares.toFixed(2),
-        bushesPerRow: bushesPerRow
+        area: areaInHectares.toFixed(2)
       }
     }))
   }

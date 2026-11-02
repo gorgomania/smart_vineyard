@@ -2,15 +2,9 @@ class GenerateRowsAndBushesJob < ApplicationJob
   queue_as :default
   discard_on ActiveRecord::RecordNotFound
 
-  def perform(vineyard_id, bushes_per_row_data)
+  # bushes_per_row — число кустов в каждом ряду по порядку номеров (VineyardLayout#bushes_per_row)
+  def perform(vineyard_id, bushes_per_row)
     vineyard = Vineyard.find(vineyard_id)
-    bushes_per_row = bushes_per_row_data
-
-    # Если это строка - парсим JSON
-    if bushes_per_row.is_a?(String)
-      bushes_per_row = JSON.parse(bushes_per_row)
-    end
-    bushes_per_row = bushes_per_row.map(&:to_i)
     return if bushes_per_row.empty?
 
     now = Time.current

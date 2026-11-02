@@ -60,15 +60,6 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
       end
     end
 
-    context "with JSON string input" do
-      before { setup_rows([ 3 ]) }
-
-      it "parses JSON and applies changes" do
-        perform("[5]")
-        expect(vineyard.rows.find_by(row_number: 1).bushes.count).to eq(5)
-      end
-    end
-
     context "when a removed bush or row had a media item" do
       before { setup_rows([ 3, 2 ]) }
 
@@ -119,7 +110,7 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
       before { setup_rows([ 3, 4 ]) }
 
       it "keeps existing rows and bushes" do
-        expect { perform("[]") }.not_to change { vineyard.bushes.count }
+        expect { perform([]) }.not_to change { vineyard.bushes.count }
         expect(vineyard.rows.count).to eq(2)
       end
     end
