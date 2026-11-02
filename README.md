@@ -110,7 +110,7 @@ bin/setup     # bundle install + db:prepare (primary, queue and cable databases)
 
 `bin/dev` runs the web server, the Tailwind watcher and the Solid Queue worker (`Procfile.dev`). Use `bin/rails db:prepare` rather than `db:create db:migrate`: it also loads the `queue` and `cable` database schemas.
 
-Each worker process loads the whole app (~250 MB of RAM); set `JOB_CONCURRENCY` in `.env` to the number of heavy-job processes your machine can afford (see [Background Jobs](#background-jobs)). Restart `bin/dev` after changing `config/queue.yml` or `.env`.
+Each worker process loads the whole app. Measured RSS (Nov 2026): an idle worker takes ~130 MB; a heavy-job process that has classified a photo keeps the ONNX model loaded and stays at ~285 MB (~220 MB of its own, the rest shared with the supervisor), peaking around ~370 MB on a 48-megapixel photo (libvips decodes images in strips; ZIP entries are streamed in chunks; FFmpeg runs as its own process). Set `JOB_CONCURRENCY` in `.env` to the number of heavy-job processes your machine can afford (see [Background Jobs](#background-jobs)). Restart `bin/dev` after changing `config/queue.yml` or `.env`.
 
 ## Tests
 
