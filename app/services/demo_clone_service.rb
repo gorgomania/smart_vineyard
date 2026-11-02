@@ -10,8 +10,6 @@ class DemoCloneService
   def initialize(master)
     @master = master
     @vineyard_map = {}
-    @row_map = {}
-    @bush_map = {}
     @folder_map = {}
   end
 
@@ -22,8 +20,18 @@ class DemoCloneService
       clone_vineyards(temp_user)
       clone_folders(temp_user)
     end
-    CloneDemoMediaJob.perform_later(temp_user.id, @folder_map.stringify_keys, @bush_map.stringify_keys)
+    # Карта виноградников, а не кустов: новый куст задача найдёт сама по номеру ряда и куста
+    # (сотни тысяч пар id в аргументах — мегабайты JSON в solid_queue)
+    CloneDemoMediaJob.perform_later(temp_user.id, @folder_map.stringify_keys, vineyard_map: @vineyard_map.stringify_keys)
     temp_user
+  end
+
+  # Таблица «старый id → новый id» для SQL: unnest двух массивов
+  def self.id_map_sql(map, as:)
+    ActiveRecord::Base.sanitize_sql_array([
+      "unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS #{as}(old_id, new_id)",
+      map.keys.map(&:to_i), map.values.map(&:to_i)
+    ])
   end
 
   private
@@ -38,41 +46,35 @@ class DemoCloneService
     )
   end
 
+  # Виноградников единицы — копируем моделями. Ряды и кусты (на 50 га это сотни тысяч) копирует сама база
+  # двумя INSERT … SELECT: через Ruby (объекты ActiveRecord + insert_all!) клон мастера на 183 тыс. кустов
+  # занимал больше 30 с, и всё это время пользователь ждал ответа на кнопку «Демо-аккаунт»
   def clone_vineyards(user)
-    now = Time.current
     # Удалённые мастером (soft delete) не копируем: папки и медиа на них в демо просто останутся без привязки
-    vineyards = @master.vineyards.active.includes(rows: :bushes).to_a
-
-    vineyards.each do |vineyard|
+    @master.vineyards.active.find_each do |vineyard|
       new_vineyard = vineyard.dup
       new_vineyard.user = user
       new_vineyard.save!(validate: false)
       @vineyard_map[vineyard.id] = new_vineyard.id
     end
+    return if @vineyard_map.empty?
 
-    all_rows = vineyards.flat_map(&:rows).sort_by(&:id)
-    if all_rows.any?
-      rows_data = all_rows.map do |row|
-        { vineyard_id: @vineyard_map[row.vineyard_id], row_number: row.row_number, created_at: now, updated_at: now }
-      end
-      new_row_ids = Row.insert_all!(rows_data, returning: [ :id ]).map { |r| r["id"] }
-      all_rows.each_with_index { |row, i| @row_map[row.id] = new_row_ids[i] }
-    end
-
-    all_bushes = vineyards.flat_map { |v| v.rows.flat_map(&:bushes) }.sort_by(&:id)
-    if all_bushes.any?
-      bushes_data = all_bushes.map do |bush|
-        {
-          row_id: @row_map[bush.row_id],
-          vineyard_id: @vineyard_map[bush.vineyard_id],
-          bush_number: bush.bush_number,
-          created_at: now,
-          updated_at: now
-        }
-      end
-      new_bush_ids = Bush.insert_all!(bushes_data, returning: [ :id ]).map { |r| r["id"] }
-      all_bushes.each_with_index { |bush, i| @bush_map[bush.id] = new_bush_ids[i] }
-    end
+    map = self.class.id_map_sql(@vineyard_map, as: "m")
+    connection = ActiveRecord::Base.connection
+    connection.execute(<<~SQL)
+      INSERT INTO rows (vineyard_id, row_number, created_at, updated_at)
+      SELECT m.new_id, r.row_number, now(), now()
+      FROM rows r JOIN #{map} ON m.old_id = r.vineyard_id
+    SQL
+    # Новый ряд — по винограднику и номеру (уникальны вместе), куст переносит свой номер
+    connection.execute(<<~SQL)
+      INSERT INTO bushes (row_id, vineyard_id, bush_number, created_at, updated_at)
+      SELECT nr.id, m.new_id, b.bush_number, now(), now()
+      FROM bushes b
+      JOIN rows r ON r.id = b.row_id
+      JOIN #{map} ON m.old_id = r.vineyard_id
+      JOIN rows nr ON nr.vineyard_id = m.new_id AND nr.row_number = r.row_number
+    SQL
   end
 
   def clone_folders(user)

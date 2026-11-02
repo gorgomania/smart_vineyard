@@ -8,10 +8,13 @@ RSpec.describe CloneDemoMediaJob, type: :job do
   let(:bush)        { create(:bush, vineyard:, row:, bush_number: 1) }
   let(:folder)      { create(:folder, user: master) }
   let(:demo_folder) { create(:folder, user: demo) }
-  let(:demo_bush)   { create(:bush, vineyard: create(:vineyard, user: demo), row: create(:row, vineyard: create(:vineyard, user: demo)), bush_number: 1) }
+  # Клон виноградника мастера: тот же ряд 1 с кустом 1, но без куста 2
+  let(:demo_vineyard) { create(:vineyard, user: demo) }
+  let(:demo_row)      { create(:row, vineyard: demo_vineyard, row_number: 1) }
+  let!(:demo_bush)    { create(:bush, vineyard: demo_vineyard, row: demo_row, bush_number: 1) }
 
-  def perform(bush_map = {})
-    described_class.new.perform(demo.id, { folder.id.to_s => demo_folder.id }, bush_map.transform_keys(&:to_s))
+  def perform(vineyard_map = { vineyard.id => demo_vineyard.id })
+    described_class.new.perform(demo.id, { folder.id.to_s => demo_folder.id }, vineyard_map: vineyard_map.transform_keys(&:to_s))
   end
 
   it "copies media items into the mapped folder, sharing the same blobs" do
@@ -27,17 +30,25 @@ RSpec.describe CloneDemoMediaJob, type: :job do
     expect(ActiveStorage::Blob.count).to eq(1)
   end
 
-  it "maps bush links to the demo bushes and drops unmapped ones" do
+  it "links copies to the demo bush with the same row and bush number, or to none if the clone has no such bush" do
     linked   = create(:media_item, :with_named_image, folder:, image_filename: "a.jpg", bush:)
     unmapped = create(:media_item, :with_named_image, folder:, image_filename: "b.jpg")
     unmapped.update_column(:bush_id, create(:bush, vineyard:, row:, bush_number: 2).id)
 
-    perform(bush.id => demo_bush.id)
+    perform
 
     copies = demo_folder.media_items.joins(media_attachment: :blob).index_by { |m| m.media.filename.to_s }
     expect(copies["a.jpg"].bush_id).to eq(demo_bush.id)
     expect(copies["b.jpg"].bush_id).to be_nil
     expect(linked.reload.bush_id).to eq(bush.id)
+  end
+
+  it "leaves copies unlinked when the master's vineyard was not cloned (deleted by the master)" do
+    create(:media_item, :with_image, folder:, bush:)
+
+    perform({})
+
+    expect(demo_folder.media_items.sole.bush_id).to be_nil
   end
 
   it "copies video previews too" do
