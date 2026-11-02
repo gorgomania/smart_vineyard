@@ -271,4 +271,21 @@ RSpec.describe "Folders", type: :request do
       expect(folder.reload.vineyard_id).to be_nil
     end
   end
+
+  describe "GET /folders/select_page" do
+    before { sign_in user }
+
+    # Ссылка «Назад» без истории ведёт туда же, куда сам выбор страницы
+    it "renders for search results, where there is no folder, with the back link to the search" do
+      get select_page_folders_path(search_query: "Куст", range_start: 1, range_end: 3)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(href="#{folders_path(folders: { title: "Куст" })}"))
+    end
+
+    it "renders for a folder with the back link to the folder" do
+      get select_page_folders_path(id: folder.id, range_start: 1, range_end: 3)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(href="#{folder_path(folder)}"))
+    end
+  end
 end
