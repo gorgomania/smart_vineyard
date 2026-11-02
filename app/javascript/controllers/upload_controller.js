@@ -52,8 +52,11 @@ export default class extends Controller {
     event.stopImmediatePropagation() // следующее действие на ссылке — history#back — не выполняется
   }
 
+  // Согласие запоминаем: «Назад» без истории — обычный переход по ссылке, и turbo:before-visit спросил бы второй раз
   mayLeave() {
-    return this.pending().length === 0 || confirm("Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся")
+    this.leaveConfirmed ||= this.pending().length === 0 ||
+      confirm("Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся")
+    return this.leaveConfirmed
   }
 
   fileInputChange(event) {
