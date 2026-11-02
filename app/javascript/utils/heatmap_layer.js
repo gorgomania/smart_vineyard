@@ -17,6 +17,12 @@ const GRID_CELLS = 64
 // Больные кусты рисуем вторым проходом, поверх здоровых и кустов без данных: иначе соседняя точка их закрывает
 const onTop = (key) => key !== 'healthy' && key !== 'none'
 
+// Результаты классификации идут потоком: слой меняем не чаще этого (мс). Каждая замена — новые картинки
+// всех видимых тайлов у Яндекса, даже если почти все взяты из кэша
+export const REDRAW_INTERVAL = 250
+// Изменилось больше кустов (сверка после переподключения) — проще перерисовать всё, чем искать задетые тайлы
+export const PARTIAL_REDRAW_LIMIT = 500
+
 export class HeatmapLayer {
   constructor(element, url) {
     this.url = url
@@ -27,6 +33,9 @@ export class HeatmapLayer {
     this.bushById = new Map()
     this.tiles = null
     this.sprites = {}
+    this.dirtyBushes = new Set() // перекрашенные с прошлой перерисовки: заново рисуются только их тайлы
+    this.dirtyAll = false
+    this.lastRedrawAt = -Infinity
 
     // Сверки могут идти одновременно (подключение, сигнал «перечитай», переподключение): у каждой свой список
     // кустов, обновлённых сообщениями, пока она в пути
@@ -41,6 +50,7 @@ export class HeatmapLayer {
     this.onRefresh = () => this.sync()
     this.onFilter = (e) => {
       this.hiddenDiagnoses = new Set(e.detail.hidden)
+      this.dirtyAll = true // скрытый диагноз — на всех тайлах
       this.scheduleRedraw()
     }
     element.addEventListener('heatmap:bush', this.onBush)
@@ -152,9 +162,30 @@ export class HeatmapLayer {
     return this.tiles?.layer ?? null
   }
 
+  // Всё заново: раскладка, фильтр легенды, сверка с сотнями изменений
   redraw() {
     if (!this.map) return
+    this.dirtyBushes.clear()
+    this.dirtyAll = false
+    this.lastRedrawAt = this.now()
     this.tilesLayer().redraw()
+  }
+
+  // Только тайлы, которые задевают точки перекрашенных кустов (с размером точки на зуме тайла)
+  redrawDirty() {
+    const bushes = [ ...this.dirtyBushes ]
+    this.dirtyBushes.clear()
+    this.lastRedrawAt = this.now()
+    this.tilesLayer().redrawTiles((zoom, left, top) => {
+      const scale = 2 ** zoom
+      const reach = this.dotSize(zoom) / 2 + 1 // +1: точку ставим с округлением до пикселя
+      return bushes.some(({ x, y }) => x * scale + reach >= left && x * scale - reach <= left + TILE &&
+                                       y * scale + reach >= top && y * scale - reach <= top + TILE)
+    })
+  }
+
+  now() {
+    return performance.now()
   }
 
   // Картинка тайла [x, y] на зуме zoom (CanvasTileLayer#tile)
@@ -312,17 +343,22 @@ export class HeatmapLayer {
     if (!target) return
 
     this.applyDiagnosis(target, [mediaItemId, classId])
+    this.dirtyBushes.add(target)
     this.scheduleRedraw()
     this.scheduleLegendUpdate()
   }
 
-  // При сверке кусты обновляются сотнями подряд — слой перерисовываем раз за кадр
+  // Изменения копятся: слой меняем раз за кадр и не чаще REDRAW_INTERVAL
   scheduleRedraw() {
     if (this.redrawFrame) return
 
     this.redrawFrame = requestAnimationFrame(() => {
       this.redrawFrame = null
-      if (this.grid) this.redraw()
+      if (!this.grid) return
+      if (this.now() - this.lastRedrawAt < REDRAW_INTERVAL) return this.scheduleRedraw()
+
+      if (this.dirtyAll || this.dirtyBushes.size > PARTIAL_REDRAW_LIMIT) this.redraw()
+      else if (this.dirtyBushes.size > 0) this.redrawDirty()
     })
   }
 

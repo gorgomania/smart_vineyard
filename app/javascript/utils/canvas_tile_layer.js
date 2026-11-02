@@ -5,6 +5,8 @@
 // ctx() — контекст по требованию (пустой тайл canvas не создаёт), вернуть true, если что-то нарисовано
 export const TILE = 256
 export const EMPTY_TILE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+// Готовых тайлов храним столько: несколько экранов на нескольких зумах. Сверх — вытесняем самые давние
+export const CACHE_LIMIT = 512
 
 export class CanvasTileLayer {
   constructor(map, draw, { pane = 'places' } = {}) {
@@ -13,11 +15,22 @@ export class CanvasTileLayer {
     this.pane = pane
     this.layer = null
     this.pendingSwaps = new Set() // старые слои, ждущие, пока новый догрузит тайлы
+    // Готовые тайлы «зум/x/y/ratio» → картинка. Новый слой берёт их отсюда: рисовать и кодировать в PNG
+    // все видимые тайлы ради пары изменившихся точек — то, из-за чего карта дёргалась при классификации
+    this.cache = new Map()
   }
 
   // Тайл — картинка. На экранах с плотными пикселями рисуем крупнее (ratio): Яндекс сожмёт тайл до 256 точек
   tile([tx, ty], zoom) {
     const ratio = Math.min(2, Math.ceil(window.devicePixelRatio || 1))
+    const key = `${zoom}/${tx}/${ty}/${ratio}`
+    const cached = this.cache.get(key)
+    if (cached !== undefined) {
+      this.cache.delete(key) // в конец очереди: недавно нужные вытесняются последними
+      this.cache.set(key, cached)
+      return cached
+    }
+
     let canvas = null
     const ctx = () => {
       if (!canvas) {
@@ -27,11 +40,30 @@ export class CanvasTileLayer {
       return canvas.getContext('2d')
     }
     const drawn = this.draw(ctx, { left: tx * TILE, top: ty * TILE, zoom, ratio })
-    return drawn && canvas ? canvas.toDataURL() : EMPTY_TILE
+    const url = drawn && canvas ? canvas.toDataURL() : EMPTY_TILE
+    this.cache.set(key, url)
+    if (this.cache.size > CACHE_LIMIT) this.cache.delete(this.cache.keys().next().value)
+    return url
+  }
+
+  // Изменилось всё (раскладка, фильтр): все тайлы рисуются заново
+  redraw() {
+    this.cache.clear()
+    this.replaceLayer()
+  }
+
+  // Изменились отдельные точки: заново рисуются только задетые тайлы — touches(zoom, left, top), угол тайла
+  // в глобальных пикселях его зума. Остальные новый слой возьмёт готовыми
+  redrawTiles(touches) {
+    for (const key of [ ...this.cache.keys() ]) {
+      const [ zoom, tx, ty ] = key.split('/').map(Number)
+      if (touches(zoom, tx * TILE, ty * TILE)) this.cache.delete(key)
+    }
+    this.replaceLayer()
   }
 
   // Новый слой на место старого. Старый снимаем, когда новый догрузил тайлы, — иначе картинка на миг пропадает
-  redraw() {
+  replaceLayer() {
     const old = this.layer
     const layer = this.layer = new ymaps.Layer((tile, zoom) => this.tile(tile, zoom), { tileTransparent: true, pane: this.pane })
 
