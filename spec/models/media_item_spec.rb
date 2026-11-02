@@ -100,6 +100,15 @@ RSpec.describe MediaItem, type: :model do
         end.reload
       end
 
+      # Общий файл бережёт сам ActiveStorage: Blob#purge не удаляет блоб, к которому ещё что-то прикреплено
+      it "keeps the master's file when the demo copy is destroyed" do
+        demo_item.destroy
+        perform_enqueued_jobs
+
+        expect(ActiveStorage::Blob.exists?(shared_blob.id)).to be true
+        expect(master_item.reload.media.blob.download).to be_present
+      end
+
       it "gives the demo copy its own blob with the same content and leaves the master untouched" do
         own_blob = demo_item.ensure_own_media_blob!
 

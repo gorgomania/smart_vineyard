@@ -16,7 +16,8 @@ const METERS_PER_DEGREE = 6371000 * Math.PI / 180
 // Тот же расчёт на сервере — VineyardLayout (app/services/vineyard_layout.rb): меняя один, меняйте и другой
 export function layoutRows(polygonPoints, sideIndex, rowSpacing) {
   const first = polygonSide(polygonPoints, sideIndex)
-  if (!first) return []
+  // Шаг не больше нуля — сдвиг не растёт, цикл ниже бесконечен
+  if (!first || !(rowSpacing > 0)) return []
 
   // Перпендикуляр считаем в метрах на местной плоскости: градус долготы короче градуса широты в cos(широты) раз,
   // и перпендикуляр «в градусах» был бы и не перпендикулярен, и не той длины
@@ -48,6 +49,7 @@ export function bushCount(p1, p2, bushSpacing) {
 
 // Кусты вдоль ряда от start к end: { number, point }, номер с 1 от start
 export function bushPoints(start, end, bushSpacing) {
+  if (!(bushSpacing > 0)) return [] // иначе шагов бесконечно много
   const steps = bushCount(start, end, bushSpacing) - 1
   const bushes = []
   for (let i = 0; i <= steps; i++) {

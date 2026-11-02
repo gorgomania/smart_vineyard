@@ -17,7 +17,6 @@ class MediaItem < ApplicationRecord
 
   attr_accessor :skip_preview_generation
 
-  before_destroy :detach_shared_blobs
   after_create_commit :generate_video_preview, unless: :skip_preview_generation
   after_create_commit :generate_image_preview, unless: :skip_preview_generation
 
@@ -92,7 +91,9 @@ public
     media_attachment.update_columns(blob_id: own_blob.id)
     media_attachment.reload
     generate_image_preview
-    own_blob
+    # Тот же объект, что media.blob: его правит normalize_filename!, его же сохраняет контроллер.
+    # own_blob — другой экземпляр той же записи, проверка дубля имени до него не дошла бы
+    media_attachment.blob
   end
 
   def normalize_filename!
@@ -138,17 +139,6 @@ private
 
   def bush_id_present?
     bush_id.present?
-  end
-
-  def detach_shared_blobs
-    { media_attachment: :media_attachment, video_preview_attachment: :video_preview_attachment }.each do |reader, assoc_name|
-      attachment = public_send(reader)
-      next unless attachment
-      if ActiveStorage::Attachment.where(blob_id: attachment.blob_id).count > 1
-        attachment.delete
-        association(assoc_name).reset
-      end
-    end
   end
 
   def generate_image_preview

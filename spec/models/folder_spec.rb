@@ -47,12 +47,17 @@ RSpec.describe Folder, type: :model do
       expect(other.errors).to be_added(:vineyard_id, :taken)
     end
 
-    it "still raises on other unique violations" do
-      create(:folder, user:, title: "Same")
-      other = create(:folder, user:, title: "Other")
-      other.title = "Same"
+    # Две вкладки создают папку с одним именем: обе проходят валидацию, второй INSERT упирается в индекс
+    it "turns a title race into the form error, for nested and root folders" do
+      parent = create(:folder, user:)
+      create(:folder, user:, parent:, title: "Same")
+      nested = build(:folder, user:, parent:, title: "Same")
+      expect(nested.save(validate: false)).to be false
+      expect(nested.errors[:title]).to eq([ "Имя папки уже используется" ])
 
-      expect { other.save(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+      root = build(:folder, user:, title: parent.title)
+      expect(root.save(validate: false)).to be false
+      expect(root.errors[:title]).to eq([ "Имя папки уже используется" ])
     end
   end
 

@@ -42,7 +42,8 @@ class VineyardLayout
   # потом в другую, пока линия пересекает полигон (layoutRows)
   def rows
     first = polygon_side
-    return [] unless first
+    # Шаг не больше нуля (NULL в базе проходит CHECK и даёт 0.0) — сдвиг не растёт, цикл ниже бесконечен
+    return [] unless first && @row_spacing.positive? && @bush_spacing.positive?
 
     p1, p2 = first
     meters_per_degree_lat = METERS_PER_DEGREE

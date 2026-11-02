@@ -51,6 +51,15 @@ RSpec.describe Vineyard, type: :model do
       expect(DestroyVineyardJob).to have_been_enqueued.with(vineyard.id)
     end
 
+    it "deletes a legacy record that no longer passes validations" do
+      vineyard = create(:vineyard)
+      vineyard.update_columns(total_rows: 0, area_hectares: nil) # старые данные: так сейчас не сохранить
+
+      vineyard.soft_destroy
+      expect(vineyard.reload.deleted_at).not_to be_nil
+      expect(Vineyard.active).not_to include(vineyard)
+    end
+
     it "refreshes the owner's total stats" do
       vineyard = create(:vineyard)
       allow(Turbo::StreamsChannel).to receive(:broadcast_refresh_to)
