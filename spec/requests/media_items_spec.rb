@@ -225,4 +225,18 @@ RSpec.describe "MediaItems", type: :request do
       expect(response).to redirect_to(media_item_path(media_item))
     end
   end
+
+  describe "GET /media_items/new" do
+    before { sign_in user }
+
+    # Ссылка «Назад» без истории ведёт в папку загрузки, а без папки — в корень
+    it "renders with and without a folder" do
+      get new_media_item_path(folder_id: folder.id)
+      expect(response.body).to include(%(href="#{folder_path(folder)}"))
+
+      get new_media_item_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(href="#{folders_path}"))
+    end
+  end
 end
