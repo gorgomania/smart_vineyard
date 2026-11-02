@@ -27,8 +27,16 @@ class CloneDemoMediaJob < ApplicationJob
       }
     end
 
-    new_ids = MediaItem.insert_all!(items_data, returning: [ :id ]).map { |r| r["id"] }
+    # Записи и их файлы — вместе или никак: при сбое между вставками остались бы пустые карточки
+    ActiveRecord::Base.transaction do
+      new_ids = MediaItem.insert_all!(items_data, returning: [ :id ]).map { |r| r["id"] }
+      attach_blobs(items, new_ids, now)
+    end
+  end
 
+  private
+
+  def attach_blobs(items, new_ids, now)
     media_attachments = items.each_with_index.filter_map do |item, i|
       next unless item.media.attached?
       { name: "media", record_type: "MediaItem", record_id: new_ids[i], blob_id: item.media_attachment.blob_id, created_at: now }

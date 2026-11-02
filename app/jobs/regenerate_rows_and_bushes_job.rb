@@ -8,16 +8,22 @@ class RegenerateRowsAndBushesJob < ApplicationJob
     # Пустая раскладка означает, что раскладку не посчитали, а не «удалить все ряды»
     return if new_bushes_per_row.blank? || new_bushes_per_row.none?(&:positive?)
 
-    # row_number => [row_id, max bush_number]; max, а не count — чтобы новые номера не пересеклись при дырах
-    current_rows = vineyard.rows
-                           .left_joins(:bushes)
-                           .group(:id, :row_number)
-                           .pluck(:row_number, :id, "MAX(bushes.bush_number)")
-                           .to_h { |number, id, max| [ number, [ id, max.to_i ] ] }
     target_count = ->(row_number) { new_bushes_per_row[row_number - 1].to_i }
 
     now = Time.current
     ActiveRecord::Base.transaction do
+      # Две задачи раскладки одного виноградника (две правки подряд, создание и сразу правка) идут по очереди:
+      # вторая ждёт здесь и читает ряды уже после первой. Иначе обе планировали бы от одного снимка,
+      # и вторая упала бы на уникальном индексе рядов, оставив ряды от первой правки
+      vineyard.lock!
+
+      # row_number => [row_id, max bush_number]; max, а не count — чтобы новые номера не пересеклись при дырах
+      current_rows = vineyard.rows
+                             .left_joins(:bushes)
+                             .group(:id, :row_number)
+                             .pluck(:row_number, :id, "MAX(bushes.bush_number)")
+                             .to_h { |number, id, max| [ number, [ id, max.to_i ] ] }
+
       # Ряды, которых больше нет (или с 0 кустов): delete_all одним SQL,
       # кусты удалит FK on_delete: :cascade, привязки media_items обнулит on_delete: :nullify
       removed_row_ids = current_rows.filter_map { |number, (id, _)| id if target_count.(number).zero? }

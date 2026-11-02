@@ -96,43 +96,40 @@ public
     media_attachment.blob
   end
 
-  def normalize_filename!
+  # Имена файлов в папке (Set) — для проверки дублей: пачке файлов хватает одного запроса на всю папку
+  def self.filenames_in_folder(folder_id, except_ids: [])
+    where(folder_id:)
+      .where.not(id: except_ids)
+      .joins(media_attachment: :blob)
+      .where(active_storage_attachments: { name: "media" })
+      .pluck("active_storage_blobs.filename")
+      .to_set
+  end
+
+  # Имя, занятое в папке, становится «имя(2).ext», «имя(3).ext»… Возвращает true, если имя поменялось.
+  # taken — имена, уже занятые в папке: при обработке пачки его передают один на всех и не перечитывают
+  # для каждого файла (на тысячах файлов это минуты); выбранное имя метод сам добавляет в taken
+  def normalize_filename!(taken = nil)
     return unless media.attached?
 
+    taken ||= self.class.filenames_in_folder(folder_id, except_ids: [ id ].compact)
     blob = media.blob
     current_filename = blob.filename.to_s
     base_name = current_filename.gsub(/\.[^.]+\z/, "").strip
     extension = blob.filename.extension_with_delimiter
 
-    # 🚀 Загружаем все имена файлов в папке одним запросом
-    existing_names = MediaItem
-      .where(folder_id: folder_id)
-      .where.not(id: id)
-      .joins(media_attachment: :blob)
-      .where(active_storage_attachments: { name: "media" })
-      .pluck("active_storage_blobs.filename")  # ← pluck вместо загрузки объектов
-      .map(&:to_s)
-
     final_name = "#{base_name}#{extension}"
-
-    if existing_names.include?(final_name)
-      index = 2
-      loop do
-        candidate = "#{base_name}(#{index})#{extension}"
-        unless existing_names.include?(candidate)
-          final_name = candidate
-          break
-        end
-        index += 1
-      end
+    index = 2
+    while taken.include?(final_name)
+      final_name = "#{base_name}(#{index})#{extension}"
+      index += 1
     end
+    taken << final_name
 
-    if final_name != current_filename
-      blob.filename = final_name
-      true
-    else
-      false
-    end
+    return false if final_name == current_filename
+
+    blob.filename = final_name
+    true
   end
 
 private

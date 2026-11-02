@@ -123,4 +123,18 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
       end
     end
   end
+
+  # Две задачи раскладки одного виноградника идут по очереди: блокировка виноградника — до чтения его рядов,
+  # тогда вторая задача читает ряды уже после первой, а не тот же снимок
+  it "locks the vineyard before reading its rows" do
+    setup_rows([ 3 ])
+    queries = []
+    callback = ->(*, payload) { queries << payload[:sql] }
+    ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { perform([ 4 ]) }
+
+    lock = queries.index { |sql| sql.match?(/FROM "vineyards".*FOR UPDATE/m) }
+    rows_read = queries.index { |sql| sql.include?('MAX(bushes.bush_number)') }
+    expect(lock).to be_present
+    expect(lock).to be < rows_read
+  end
 end

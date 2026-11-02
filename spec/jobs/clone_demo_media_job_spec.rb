@@ -54,4 +54,13 @@ RSpec.describe CloneDemoMediaJob, type: :job do
   it "does nothing when the master folders are empty" do
     expect { perform }.not_to change(MediaItem, :count)
   end
+
+  # Записи и их файлы — вместе или никак, иначе в демо остались бы карточки без файлов
+  it "leaves no media items behind when attaching their files fails" do
+    create(:media_item, :with_image, folder:)
+    allow(ActiveStorage::Attachment).to receive(:insert_all!).and_raise(ActiveRecord::InvalidForeignKey)
+
+    expect { perform }.to raise_error(ActiveRecord::InvalidForeignKey)
+    expect(demo_folder.media_items).to be_empty
+  end
 end
