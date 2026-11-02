@@ -127,7 +127,7 @@ RSpec + FactoryBot + Shoulda Matchers + Faker, 441 examples:
 - `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, `/up`
 - `spec/initializers/` — ordered writes to Solid Cable (an advisory lock so concurrent broadcasts aren't lost)
 - `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite, no chromedriver): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, and the vineyard → row → free bush cascade when attaching a photo. Needs Chrome installed; `HEADLESS=false` shows the browser
-- `spec/javascript/` — unit tests for the browser-free JS in `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
+- `spec/javascript/` — unit tests for the browser-free JS in `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing, the upload MD5 checksum), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
 
 CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop. To check the Helm chart locally: `helm lint chart`.
 

@@ -9,3 +9,4 @@ pin_all_from "app/javascript/utils", under: "utils"
 
 pin "@rails/activestorage", to: "activestorage.esm.js"
 pin "chart.js", to: "chart.umd.js"
+pin "spark-md5" # @3.0.2

@@ -23,4 +23,24 @@ RSpec.describe "Uploading photos", type: :system do
     expect(page).to have_content("pixel")
     expect(folder.media_items.count).to eq(1)
   end
+
+  # Файлы проверяются (MD5) по очереди, а грузятся, не дожидаясь остальных: все три доходят до сервера
+  # с верной контрольной суммой (иначе сервис :local отказал бы в сохранении)
+  it "checks and uploads several photos one after another" do
+    files = %w[Ряд\ 1\ Куст\ 1 Ряд\ 1\ Куст\ 2 Ряд\ 1\ Куст\ 3].map do |name|
+      Rails.root.join("tmp", "#{name}.jpg").tap { |path| FileUtils.cp(Rails.root.join("spec/fixtures/files/pixel.jpg"), path) }
+    end
+
+    visit new_media_item_path(folder_id: folder.id)
+    attach_file "fileInput", files, make_visible: true
+    expect(page).to have_content("✅ Все файлы загружены!")
+    click_button "Загрузить"
+
+    expect(page).to have_content("3 файла загружаются в фоне")
+    perform_enqueued_jobs(only: AttachMediaJob)
+    expect(folder.media_items.joins(media_attachment: :blob).pluck("active_storage_blobs.filename"))
+      .to match_array([ "Ряд 1 Куст 1.jpg", "Ряд 1 Куст 2.jpg", "Ряд 1 Куст 3.jpg" ])
+  ensure
+    files&.each { |path| FileUtils.rm_f(path) }
+  end
 end

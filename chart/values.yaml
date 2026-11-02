@@ -51,11 +51,14 @@ worker:
     limits: { cpu: "3", memory: 4Gi }   # 3 тяжёлых процесса: замер 02.11 — ~0.3 ГБ с загруженной моделью ONNX, до ~0.4 ГБ на фото 48 Мп; + мелочь и ffmpeg, запас
 
 storage:
-  size: 50Gi             # ActiveStorage uploads (photos, videos)
+  # ActiveStorage (фото, видео). Класс по умолчанию в k3s — local-path: том — каталог на диске ВМ, и размер
+  # он НЕ ограничивает. Реальный предел — свободное место на диске ВМ (df -h на узле), а не эта цифра.
+  # Не менять у существующего тома: local-path не поддерживает resize, helm upgrade упадёт
+  size: 50Gi
 
 postgres:
   image: imresamu/postgis:16-3.5   # postgis/postgis has no arm64 build
-  size: 20Gi
+  size: 20Gi              # как и storage.size: local-path не ограничивает, только заявка; не менять у существующего тома
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { memory: 2Gi }

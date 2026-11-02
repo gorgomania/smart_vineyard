@@ -1,10 +1,13 @@
 import { Controller } from "@hotwired/stimulus"
-import { DirectUpload } from "@rails/activestorage"
+import { fileChecksum } from "utils/file_checksum"
 
 const MAX_FILE_SIZE = 1073741824 // 1 ГБ
 const DIRECT_UPLOAD_URL = "/rails/active_storage/direct_uploads"
 
-// Все файлы (включая ZIP) сразу грузятся через DirectUpload, прогресс считается по байтам.
+// Все файлы (включая ZIP) сразу грузятся на сервер прямой загрузкой ActiveStorage, тем же протоколом, что DirectUpload:
+// MD5 файла → POST direct_uploads (blob и адрес загрузки) → PUT файла. Шаги свои, а не DirectUpload, чтобы видеть
+// прогресс проверки (MD5 гигабайтного файла считается минуты) и проверять файлы по одному: первый начинает
+// грузиться, пока проверяются следующие, а не все ждут, пока досчитаются все.
 // При отправке формы уходят только signed id: сами файлы второй раз не передаются
 export default class extends Controller {
   static targets = [
@@ -14,8 +17,10 @@ export default class extends Controller {
   ]
 
   connect() {
-    // ключ name_size → { file, isZip, loaded, status: preparing|uploading|done|error, signedId, xhr, wrapper, overlay }
+    // ключ name_size → { file, isZip, checked, loaded, status: queued|checking|uploading|done|error, signedId,
+    //                    abort, xhr, wrapper, overlay }
     this.uploads = new Map()
+    this.checkQueue = Promise.resolve() // проверка (MD5) — по одному файлу: диск читается последовательно
     this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
     this.render()
   }
@@ -77,50 +82,105 @@ export default class extends Controller {
         return this.showError("Недопустимый тип файла " + file.name)
       }
 
-      const entry = { key, file, isZip, loaded: 0, status: "preparing", signedId: null, xhr: null }
+      const entry = {
+        key, file, isZip, checked: 0, loaded: 0, status: "queued", signedId: null,
+        abort: new AbortController(), xhr: null
+      }
       this.uploads.set(key, entry)
       this.buildPreview(entry)
-      this.startUpload(entry)
+      // Загрузку не ждём: пока файл грузится, очередь уже проверяет следующий
+      this.checkQueue = this.checkQueue.then(() => this.prepare(entry))
     })
     this.render()
   }
 
-  startUpload(entry) {
-    const upload = new DirectUpload(entry.file, DIRECT_UPLOAD_URL, {
-      directUploadWillStoreFileWithXHR: (xhr) => {
-        // Файл убрали, пока считалась контрольная сумма: загрузка ещё не началась, но DirectUpload её запустит —
-        // обрываем, иначе файл до 1 ГБ ушёл бы на сервер впустую
-        if (!this.uploads.has(entry.key)) return xhr.abort()
-        entry.xhr = xhr
-        entry.status = "uploading"
-        xhr.upload.addEventListener("progress", (e) => {
-          entry.loaded = e.loaded
-          this.render()
+  // Проверка (MD5) и создание blob, затем загрузка — без ожидания
+  async prepare(entry) {
+    if (!this.uploads.has(entry.key)) return // убрали, пока ждал очереди
+
+    try {
+      entry.status = "checking"
+      this.render()
+      const checksum = await fileChecksum(entry.file, {
+        signal: entry.abort.signal,
+        onProgress: (bytes) => { entry.checked = bytes; this.renderEntry(entry) }
+      })
+      const blob = await this.createBlob(entry.file, checksum, entry.abort.signal)
+      if (!this.uploads.has(entry.key)) return // убрали, пока создавался blob: файл не отправляем
+      this.upload(entry, blob)
+    } catch (error) {
+      if (error.name !== "AbortError") this.fail(entry, error.message)
+    }
+  }
+
+  async createBlob(file, checksum, signal) {
+    let response
+    try {
+      response = await fetch(DIRECT_UPLOAD_URL, {
+        method: "POST",
+        signal,
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]')?.content
+        },
+        body: JSON.stringify({
+          blob: { filename: file.name, content_type: file.type || "application/octet-stream", byte_size: file.size, checksum }
         })
-        this.render()
-      }
+      })
+    } catch (error) {
+      if (error.name === "AbortError") throw error
+      throw new Error("нет связи с сервером")
+    }
+    const data = await response.json().catch(() => ({}))
+    // Свой текст сервера (DirectUploadsController: тип или размер), иначе — статус
+    if (!response.ok) throw new Error(data.error || `сервер не принял файл (код ${response.status})`)
+    return data
+  }
+
+  upload(entry, blob) {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", blob.direct_upload.url, true)
+    Object.entries(blob.direct_upload.headers).forEach(([ name, value ]) => xhr.setRequestHeader(name, value))
+    xhr.upload.addEventListener("progress", (e) => {
+      entry.loaded = e.loaded
+      this.render()
     })
-
-    upload.create((error, blob) => {
-      if (!this.uploads.has(entry.key)) return // удалён пользователем во время загрузки
-
-      if (error) {
-        entry.status = "error"
-        this.showError(`Ошибка загрузки "${entry.file.name}": ${error.message || error}`)
-      } else {
+    xhr.addEventListener("load", () => {
+      if (!this.uploads.has(entry.key)) return
+      if (xhr.status >= 200 && xhr.status < 300) {
         entry.status = "done"
         entry.loaded = entry.file.size
         entry.signedId = blob.signed_id
+        this.render()
+      } else {
+        this.fail(entry, `сервер не сохранил файл (код ${xhr.status})`)
       }
-      this.render()
     })
+    // Обрыв соединения (status 0): сеть, перезапуск сервера, сон компьютера
+    xhr.addEventListener("error", () => this.fail(entry, "соединение прервано"))
+
+    entry.xhr = xhr
+    entry.status = "uploading"
+    this.render()
+    xhr.send(entry.file.slice()) // как BlobUpload в ActiveStorage: тело без имени и типа файла, заголовки — от сервера
+  }
+
+  fail(entry, reason) {
+    if (!this.uploads.has(entry.key)) return // удалён пользователем
+    entry.status = "error"
+    this.showError(`Ошибка загрузки "${entry.file.name}": ${reason}`)
+    this.render()
   }
 
   remove(entry) {
     this.uploads.delete(entry.key)
     entry.wrapper.remove()
 
-    if (entry.status === "uploading") {
+    if (entry.status === "queued" || entry.status === "checking") {
+      entry.abort.abort() // проверка и создание blob останавливаются, файл не отправляется
+    } else if (entry.status === "uploading") {
       entry.xhr?.abort()
     } else if (entry.status === "done") {
       const csrfToken = document.querySelector('[name="csrf-token"]').content
@@ -221,6 +281,7 @@ export default class extends Controller {
       this.trackBatch(loadedBytes)
       this.progressStatusTarget.textContent =
         `Загружено ${done} из ${active.length} · ${this.formatMb(loadedBytes)} из ${this.formatMb(totalBytes)} МБ\n` +
+        this.checkingText(active) +
         `Время загрузки ${this.formatDuration(this.elapsedSeconds())}\n` +
         this.etaText(loadedBytes, totalBytes)
       this.submitBtnTarget.disabled = true
@@ -245,9 +306,18 @@ export default class extends Controller {
       entry.overlay.textContent = symbol
     } else if (entry.status === "uploading") {
       entry.overlay.textContent = `${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`
+    } else if (entry.status === "checking") {
+      entry.overlay.textContent = `Проверка ${Math.floor((entry.checked / (entry.file.size || 1)) * 100)}%`
     } else {
-      entry.overlay.textContent = "Подготовка..." // считается checksum и создаётся blob
+      entry.overlay.textContent = "В очереди"
     }
+  }
+
+  // Пока не все файлы проверены — сколько проверено: иначе первые минуты на больших файлах ничего не движется
+  checkingText(active) {
+    const waiting = active.filter(u => u.status === "queued" || u.status === "checking")
+    if (waiting.length === 0) return ""
+    return `Проверено ${active.length - waiting.length} из ${active.length} файлов\n`
   }
 
   // --- оценка оставшегося времени ---
@@ -275,7 +345,7 @@ export default class extends Controller {
   etaText(loadedBytes, totalBytes) {
     const elapsed = this.elapsedSeconds()
     const transferred = loadedBytes - this.batch.baseLoaded
-    // Первые секунды уходят на checksum в браузере и создание блобов: скорости ещё нет
+    // Сначала файл проверяется (MD5) и создаётся blob: байты ещё не идут, скорости нет
     if (elapsed < 5 || transferred <= 0) return "Рассчитываем оставшееся время..."
 
     const remaining = (totalBytes - loadedBytes) / (transferred / elapsed)
@@ -296,7 +366,7 @@ export default class extends Controller {
   }
 
   pending() {
-    return [ ...this.uploads.values() ].filter(u => u.status === "preparing" || u.status === "uploading")
+    return [ ...this.uploads.values() ].filter(u => [ "queued", "checking", "uploading" ].includes(u.status))
   }
 
   appendHidden(name, values) {
