@@ -18,14 +18,14 @@ class FoldersController < ApplicationController
         @page = @page.clamp(1, @page_limit)
 
         offset = (@page - 1) * per_page
-        @childrens = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").order(created_at: :asc).limit(per_page).offset(offset)
+        @childrens = policy_scope(Folder).where("title ILIKE ?", search_pattern(title_search_query)).order(created_at: :asc).limit(per_page).offset(offset)
         if @childrens.length < per_page
           if @childrens_length > offset
             offset = 0
           else
             offset -= @childrens_length
           end
-          @media = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
+          @media = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", search_pattern(title_search_query)).order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
         else
           @media = []
         end
@@ -240,11 +240,16 @@ class FoldersController < ApplicationController
 
   # Сколько папок и файлов пользователя подходят под поиск по названию
   def search_counts(query)
-    pattern = "%#{query}%"
+    pattern = search_pattern(query)
     [
       policy_scope(Folder).where("title ILIKE ?", pattern).count,
       policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", pattern).count
     ]
+  end
+
+  # Шаблон ILIKE «содержит query»: % и _ из запроса — обычные символы, а не «что угодно» и «любой символ»
+  def search_pattern(query)
+    "%#{Folder.sanitize_sql_like(query)}%"
   end
 
   # Число страниц по PER_PAGE; пустая папка или поиск без результатов — одна страница
