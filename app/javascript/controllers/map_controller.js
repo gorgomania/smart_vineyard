@@ -173,6 +173,8 @@ export default class extends Controller {
         strokeWidth: 3,
         visible: false, // показывает showPolygon, когда координаты уже заданы
         editorDrawing: false,
+        // Под тепловой картой контур не перехватывает мышь: подсказку и клик по кусту ищет слой (HeatmapLayer#hitTest)
+        ...(this.heatmap && !editable && { interactivityModel: 'default#silent', hasHint: false }),
       }
     )
   }
