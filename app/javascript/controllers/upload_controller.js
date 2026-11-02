@@ -22,11 +22,38 @@ export default class extends Controller {
     this.uploads = new Map()
     this.checkQueue = Promise.resolve() // проверка (MD5) — по одному файлу: диск читается последовательно
     this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
+
+    // Уход со страницы при незаконченной загрузке — только с подтверждения: файлы без отправки формы
+    // в папку не попадут. beforeunload — закрытие вкладки и перезагрузка, turbo:before-visit — ссылки сайта
+    this.warnOnUnload = (event) => { if (this.pending().length > 0) event.preventDefault() }
+    this.confirmVisit = (event) => { if (!this.mayLeave()) event.preventDefault() }
+    window.addEventListener("beforeunload", this.warnOnUnload)
+    document.addEventListener("turbo:before-visit", this.confirmVisit)
     this.render()
   }
 
+  // Ушли со страницы (в том числе кнопкой браузера «назад»: Turbo не перезагружает страницу, и сам браузер
+  // ничего не обрывает) — останавливаем проверку и загрузку, иначе гигабайты шли бы на сервер впустую
   disconnect() {
     clearInterval(this.batch?.timer)
+    window.removeEventListener("beforeunload", this.warnOnUnload)
+    document.removeEventListener("turbo:before-visit", this.confirmVisit)
+    this.uploads.forEach(entry => {
+      entry.abort.abort()
+      entry.xhr?.abort()
+    })
+    this.uploads.clear()
+  }
+
+  // Ссылка «Назад» (history#back — переход по истории, turbo:before-visit его не видит)
+  confirmLeave(event) {
+    if (this.mayLeave()) return
+    event.preventDefault()
+    event.stopImmediatePropagation() // следующее действие на ссылке — history#back — не выполняется
+  }
+
+  mayLeave() {
+    return this.pending().length === 0 || confirm("Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся")
   }
 
   fileInputChange(event) {

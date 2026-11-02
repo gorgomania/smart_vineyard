@@ -43,4 +43,40 @@ RSpec.describe "Uploading photos", type: :system do
   ensure
     files&.each { |path| FileUtils.rm_f(path) }
   end
+
+  # «Назад» — переход Turbo без перезагрузки страницы: браузер сам ничего не обрывает, и без отмены
+  # проверка и загрузка гигабайтов шли бы дальше невидимо и впустую (форму уже не отправить)
+  it "stops checking and uploading when the user leaves the page" do
+    big = Rails.root.join("tmp", "big_upload.zip")
+    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    visit folder_path(folder)
+    visit new_media_item_path(folder_id: folder.id)
+
+    attach_file "fileInput", big, make_visible: true
+    expect(page).to have_content(/Проверка|В очереди/)
+    accept_confirm { click_link "Назад" }
+    expect(page).to have_current_path(folder_path(folder))
+
+    sleep 3 # за это время 64 МБ успели бы и проверить, и создать blob
+    expect(ActiveStorage::Blob.where(filename: "big_upload.zip")).not_to exist
+  ensure
+    FileUtils.rm_f(big) if big
+  end
+
+  it "keeps uploading when the user changes their mind about leaving" do
+    big = Rails.root.join("tmp", "big_upload.zip")
+    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    visit folder_path(folder)
+    visit new_media_item_path(folder_id: folder.id)
+
+    attach_file "fileInput", big, make_visible: true
+    expect(page).to have_content(/Проверка|В очереди/)
+    dismiss_confirm { click_link "Назад" }
+
+    expect(page).to have_content("✅ Все файлы загружены!", wait: 30)
+    expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
+    expect(ActiveStorage::Blob.find_by(filename: "big_upload.zip").byte_size).to eq(64.megabytes)
+  ensure
+    FileUtils.rm_f(big) if big
+  end
 end
