@@ -7,18 +7,28 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
       expect { described_class.new.perform }.not_to raise_error
     end
 
-    it "purges orphaned blobs older than 1 hour" do
+    it "purges orphaned blobs older than the grace period" do
       blob = ActiveStorage::Blob.create_before_direct_upload!(
         filename: "orphan.jpg",
         byte_size: 100,
         checksum: "abc",
         content_type: "image/jpeg"
       )
-      blob.update_column(:created_at, 2.hours.ago)
+      blob.update_column(:created_at, 2.days.ago)
 
       expect {
         described_class.new.perform
       }.to change(ActiveStorage::Blob, :count).by(-1)
+    end
+
+    # Большая загрузка или забитая очередь: AttachMediaJob ещё не прикрепил файл, а ему уже больше часа
+    it "keeps a recent upload that is still waiting to be attached" do
+      blob = ActiveStorage::Blob.create_before_direct_upload!(
+        filename: "late.jpg", byte_size: 100, checksum: "abc", content_type: "image/jpeg"
+      )
+      blob.update_column(:created_at, 3.hours.ago)
+
+      expect { described_class.new.perform }.not_to change(ActiveStorage::Blob, :count)
     end
 
     it "purges orphaned blobs in bulk together with their thumbnails" do
@@ -27,7 +37,7 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
         ActiveStorage::Blob.create_and_upload!(io: StringIO.new(jpeg), filename: "p.jpg", content_type: "image/jpeg")
       end
       thumbs = orphans.map { |b| b.variant(resize_to_limit: [ 20, 20 ]).processed.image.blob }
-      ActiveStorage::Blob.where(id: orphans.map(&:id)).update_all(created_at: 2.hours.ago)
+      ActiveStorage::Blob.where(id: orphans.map(&:id)).update_all(created_at: 2.days.ago)
 
       expect { described_class.new.perform }.not_to have_enqueued_job
 
@@ -66,7 +76,7 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
       let(:blob)       { media_item.media.blob }
 
       before do
-        blob.update_column(:created_at, 2.hours.ago)
+        blob.update_column(:created_at, 2.days.ago)
         MediaItem.where(id: media_item.id).delete_all
       end
 

@@ -21,5 +21,9 @@ class GenerateRowsAndBushesJob < ApplicationJob
         bushes_per_row.each_with_index.to_h { |count, row_index| [ row_ids[row_index + 1], 1..count ] }
       )
     end
+
+    # Папку могли привязать, пока ряды ещё строились: её раскладка тогда не нашла кустов. Повторяем,
+    # как RegenerateRowsAndBushesJob после пересчёта
+    DistributeMediaToBushesJob.perform_later(vineyard.folder.id) if vineyard.folder.present?
   end
 end

@@ -55,4 +55,16 @@ RSpec.describe GenerateRowsAndBushesJob, type: :job do
       end
     end
   end
+
+  describe "a folder attached while the rows were being built" do
+    # Её раскладка файлов отработала раньше, чем появились кусты, — повторяем после создания рядов
+    it "re-distributes the folder's files onto the new bushes" do
+      folder = create(:folder, user: vineyard.user, vineyard:)
+      expect { perform([ 2 ]) }.to have_enqueued_job(DistributeMediaToBushesJob).with(folder.id)
+    end
+
+    it "does nothing extra without a folder" do
+      expect { perform([ 2 ]) }.not_to have_enqueued_job(DistributeMediaToBushesJob)
+    end
+  end
 end
