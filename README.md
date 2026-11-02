@@ -22,8 +22,8 @@ A web application for vineyard management with AI-based vine health classificati
 
 ## Features
 
-- **Vineyard map** — draw and edit vineyard polygons on an interactive map (Yandex Maps)
-- **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place
+- **Vineyard map** — draw and edit vineyard polygons on an interactive map (Yandex Maps), up to 50 ha per vineyard
+- **Row and bush structure** — rows and bushes are generated from the polygon, row spacing and bush spacing; editing the geometry updates them in place. The map shows the layout as you draw, but the server computes it again on save (`VineyardLayout`, a Ruby port of the map's JS) rather than trusting numbers from the browser
 - **Media library** — upload photos, videos and ZIP archives, organize them into nested folders, link a folder to a vineyard and a file to a bush (automatically by file name `Ряд N Куст M`, or manually for any file). Uploaded files appear in the open folder as soon as they are processed, without a page reload; files are served only to their owner
 - **AI classification** — vine health from a photo (black rot, ESCA, leaf blight, healthy) with a local ONNX model
 - **Statistics** — disease breakdown charts and a per-bush health heatmap. Both update live while photos are being classified: the heatmap repaints single bushes, the charts refresh in place (Turbo Streams over Solid Cable)
@@ -44,6 +44,7 @@ A web application for vineyard management with AI-based vine health classificati
 - Ruby 3.3.12 (`.ruby-version`)
 - PostgreSQL with the PostGIS extension
 - libvips and FFmpeg
+- For tests: Node.js 21+ (`bin/test-js`) and Google Chrome (system specs)
 
 ## Configuration
 
@@ -122,8 +123,9 @@ RSpec + FactoryBot + Shoulda Matchers + Faker, 441 examples:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard)
 - `spec/jobs/` — every background job: row/bush generation and regeneration, ZIP processing, bush distribution, previews, classification, demo cloning and cleanup, storage cleanup and its schedule
-- `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model)
+- `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model), `VineyardLayout` (checked against the same reference layouts as its JS original, `spec/fixtures/files/vineyard_layouts.json`)
 - `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, `/up`
+- `spec/initializers/` — ordered writes to Solid Cable (an advisory lock so concurrent broadcasts aren't lost)
 - `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite, no chromedriver): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, and the vineyard → row → free bush cascade when attaching a photo. Needs Chrome installed; `HEADLESS=false` shows the browser
 - `spec/javascript/` — unit tests for the browser-free JS in `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
 
@@ -136,7 +138,7 @@ Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in p
 | Pool | Queues | Jobs | Processes × threads |
 |------|--------|------|---------------------|
 | heavy | `heavy` | ZIP extraction, AI classification, image and video previews | `JOB_CONCURRENCY` × 1 |
-| light | `default`, `low_priority` | attaching uploads, distribution to bushes, filename normalization, folder refresh broadcasts, row/bush generation, demo cloning and cleanup, storage cleanup | 1 × `JOB_THREADS` |
+| light | `default`, `low_priority` | attaching uploads, distribution to bushes, filename normalization, folder refresh broadcasts, row/bush generation, vineyard deletion, demo cloning and cleanup, storage cleanup | 1 × `JOB_THREADS` |
 
 Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each: two ZIP archives are extracted on two cores at once. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
 
