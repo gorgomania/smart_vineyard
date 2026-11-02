@@ -55,14 +55,19 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: /rails/storage
+          # До запуска Puma entrypoint выполняет db:prepare: миграции данных бывают долгими. Пока startupProbe
+          # не прошла, liveness молчит — иначе под убили бы посреди миграции. 60 × 10 с = 10 мин, как helm --timeout
+          startupProbe:
+            httpGet: { path: /up, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
           readinessProbe:
             httpGet: { path: /up, port: http }
-            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
           livenessProbe:
             httpGet: { path: /up, port: http }
-            initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 5
           # После SIGTERM Puma не принимает новые запросы (Thruster отвечает 502), поэтому сначала

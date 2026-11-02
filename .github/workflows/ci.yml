@@ -13,9 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install system dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y libvips
-
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -32,6 +29,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # bin/importmap загружает приложение, а с ним гем ruby-vips: без libvips он не загрузится
       - name: Install system dependencies
         run: sudo apt-get update -qq && sudo apt-get install -y libvips
 
@@ -64,9 +62,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-
-      - name: Install system dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y libvips
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -117,11 +112,12 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      # Миграции с нуля, а не db:prepare (загрузка схемы): заодно проверяем сами миграции.
+      # db:migrate проходит по всем базам, включая queue; у cable миграций нет — только схема
       - name: Set up databases
         run: |
           bin/rails db:create
           bin/rails db:migrate
-          bin/rails db:migrate:queue
           bin/rails db:schema:load:cable
 
       - name: Run tests

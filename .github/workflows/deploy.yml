@@ -10,8 +10,11 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: read   # список запусков CI: какой коммит main прошёл последним
 
-# Один деплой за раз: новый ждёт завершения текущего, а не пересекается с ним в helm upgrade
+# Один деплой за раз, без пересечений в helm upgrade. Очереди нет: GitHub держит один ожидающий запуск,
+# и новый вытесняет прежний. Поэтому каждый запуск выкатывает не коммит своего события, а новейший
+# коммит main с успешным CI (шаг «Resolve commit to deploy») — вытесненный ничего не теряет
 concurrency:
   group: deploy-production
   cancel-in-progress: false
@@ -22,9 +25,10 @@ env:
 jobs:
   prepare:
     # Только успешный CI на push в main этого репозитория: CI идёт и на pull_request,
-    # а фильтр branches смотрит лишь на имя ветки (PR из форка с веткой main тоже бы прошёл)
+    # а фильтр branches смотрит лишь на имя ветки (PR из форка с веткой main тоже бы прошёл).
+    # Ручной запуск — только с main (повторить упавший деплой), не с произвольной ветки
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
@@ -39,18 +43,35 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_KEY: ${{ secrets.SSH_KEY }}
-          # workflow_run: ровно тот коммит, что прошёл CI, а не текущий HEAD main
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Запасной вариант, если API не ответил: коммит, чей CI запустил этот деплой
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
+          # Новейший коммит main, прошедший CI на push: не обязательно коммит этого события
+          # (тот мог устареть, пока запуск ждал своей очереди) и никогда — коммит с упавшим CI
+          SHA=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1" \
+            --jq '.workflow_runs[0].head_sha // empty') || SHA=""
+          SHA=${SHA:-$EVENT_SHA}
+          if [ -z "$SHA" ]; then
+            echo "::error::No commit on main with successful CI"
+            exit 1
+          fi
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           stale=false
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             # Сравниваем с тем, что реально стоит на проде (workflow сериализован через concurrency).
             # Так прошедший CI коммит выкатится, даже если следующий за ним упал,
-            # а поздно закончившийся CI старого коммита не откатит прод назад
+            # а поздно закончившийся CI старого коммита не откатит прод назад.
+            # Берём ревизию со статусом deployed: у последней, упавшей по таймауту, тег новый,
+            # а на проде старые поды — по нему повторный деплой ошибочно счёлся бы лишним
             key=$(mktemp) && printf '%s\n' "$SSH_KEY" > "$key"
-            deployed=$(ssh -i "$key" -o StrictHostKeyChecking=accept-new "ubuntu@$SSH_HOST" \
-              'helm get values smart-vineyard -n smart-vineyard -o json' | jq -r '.image.tag // empty') || deployed=""
+            remote() { ssh -i "$key" -o StrictHostKeyChecking=accept-new "ubuntu@$SSH_HOST" "$1"; }
+            rev=$(remote 'helm history smart-vineyard -n smart-vineyard -o json' \
+              | jq -r '[.[] | select(.status == "deployed")] | last | .revision // empty') || rev=""
+            deployed=""
+            if [ -n "$rev" ]; then
+              deployed=$(remote "helm get values smart-vineyard -n smart-vineyard --revision $rev -o json" \
+                | jq -r '.image.tag // empty') || deployed=""
+            fi
             rm -f "$key"
 
             if [ -n "$deployed" ] && [ "$deployed" != "latest" ]; then

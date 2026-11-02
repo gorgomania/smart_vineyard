@@ -38,5 +38,5 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{- define "sv.image" -}}
-{{ .Values.image.repository }}:{{ .Values.image.tag }}
+{{ .Values.image.repository }}:{{ required "image.tag is required: --set image.tag=<commit sha> (or --reuse-values)" .Values.image.tag }}
 {{- end }}
