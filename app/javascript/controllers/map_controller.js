@@ -13,6 +13,25 @@ import { parseWKT } from "utils/wkt"
 const DEFAULT_CENTER = [44.5947, 33.4756]
 const FIRST_ROW_COLOR = '#FFD700' // золотой: опорная сторона и первый куст
 
+// API Яндекс Карт грузим один раз на все страницы: вторая карта, открытая, пока скрипт ещё грузится,
+// не добавляет его повторно, а ждёт того же обещания
+let ymapsLoading = null
+function loadYmaps(apiKey) {
+  if (window.ymaps) return Promise.resolve()
+
+  ymapsLoading ||= new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`
+    script.onload = resolve
+    script.onerror = () => { ymapsLoading = null; reject(new Error('Failed to load Yandex Maps API')) }
+    document.head.appendChild(script)
+  })
+  return ymapsLoading
+}
+
+// Название и сорт — текст пользователя, а подсказки Яндекс Карт показывают HTML
+const escapeHtml = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+
 // Цвета полигонов берём из палитры сайта (@theme в tailwind/application.css)
 const brandColor = (shade) => getComputedStyle(document.documentElement)
   .getPropertyValue(shade ? `--color-brand-${shade}` : "--color-brand").trim()
@@ -61,6 +80,8 @@ export default class extends Controller {
   }
 
   disconnect() {
+    // Ушли со страницы раньше, чем загрузились Яндекс Карты: initMap по этому признаку ничего не создаст
+    this.loadToken = null
     this.stopListeningToForm()
     this.heatmap?.destroy()
 
@@ -80,21 +101,18 @@ export default class extends Controller {
   }
 
   loadMap() {
-    // API уже загружено другой страницей
-    if (window.ymaps) {
-      this.initMap()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${this.apiKey}&lang=ru_RU`
-    script.onload = () => this.initMap()
-    script.onerror = () => console.error('Failed to load Yandex Maps API')
-    document.head.appendChild(script)
+    const token = this.loadToken = {}
+    loadYmaps(this.apiKey)
+      .then(() => this.initMap(token))
+      .catch((error) => console.error(error.message))
   }
 
-  initMap() {
+  // token — от этого подключения: если контроллер уже отключили (или подключили заново), карту не создаём,
+  // иначе она легла бы на отключённый элемент, а подписки на события формы остались бы висеть
+  initMap(token) {
     ymaps.ready(() => {
+      if (this.loadToken !== token) return
+
       // Под тепловой картой подложки нет: точки видно лучше на чистом фоне
       this.map = new ymaps.Map(this.element, {
         center: this.center,
@@ -171,9 +189,11 @@ export default class extends Controller {
       if (!this.currentPolygon?.geometry) return
       this.switchSide(-1)
     }
-    this.boundFirstBush = () => {
+    // Форма присылает выбранное значение, а не «переключи»: повторное нажатие уже выбранной кнопки
+    // (с клавиатуры её pointer-events-none не останавливает) иначе перевернуло бы нумерацию
+    this.boundFirstBush = (event) => {
       if (!this.currentPolygon?.geometry) return
-      this.referenceVertexIsFirst = !this.referenceVertexIsFirst
+      this.referenceVertexIsFirst = event.detail.referenceVertexIsFirst
       this.regenerateRows()
     }
     this.boundSpacing = (event) => {
@@ -257,11 +277,11 @@ export default class extends Controller {
         this.map.geoObjects.add(new ymaps.Polygon(
           [coordinates],
           {
-            hintContent: `${data.name}\n🍇 ${data.grape_variety || '—'}\n📊 ${data.area} га`,
+            hintContent: `${escapeHtml(data.name)}\n🍇 ${escapeHtml(data.grape_variety || '—')}\n📊 ${data.area} га`,
             balloonContent: `
               <div style="padding: 8px;">
-                <b style="color: var(--color-brand);">${data.name}</b><br/>
-                🍇 ${data.grape_variety || 'Сорт не указан'}<br/>
+                <b style="color: var(--color-brand);">${escapeHtml(data.name)}</b><br/>
+                🍇 ${escapeHtml(data.grape_variety || 'Сорт не указан')}<br/>
                 📊 Площадь: ${data.area} га<br/>
                 📏 Количество рядов: ${data.total_rows}<br/>
                 🌿 Количество кустов: ${data.total_bushes}<br/>
@@ -347,6 +367,10 @@ export default class extends Controller {
   generateRows(polygonPoints) {
     if (!polygonPoints || polygonPoints.length < 3) return
 
+    // Вершину удалили в редакторе — опорной стороны с таким номером больше нет: берём последнюю,
+    // иначе рядов не было бы вовсе (форма получит исправленный номер в map:statisticsUpdated)
+    this.referenceSideIndex = Math.min(this.referenceSideIndex, polygonPoints.length - 2)
+
     this.heatmap?.reset({ rowSpacing: this.rowSpacing, bushSpacing: this.bushSpacing })
     this.rowsCollection.removeAll()
 
@@ -386,12 +410,14 @@ export default class extends Controller {
     return bushes
   }
 
+  // Числа для показа и опорная сторона: карта — единственный её источник, форма лишь сохраняет номер
   sendStatisticsToForm(rowsCount, bushesCount, areaInHectares) {
     document.dispatchEvent(new CustomEvent('map:statisticsUpdated', {
       detail: {
         rows: rowsCount,
         bushes: bushesCount,
-        area: areaInHectares.toFixed(2)
+        area: areaInHectares.toFixed(2),
+        referenceSideIndex: this.referenceSideIndex
       }
     }))
   }

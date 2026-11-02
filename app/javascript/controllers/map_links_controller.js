@@ -3,22 +3,17 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = ["link"]
   
+  // Центр и зум приходят от карты (map:updated): при создании карты и при каждом сдвиге. До этого у ссылок
+  // адреса из разметки. Подписку снимаем в disconnect, иначе после каждого перехода их становилось бы больше
   connect() {
-    // Подписываемся на события от карты
-    document.addEventListener('map:updated', (event) => {
-      this.updateLinks(event.detail)
-    })
-    
-    // Находим карту и получаем начальное состояние
-    const mapElement = document.querySelector('[data-controller="map"]')
-    if (mapElement && mapElement.__mapInstance) {
-      this.updateLinks({
-        center: mapElement.__mapInstance.getCenter(),
-        zoom: mapElement.__mapInstance.getZoom()
-      })
-    }
+    this.onMapUpdated = (event) => this.updateLinks(event.detail)
+    document.addEventListener('map:updated', this.onMapUpdated)
   }
-  
+
+  disconnect() {
+    document.removeEventListener('map:updated', this.onMapUpdated)
+  }
+
   updateLinks({ center, zoom }) {
     this.linkTargets.forEach(link => {
       const linkType = link.dataset.linkType
