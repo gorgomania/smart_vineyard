@@ -3,15 +3,14 @@
 // heatmap_bush (heatmap:bush на элементе карты); легенда (heatmap_legend_controller) получает числа
 // кустов по диагнозам (heatmap:counts) и прячет диагнозы с карты (heatmap:filter).
 //
-// Точки — не объекты Яндекс Карт, а свой тайловый слой: каждый тайл 256×256 рисуем на canvas сами.
-// Метка Яндекса — несколько DOM-элементов с подписками на события: 41 тысяча кустов (10 га, шаги 2 × 1.2 м)
-// рисовалась ~20 с, а снималась с карты (повторная раскладка) — минуты. Тайл с кустами — десятки миллисекунд.
+// Точки — не объекты Яндекс Карт, а свой тайловый слой (utils/canvas_tile_layer): метка Яндекса — несколько
+// DOM-элементов с подписками на события, 41 тысяча кустов (10 га, шаги 2 × 1.2 м) рисовалась ~20 с,
+// а снималась с карты (повторная раскладка) — минуты. Тайл с кустами — десятки миллисекунд.
 // Подсказку и клик по кусту ищем сами по сетке-индексу (hitTest)
+import { CanvasTileLayer, TILE } from "utils/canvas_tile_layer"
 import { diagnosisKey, diagnosisColor } from "utils/diagnoses"
 import { rowBushPoints } from "utils/vineyard_rows"
 
-const TILE = 256
-const EMPTY_TILE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 // Сетка-индекс: столько ячеек по большей стороне участка
 const GRID_CELLS = 64
 
@@ -26,7 +25,7 @@ export class HeatmapLayer {
     this.hiddenDiagnoses = new Set()
     this.bushes = []
     this.bushById = new Map()
-    this.layer = null
+    this.tiles = null
     this.sprites = {}
 
     // Сверки могут идти одновременно (подключение, сигнал «перечитай», переподключение): у каждой свой список
@@ -59,7 +58,7 @@ export class HeatmapLayer {
     cancelAnimationFrame(this.hoverFrame)
     this.streamObserver?.disconnect()
     clearTimeout(this.fallback)
-    clearTimeout(this.swapTimer)
+    this.tiles?.remove()
   }
 
   // Карта готова: наведение — подсказка «Ряд N Куст M», клик — файл куста
@@ -149,52 +148,43 @@ export class HeatmapLayer {
     return found
   }
 
-  // Новый слой на место старого. Старый снимаем, когда новый догрузил тайлы, — иначе точки на миг пропадают
-  redraw() {
-    if (!this.map) return
-    const old = this.layer
-    const layer = this.layer = new ymaps.Layer((tile, zoom) => this.drawTile(tile, zoom), { tileTransparent: true, pane: 'places' })
-
-    if (old) {
-      const swap = () => {
-        clearTimeout(this.swapTimer)
-        layer.events.remove('tileloadchange', onLoad)
-        this.map?.layers.remove(old)
-      }
-      const onLoad = (e) => {
-        if (e.get('readyTileNumber') >= e.get('totalTileNumber')) swap()
-      }
-      layer.events.add('tileloadchange', onLoad)
-      this.swapTimer = setTimeout(swap, 1000)
-    }
-    this.map.layers.add(layer)
+  get layer() {
+    return this.tiles?.layer ?? null
   }
 
-  // Тайл — картинка data: URL. Пустой тайл — общий прозрачный пиксель
-  drawTile([tx, ty], zoom) {
+  redraw() {
+    if (!this.map) return
+    this.tilesLayer().redraw()
+  }
+
+  // Картинка тайла [x, y] на зуме zoom (CanvasTileLayer#tile)
+  drawTile(tile, zoom) {
+    return this.tilesLayer().tile(tile, zoom)
+  }
+
+  tilesLayer() {
+    return this.tiles ||= new CanvasTileLayer(this.map, (ctx, tile) => this.drawBushes(ctx, tile))
+  }
+
+  drawBushes(ctx, { left, top, zoom, ratio }) {
     const scale = 2 ** zoom
     const size = this.dotSize(zoom)
     const margin = size / 2 / scale
-    const bushes = this.bushesIn(tx * TILE / scale - margin, ty * TILE / scale - margin,
-                                 (tx + 1) * TILE / scale + margin, (ty + 1) * TILE / scale + margin)
+    const bushes = this.bushesIn(left / scale - margin, top / scale - margin,
+                                 (left + TILE) / scale + margin, (top + TILE) / scale + margin)
       .filter(bush => !this.hiddenDiagnoses.has(bush.key))
-    if (!bushes.length) return EMPTY_TILE
+    if (!bushes.length) return false
 
-    // На экранах с плотными пикселями рисуем крупнее: Яндекс сожмёт тайл до 256 точек
-    const ratio = Math.min(2, Math.ceil(window.devicePixelRatio || 1))
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = TILE * ratio
-    const ctx = canvas.getContext('2d')
-    const offsetX = tx * TILE + size / 2, offsetY = ty * TILE + size / 2
-
-    for (const top of [false, true]) {
+    const context = ctx()
+    const offsetX = left + size / 2, offsetY = top + size / 2
+    for (const upper of [false, true]) {
       for (const bush of bushes) {
-        if (onTop(bush.key) !== top) continue
-        ctx.drawImage(this.sprite(bush.key, size, ratio),
-                      Math.round((bush.x * scale - offsetX) * ratio), Math.round((bush.y * scale - offsetY) * ratio))
+        if (onTop(bush.key) !== upper) continue
+        context.drawImage(this.sprite(bush.key, size, ratio),
+                          Math.round((bush.x * scale - offsetX) * ratio), Math.round((bush.y * scale - offsetY) * ratio))
       }
     }
-    return canvas.toDataURL()
+    return true
   }
 
   // Точка одна на диагноз и размер. Белая обводка отделяет соседние точки
