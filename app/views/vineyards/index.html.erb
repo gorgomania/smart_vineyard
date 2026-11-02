@@ -2,11 +2,11 @@
 <main class="mt-[82px] py-4 pr-4.5 flex-[1_0_auto]">
     <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-h-16 py-2 [overflow-wrap:anywhere] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg z-10">
                 <%= msg %>
             </div>
         <% else %>
-            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-16 px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg z-10">
+            <div class="flash fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 min-h-16 py-2 [overflow-wrap:anywhere] px-3 w-fit border rounded-lg flex items-center justify-center transition-opacity duration-500 border-success text-success bg-success-bg z-10">
                 <%= msg %>
             </div>
         <% end %>
