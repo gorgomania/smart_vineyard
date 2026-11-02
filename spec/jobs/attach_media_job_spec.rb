@@ -76,4 +76,15 @@ RSpec.describe AttachMediaJob, type: :job do
       expect(MediaItem.count).to eq(0)
     end
   end
+
+  describe "file names" do
+    it "loads the folder's names once for the whole batch and dedupes inside it" do
+      create(:media_item, :with_named_image, folder:, image_filename: "a.jpg")
+      blobs = 3.times.map { upload_blob(filename: "a.jpg") }
+      expect(MediaItem).to receive(:filenames_in_folder).once.and_call_original
+
+      described_class.new.perform(folder, blobs.map(&:signed_id))
+      expect(folder.media_items.map { |i| i.media.blob.filename.to_s }.sort).to eq([ "a(2).jpg", "a(3).jpg", "a(4).jpg", "a.jpg" ])
+    end
+  end
 end

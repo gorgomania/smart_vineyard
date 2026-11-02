@@ -8,6 +8,8 @@ class AttachMediaJob < ApplicationJob
   def perform(folder, signed_blob_ids)
     last_refresh_at = Time.current
     media_item_ids = []
+    # Имена папки — один раз на пачку, а не на каждый файл
+    taken_names = MediaItem.filenames_in_folder(folder.id)
 
     signed_blob_ids.each do |signed_id|
       blob = ActiveStorage::Blob.find_signed(signed_id)
@@ -17,7 +19,7 @@ class AttachMediaJob < ApplicationJob
 
       media_item = MediaItem.new(folder_id: folder.id)
       media_item.media.attach(blob)
-      media_item.normalize_filename!
+      media_item.normalize_filename!(taken_names)
       next unless media_item.save
 
       media_item_ids << media_item.id

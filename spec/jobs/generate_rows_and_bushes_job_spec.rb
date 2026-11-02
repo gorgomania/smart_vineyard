@@ -67,4 +67,13 @@ RSpec.describe GenerateRowsAndBushesJob, type: :job do
       expect { perform([ 2 ]) }.not_to have_enqueued_job(DistributeMediaToBushesJob)
     end
   end
+
+  it "locks the vineyard while building its rows" do
+    queries = []
+    callback = ->(*, payload) { queries << payload[:sql] }
+    ActiveSupport::Notifications.subscribed(callback, "sql.active_record") { perform([ 2 ]) }
+
+    expect(queries.index { |sql| sql.match?(/FROM "vineyards".*FOR UPDATE/m) })
+      .to be < queries.index { |sql| sql.match?(/INSERT INTO "rows"/) }
+  end
 end

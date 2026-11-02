@@ -9,6 +9,9 @@ class GenerateRowsAndBushesJob < ApplicationJob
 
     now = Time.current
     ActiveRecord::Base.transaction do
+      # По очереди с RegenerateRowsAndBushesJob того же виноградника (создали и сразу поправили)
+      vineyard.lock!
+
       # Все ряды одним INSERT, кусты — пачками: на 10 га это десятки тысяч записей
       rows_data = bushes_per_row.each_index.map do |row_index|
         { vineyard_id: vineyard.id, row_number: row_index + 1, created_at: now, updated_at: now }
