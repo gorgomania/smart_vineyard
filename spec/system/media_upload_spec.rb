@@ -45,21 +45,32 @@ RSpec.describe "Uploading photos", type: :system do
   end
 
   # «Назад» — переход Turbo без перезагрузки страницы: браузер сам ничего не обрывает, и без отмены
-  # проверка и загрузка гигабайтов шли бы дальше невидимо и впустую (форму уже не отправить)
-  it "stops checking and uploading when the user leaves the page" do
-    big = Rails.root.join("tmp", "big_upload.zip")
-    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+  # загрузка гигабайтов шла бы дальше невидимо и впустую (форму уже не отправить).
+  # Отдача замедлена в Chrome: на любой машине уходим посреди загрузки, а не после неё
+  it "stops uploading when the user leaves the page, asking once" do
+    big = big_file
+    network = page.driver.browser.network
     visit folder_path(folder)
     visit new_media_item_path(folder_id: folder.id)
+    network.emulate_network_conditions(upload_throughput: 256.kilobytes)
 
     attach_file "fileInput", big, make_visible: true
-    expect(page).to have_content(/Проверка|В очереди/)
-    accept_confirm { click_link "Назад" }
+    expect(page).to have_css("#preview-container div", text: /\A\d+%\z/) # проверен, идёт загрузка
+    # Считаем вопросы: «Назад» без истории — переход по ссылке, его видит и turbo:before-visit.
+    # Turbo не перезагружает страницу, так что счётчик доживает до проверки
+    execute_script("window.confirms = []; window.confirm = (message) => { window.confirms.push(message); return true }")
+    click_link "Назад"
     expect(page).to have_current_path(folder_path(folder))
+    expect(evaluate_script("window.confirms")).to eq([ "Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся" ])
 
-    sleep 3 # за это время 64 МБ успели бы и проверить, и создать blob
-    expect(ActiveStorage::Blob.where(filename: "big_upload.zip")).not_to exist
+    upload = network.traffic.find { |exchange| exchange.request&.method == "PUT" }
+    expect(upload).to be_present
+    50.times { break unless upload.pending?; sleep 0.1 }
+    expect(upload).not_to be_pending # оборван, а не идёт в фоне
+    blob = ActiveStorage::Blob.find_by!(filename: "big_upload.zip") # запись есть, её уберёт ночная очистка
+    expect(ActiveStorage::Blob.service.exist?(blob.key)).to be(false)
   ensure
+    network&.emulate_network_conditions
     FileUtils.rm_f(big) if big
   end
 
@@ -84,19 +95,28 @@ RSpec.describe "Uploading photos", type: :system do
   end
 
   it "keeps uploading when the user changes their mind about leaving" do
-    big = Rails.root.join("tmp", "big_upload.zip")
-    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    big = big_file
+    network = page.driver.browser.network
     visit folder_path(folder)
     visit new_media_item_path(folder_id: folder.id)
+    network.emulate_network_conditions(upload_throughput: 256.kilobytes) # к клику загрузка точно не кончится
 
     attach_file "fileInput", big, make_visible: true
-    expect(page).to have_content(/Проверка|В очереди/)
+    expect(page).to have_css("#preview-container div", text: /\A\d+%\z/)
     dismiss_confirm { click_link "Назад" }
+    network.emulate_network_conditions
 
     expect(page).to have_content("✅ Все файлы загружены!", wait: 30)
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
     expect(ActiveStorage::Blob.find_by(filename: "big_upload.zip").byte_size).to eq(64.megabytes)
   ensure
+    network&.emulate_network_conditions
     FileUtils.rm_f(big) if big
+  end
+
+  def big_file
+    Rails.root.join("tmp", "big_upload.zip").tap do |path|
+      File.open(path, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    end
   end
 end
