@@ -12,7 +12,7 @@ export function polygonSide(points, index) {
 const METERS_PER_DEGREE = 6371000 * Math.PI / 180
 
 // Первый ряд — опорная сторона, остальные параллельно ей через rowSpacing метров: сначала в одну сторону,
-// потом в другую, пока линия пересекает полигон. Номер ряда — порядок обхода (так их считает и форма).
+// потом в другую, пока линия пересекает полигон. Номер ряда — порядок обхода (так же их нумерует сервер).
 // Тот же расчёт на сервере — VineyardLayout (app/services/vineyard_layout.rb): меняя один, меняйте и другой
 export function layoutRows(polygonPoints, sideIndex, rowSpacing) {
   const first = polygonSide(polygonPoints, sideIndex)

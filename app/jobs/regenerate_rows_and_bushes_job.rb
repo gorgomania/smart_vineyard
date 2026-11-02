@@ -5,13 +5,7 @@ class RegenerateRowsAndBushesJob < ApplicationJob
   def perform(vineyard_id, new_bushes_per_row)
     vineyard = Vineyard.find(vineyard_id)
 
-    # Если это строка - парсим JSON
-    if new_bushes_per_row.is_a?(String)
-      new_bushes_per_row = JSON.parse(new_bushes_per_row)
-    end
-    new_bushes_per_row = new_bushes_per_row.map(&:to_i)
-
-    # Пустая раскладка означает, что карта ничего не посчитала, а не «удалить все ряды»
+    # Пустая раскладка означает, что раскладку не посчитали, а не «удалить все ряды»
     return if new_bushes_per_row.blank? || new_bushes_per_row.none?(&:positive?)
 
     # row_number => [row_id, max bush_number]; max, а не count — чтобы новые номера не пересеклись при дырах

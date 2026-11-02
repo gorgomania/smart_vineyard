@@ -112,16 +112,14 @@ export default class extends Controller {
     return vertices
   }
 
-  updateStatistics({ rows, bushes, area, bushesPerRow }) {
-    // Обновляем поля в форме
+  // Числа с карты — только показать: при сохранении раскладку и площадь сервер считает сам (VineyardLayout)
+  updateStatistics({ rows, bushes, area }) {
     const rowsField = document.getElementById('vineyard_total_rows')
     const bushesField = document.getElementById('vineyard_total_bushes')
     const areaField = document.getElementById('vineyard_area_hectares')
-    const bushesPerRowField = document.getElementById('vineyard_bushes_per_row')
     if (rowsField) rowsField.value = rows
     if (bushesField) bushesField.value = bushes
     if (areaField) areaField.value = area + " га"
-    if (bushesPerRowField) bushesPerRowField.value = JSON.stringify(bushesPerRow)
   }
   
   updateSidesInfo({ direction }) {

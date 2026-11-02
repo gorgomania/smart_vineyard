@@ -47,15 +47,6 @@ RSpec.describe GenerateRowsAndBushesJob, type: :job do
       end
     end
 
-    context "with JSON string input" do
-      it "parses the JSON and creates rows and bushes" do
-        perform("[2, 3]")
-        expect(vineyard.rows.count).to eq(2)
-        counts = vineyard.rows.order(:row_number).map { |r| r.bushes.count }
-        expect(counts).to eq([ 2, 3 ])
-      end
-    end
-
     context "when vineyard does not exist" do
       it "is discarded without raising" do
         expect {
