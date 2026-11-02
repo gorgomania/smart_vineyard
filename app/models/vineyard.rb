@@ -3,7 +3,9 @@ class Vineyard < ApplicationRecord
   # Кусты (FK bushes → rows ON DELETE CASCADE) и привязки файлов к ним (media_items → bushes ON DELETE SET NULL)
   # убирает сама БД: один DELETE вместо destroy каждого из тысяч кустов
   has_many :rows, dependent: :delete_all
-  has_many :bushes, through: :rows
+  # Напрямую по bushes.vineyard_id (обязательная колонка с индексом), а не через ряды: на один JOIN меньше,
+  # и запросы вида bushes.joins(:row) не присоединяют rows дважды
+  has_many :bushes
   has_many :media_items, through: :bushes
   has_one :folder, dependent: :nullify
 
