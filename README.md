@@ -118,12 +118,13 @@ bundle exec rspec
 bin/test-js
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 283 examples:
+RSpec + FactoryBot + Shoulda Matchers + Faker, 441 examples:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard)
 - `spec/jobs/` — every background job: row/bush generation and regeneration, ZIP processing, bush distribution, previews, classification, demo cloning and cleanup, storage cleanup and its schedule
 - `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model)
 - `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, `/up`
+- `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite, no chromedriver): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, and the vineyard → row → free bush cascade when attaching a photo. Needs Chrome installed; `HEADLESS=false` shows the browser
 - `spec/javascript/` — unit tests for the browser-free JS in `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
 
 CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop. To check the Helm chart locally: `helm lint chart`.

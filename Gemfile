@@ -57,6 +57,12 @@ group :development, :test do
   gem "shoulda-matchers"
 end
 
+# System-тесты: настоящий headless Chrome через протокол DevTools, без chromedriver и Selenium
+group :test do
+  gem "capybara"
+  gem "cuprite"
+end
+
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
