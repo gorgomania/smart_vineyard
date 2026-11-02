@@ -131,6 +131,11 @@ export default class extends Controller {
       const checksum = await fileChecksum(entry.file, {
         signal: entry.abort.signal,
         onProgress: (bytes) => { entry.checked = bytes; this.renderEntry(entry) }
+      }).catch(error => {
+        if (error.name === "AbortError") throw error
+        // Текст браузера (файл изменился на диске, WebAssembly запрещён и т. п.) — в консоль, пользователю — суть
+        console.error(`Проверка "${entry.file.name}":`, error)
+        throw new Error("не удалось прочитать файл. Выберите его ещё раз")
       })
       const blob = await this.createBlob(entry.file, checksum, entry.abort.signal)
       if (!this.uploads.has(entry.key)) return // убрали, пока создавался blob: файл не отправляем
@@ -411,7 +416,7 @@ export default class extends Controller {
 
   showError(message) {
     const errorWrapper = document.createElement("div")
-    errorWrapper.className = "mt-5 px-3 h-16 w-70 border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center"
+    errorWrapper.className = "mt-5 px-3 min-h-16 py-2 [overflow-wrap:anywhere] w-70 border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center"
     errorWrapper.textContent = message
     this.errorContainerTarget.appendChild(errorWrapper)
   }

@@ -63,6 +63,26 @@ RSpec.describe "Uploading photos", type: :system do
     FileUtils.rm_f(big) if big
   end
 
+  # Файл пропал с диска, пока ждал проверки: пользователю — понятная причина, а не текст браузера,
+  # и блок ошибки растёт под текст, а не обрезает его
+  it "explains in plain words when a file can no longer be read" do
+    big = Rails.root.join("tmp", "big_upload.zip")
+    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    gone = Rails.root.join("tmp", "Ряд 9 Куст 9.jpg").tap { |path| FileUtils.cp(Rails.root.join("spec/fixtures/files/pixel.jpg"), path) }
+
+    visit new_media_item_path(folder_id: folder.id)
+    attach_file "fileInput", [ big, gone ], make_visible: true
+    FileUtils.rm_f(gone)
+
+    error = find("#error-container div", text: "Ошибка загрузки \"Ряд 9 Куст 9.jpg\": не удалось прочитать файл", wait: 30)
+    expect(error[:class].split).to include("min-h-16")
+    expect(error[:class].split).not_to include("h-16")
+    expect(page).to have_content("✅ Загружено 1, с ошибкой 1", wait: 30)
+  ensure
+    FileUtils.rm_f(big) if big
+    FileUtils.rm_f(gone) if gone
+  end
+
   it "keeps uploading when the user changes their mind about leaving" do
     big = Rails.root.join("tmp", "big_upload.zip")
     File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }

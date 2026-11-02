@@ -6,11 +6,11 @@
 
       <% flash.each do |type, msg| %>
         <% if type == "alert" %>
-          <div class="mt-5 px-3 h-16 w-full border rounded-lg text-center flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
+          <div class="mt-5 px-3 min-h-16 py-2 [overflow-wrap:anywhere] w-full border rounded-lg text-center flex items-center justify-center transition-opacity duration-500 border-danger text-danger bg-danger-bg">
             <%= msg %>
           </div>
         <% else %>
-          <div class="mt-5 px-3 h-16 w-full border border-success text-success bg-success-bg rounded-lg text-center flex items-center justify-center">
+          <div class="mt-5 px-3 min-h-16 py-2 [overflow-wrap:anywhere] w-full border border-success text-success bg-success-bg rounded-lg text-center flex items-center justify-center">
             <%= msg %>
           </div>
         <% end %>

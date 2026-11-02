@@ -33,7 +33,7 @@
 
           <% if @vineyard.errors.any? %>
             <% @vineyard.errors.full_messages.each do |msg| %>
-              <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
+              <div class="mt-5 px-3 min-h-16 py-2 [overflow-wrap:anywhere] w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
                   <%= msg %>
               </div>
             <% end %>
