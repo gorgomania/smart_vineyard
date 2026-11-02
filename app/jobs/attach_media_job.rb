@@ -2,11 +2,13 @@ class AttachMediaJob < ApplicationJob
   queue_as :default
   discard_on_deleted_arguments # папку удалили раньше, чем задача началась
 
-  # Большая пачка обрабатывается не мгновенно: показываем файлы по мере появления, но не чаще этого
+  # Большая пачка обрабатывается не мгновенно: показываем файлы по мере появления, но не чаще этого.
+  # Интервал меряем монотонными часами: системные могут прыгнуть (синхронизация времени, WSL2),
+  # и тогда обновления сыпались бы подряд или замирали до тех пор, пока часы не догонят
   REFRESH_INTERVAL = 2.seconds
 
   def perform(folder, signed_blob_ids)
-    last_refresh_at = Time.current
+    last_refresh_at = monotonic_now
     media_item_ids = []
     # Имена папки — один раз на пачку, а не на каждый файл
     taken_names = MediaItem.filenames_in_folder(folder.id)
@@ -25,9 +27,9 @@ class AttachMediaJob < ApplicationJob
       media_item_ids << media_item.id
       ClassifyMediaJob.perform_later(media_item.id) if blob.content_type.start_with?("image/")
 
-      if Time.current - last_refresh_at >= REFRESH_INTERVAL
+      if monotonic_now - last_refresh_at >= REFRESH_INTERVAL
         folder.broadcast_refresh
-        last_refresh_at = Time.current
+        last_refresh_at = monotonic_now
       end
     end
 
@@ -35,5 +37,11 @@ class AttachMediaJob < ApplicationJob
     # и кусты читаются в момент привязки, а не в начале длинной пачки (их могли пересоздать)
     DistributeMediaToBushesJob.perform_later(folder.id, media_item_ids) if folder.vineyard_id && media_item_ids.any?
     folder.broadcast_new_files
+  end
+
+  private
+
+  def monotonic_now
+    Process.clock_gettime(Process::CLOCK_MONOTONIC)
   end
 end
