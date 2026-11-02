@@ -24,6 +24,35 @@ RSpec.describe "Uploading photos", type: :system do
     expect(folder.media_items.count).to eq(1)
   end
 
+  # У зоны transition: цвет доходит до конечного не сразу — ждём, пока перестанет меняться
+  def settled(read)
+    previous = nil
+    20.times do
+      current = read.call
+      return current if current == previous
+      previous = current
+      sleep 0.1
+    end
+    previous
+  end
+
+  # Подсветка зоны, пока над ней несут файл. Цвет проверяем вычисленный: класс на месте ещё не значит,
+  # что он виден, — его может перебить фон зоны с той же специфичностью
+  it "highlights the drop zone while a file is dragged over it" do
+    visit new_media_item_path(folder_id: folder.id)
+    background = -> { page.evaluate_script("getComputedStyle(document.getElementById('dropZone')).backgroundColor") }
+    drag = ->(type) { page.execute_script("document.getElementById('dropZone').dispatchEvent(new DragEvent('#{type}', { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() }))") }
+    idle = background.call
+
+    drag.call("dragenter")
+    expect(page).to have_css("#dropZone[data-dragover]")
+    expect(settled(background)).to eq("rgb(246, 231, 253)") # --color-brand-soft
+
+    drag.call("dragleave")
+    expect(page).to have_no_css("#dropZone[data-dragover]")
+    expect(settled(background)).to eq(idle)
+  end
+
   # Файлы проверяются (MD5) по очереди, а грузятся, не дожидаясь остальных: все три доходят до сервера
   # с верной контрольной суммой (иначе сервис :local отказал бы в сохранении)
   it "checks and uploads several photos one after another" do

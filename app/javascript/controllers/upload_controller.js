@@ -67,21 +67,23 @@ export default class extends Controller {
     this.fileInputTarget.value = ""
   }
 
+  // Подсветку рисуют варианты data-dragover: в разметке. Не классы bg-brand-soft и т. п. из JS: у них та же
+  // специфичность, что у фона зоны, и победит тот, что раньше в CSS, — после палитры это был фон зоны
   dragOver(event) {
     event.preventDefault()
     event.stopPropagation()
-    this.dropZoneTarget.classList.add("border-brand-light", "bg-brand-soft")
+    this.dropZoneTarget.dataset.dragover = ""
   }
 
   dragLeave() {
-    this.dropZoneTarget.classList.remove("border-brand-light", "bg-brand-soft")
+    delete this.dropZoneTarget.dataset.dragover
   }
 
   drop(event) {
     event.preventDefault()
     event.stopPropagation()
     this.errorContainerTarget.innerHTML = ""
-    this.dropZoneTarget.classList.remove("border-brand-light", "bg-brand-soft")
+    delete this.dropZoneTarget.dataset.dragover
     this.addFiles(event.dataTransfer.files)
   }
 
