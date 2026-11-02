@@ -7,7 +7,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { GeometryHelpers } from "utils/geometry_helpers"
 import { HeatmapLayer } from "utils/heatmap_layer"
-import { layoutRows, bushCount } from "utils/vineyard_rows"
+import { layoutRows, orientSegments, rowBushCount } from "utils/vineyard_rows"
 import { parseWKT } from "utils/wkt"
 
 const DEFAULT_CENTER = [44.5947, 33.4756]
@@ -358,32 +358,31 @@ export default class extends Controller {
     this.heatmap?.rendered()
   }
 
-  // Ряд на карте; возвращает число кустов в нём. Кусты нумеруются от опорной вершины
-  addRow({ number, p1, p2 }) {
-    const bushes = bushCount(p1, p2, this.bushSpacing)
-    const [start, end] = this.referenceVertexIsFirst ? [p1, p2] : [p2, p1]
+  // Ряд на карте — линия на каждый его кусок (выемка участка разрывает ряд); возвращает число кустов в ряду.
+  // Кусты нумеруются от опорной вершины подряд через все куски
+  addRow({ number, segments }) {
+    const bushes = rowBushCount(segments, this.bushSpacing)
+    const oriented = orientSegments(segments, this.referenceVertexIsFirst)
 
     if (this.heatmap) {
-      this.heatmap.addRow(number, start, end)
+      this.heatmap.addRow(number, oriented)
       return bushes
     }
 
     const hint = { hintContent: `Ряд ${number} · ${bushes} ${pluralizeBushes(bushes)}` }
     if (number === 1) {
       // Опорная сторона золотая, первый куст — золотой круг на опорной вершине
+      const [start] = oriented[0]
       this.rowsCollection.add(new ymaps.Circle(
         [[start[0], start[1]], 3],
         { hintContent: 'Первый куст' },
         { fillColor: FIRST_ROW_COLOR, fillOpacity: 0.8, strokeColor: FIRST_ROW_COLOR, strokeWidth: 2, strokeOpacity: 1 }
       ))
-      this.rowsCollection.add(new ymaps.Polyline(
-        [[p1[0], p1[1]], [p2[0], p2[1]]], hint,
-        { strokeColor: FIRST_ROW_COLOR, strokeWidth: 4, strokeOpacity: 0.9 }
-      ))
     }
-    else {
-      this.rowsCollection.add(new ymaps.Polyline([[p1[0], p1[1]], [p2[0], p2[1]]], hint))
-    }
+    const style = number === 1 ? { strokeColor: FIRST_ROW_COLOR, strokeWidth: 4, strokeOpacity: 0.9 } : {}
+    segments.forEach(([p1, p2]) => {
+      this.rowsCollection.add(new ymaps.Polyline([[p1[0], p1[1]], [p2[0], p2[1]]], hint, style))
+    })
     return bushes
   }
 

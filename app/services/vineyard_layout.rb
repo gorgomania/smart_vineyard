@@ -6,6 +6,8 @@
 class VineyardLayout
   EARTH_RADIUS_KM = 6371
   METERS_PER_DEGREE = 6_371_000 * Math::PI / 180
+  # Две точки пересечения ближе этого — одна и та же (линия прошла через вершину и задела обе её стороны)
+  SAME_POINT_DEGREES = 1e-12
 
   # points — замкнутый контур [[lat, lng], ...], как в JS
   def self.for(vineyard)
@@ -21,9 +23,9 @@ class VineyardLayout
     @bush_spacing = bush_spacing
   end
 
-  # Число кустов в каждом ряду по порядку номеров
+  # Число кустов в каждом ряду по порядку номеров — сумма по кускам ряда
   def bushes_per_row
-    rows.map { |p1, p2| bush_count(p1, p2) }
+    rows.map { |segments| segments.sum { |p1, p2| bush_count(p1, p2) } }
   end
 
   # Площадь участка в гектарах на сфере R = 6371 км (GeometryHelpers.calculateArea)
@@ -38,8 +40,9 @@ class VineyardLayout
     (area * radius * radius / 2).abs / 10_000
   end
 
-  # [[p1, p2], ...]: первый — опорная сторона, затем параллельные через row_spacing метров в одну сторону,
-  # потом в другую, пока линия пересекает полигон (layoutRows)
+  # Ряды по номерам, каждый — куски [[p1, p2], ...]: выемка участка (буквы «Г», «П») разрывает ряд на несколько.
+  # Первый — опорная сторона, затем параллельные через row_spacing метров в одну сторону, потом в другую,
+  # пока линия задевает участок (layoutRows)
   def rows
     first = polygon_side
     # Шаг не больше нуля (NULL в базе проходит CHECK и даёт 0.0) — сдвиг не растёт, цикл ниже бесконечен
@@ -53,15 +56,14 @@ class VineyardLayout
     length = Math.sqrt(north * north + east * east)
     perp_per_meter = [ -east / length / meters_per_degree_lat, north / length / meters_per_degree_lng ]
 
-    rows = [ first ]
+    rows = [ [ first ] ]
     [ 1, -1 ].each do |direction|
       offset = direction * @row_spacing
       loop do
-        shifted = shift_line(p1, p2, perp_per_meter, offset)
-        intersections = intersections_with_polygon(*shifted)
-        break unless intersections.size == 2
+        segments = inside_segments(*shift_line(p1, p2, perp_per_meter, offset))
+        break if segments.empty?
 
-        rows << intersections
+        rows << segments
         offset += direction * @row_spacing
       end
     end
@@ -98,6 +100,35 @@ class VineyardLayout
   def shift_line(p1, p2, perp, offset)
     [ [ p1[0] + perp[0] * offset, p1[1] + perp[1] * offset ],
       [ p2[0] + perp[0] * offset, p2[1] + perp[1] * offset ] ]
+  end
+
+  # Куски прямой внутри полигона по порядку вдоль line_p1 → line_p2 (insideSegments): точки — по положению
+  # на прямой, а не по расстоянию от line_p1, которая может лежать и внутри участка. Между соседними точками
+  # линия либо на участке, либо в выемке снаружи — какой из двух, решает середина куска
+  def inside_segments(line_p1, line_p2)
+    direction = [ line_p2[0] - line_p1[0], line_p2[1] - line_p1[1] ]
+    along = ->(point) { (point[0] - line_p1[0]) * direction[0] + (point[1] - line_p1[1]) * direction[1] }
+    # с индексом: сортировка в JS устойчивая, равные остаются в прежнем порядке
+    points = intersections_with_polygon(line_p1, line_p2).sort_by.with_index { |point, i| [ along.(point), i ] }
+    points = points.each_with_index.reject { |point, i| i.positive? && distance(point, points[i - 1]) <= SAME_POINT_DEGREES }.map(&:first)
+
+    points.each_cons(2).filter_map do |a, b|
+      [ a, b ] if point_in_polygon?([ (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 ])
+    end
+  end
+
+  # Луч из точки вдоль параллели: нечётное число пересечений со сторонами — точка внутри (pointInPolygon)
+  def point_in_polygon?(point)
+    lat, lng = point
+    inside = false
+    j = @points.size - 1
+    @points.each_index do |i|
+      lat_i, lng_i = @points[i]
+      lat_j, lng_j = @points[j]
+      inside = !inside if (lat_i > lat) != (lat_j > lat) && lng < (lng_j - lng_i) * (lat - lat_i) / (lat_j - lat_i) + lng_i
+      j = i
+    end
+    inside
   end
 
   # Пересечения прямой через line_p1, line_p2 со сторонами полигона, от line_p1 по порядку
