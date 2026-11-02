@@ -1,4 +1,12 @@
-@import "tailwindcss";
+/*
+  Классы ищем только в app/. Без source(none) Tailwind следит за всем проектом, включая storage/
+  со 100+ тыс. папок ActiveStorage: tailwindcss:watch упирается в лимит inotify и роняет bin/dev
+*/
+@import "tailwindcss" source(none);
+@source "../../views";
+@source "../../helpers";
+@source "../../javascript";
+@source "../../services";
 
 /*
   Палитра сайта. Классы: bg-brand, text-ink, border-line, hover:bg-brand-pale и т.д.
