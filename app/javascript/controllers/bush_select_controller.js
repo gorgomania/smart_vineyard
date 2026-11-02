@@ -1,11 +1,18 @@
 // app/javascript/controllers/bush_select_controller.js
 import { Controller } from "@hotwired/stimulus"
 
-// Показывает только свободные кусты. keepBushId — текущий куст файла при перекреплении: его тоже можно выбрать
+// Показывает только свободные кусты. keepBushId — текущий куст файла при перекреплении: его тоже можно выбрать.
+// Ответы на старый выбор (быстро сменили ряд или виноградник, а прежний запрос пришёл позже) отбрасываем:
+// иначе в списке оказались бы кусты другого ряда, и файл прикрепился бы не туда
 export default class extends Controller {
   static values = { keepBushId: Number }
 
+  rowsRequest = 0
+  bushesRequest = 0
+
   async loadRows(event) {
+    const request = ++this.rowsRequest
+    ++this.bushesRequest // кусты прежнего виноградника больше не нужны
     const vineyardId = event.target.value
     const rowsContainer = document.getElementById('rows-container')
     const bushesContainer = document.getElementById('bushes-container')
@@ -20,6 +27,7 @@ export default class extends Controller {
     const response = await fetch(`/vineyards/${vineyardId}/rows.json${this.keepQuery}`)
     // Нет доступа (403) или ошибка — пустой список, а не исключение на разборе ответа
     const rows = response.ok ? await response.json() : []
+    if (request !== this.rowsRequest) return
 
     const rowSelect = document.getElementById('row_id')
     rowSelect.replaceChildren(new Option(rows.length ? '- Выберите ряд -' : '- Нет свободных кустов -', ''))
@@ -30,6 +38,7 @@ export default class extends Controller {
   }
 
   async loadBushes(event) {
+    const request = ++this.bushesRequest
     const rowId = event.target.value
     const bushesContainer = document.getElementById('bushes-container')
     if (!rowId) {
@@ -40,6 +49,7 @@ export default class extends Controller {
     // Загружаем свободные кусты выбранного ряда
     const response = await fetch(`/rows/${rowId}/bushes.json${this.keepQuery}`)
     const bushes = response.ok ? await response.json() : []
+    if (request !== this.bushesRequest) return
 
     const bushSelect = document.getElementById('bush_id')
     bushSelect.replaceChildren(new Option('- Выберите куст -', ''))

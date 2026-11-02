@@ -8,15 +8,11 @@ export default class extends Controller {
                     "firstBushStart", "firstBushEnd", "referenceSideIndex", "referenceVertexIsFirst"]
 
   connect() {
-    document.addEventListener('map:geometryChanged', (event) => {
-      this.updateVerticesFields(event.detail.coordinates)
-    })
-
-    document.addEventListener('map:statisticsUpdated', (event) => {
-      this.updateStatistics(event.detail)
-    })
-
-    document.addEventListener('vineyard:initFormFromExistingPolygon', (event) => {
+    // Подписки на document снимаем в disconnect: иначе после каждого перехода Turbo на форму их становилось
+    // бы на одну больше, и перетаскивание вершины перестраивало бы поля столько же раз
+    this.onGeometryChanged = (event) => this.updateVerticesFields(event.detail.coordinates)
+    this.onStatisticsUpdated = (event) => this.updateStatistics(event.detail)
+    this.onInitFromExistingPolygon = (event) => {
       if (!event.detail.referenceVertexIsFirst) {
         // Инвертируем текущее состояние
         this.updateFirstBushButtonState('end')
@@ -25,12 +21,21 @@ export default class extends Controller {
       this.rowSpacingValueTarget.textContent = event.detail.rowSpacing.toFixed(1)
       this.bushSpacingTarget.value = event.detail.bushSpacing
       this.bushSpacingValueTarget.textContent = event.detail.bushSpacing
-    })
+    }
+    document.addEventListener('map:geometryChanged', this.onGeometryChanged)
+    document.addEventListener('map:statisticsUpdated', this.onStatisticsUpdated)
+    document.addEventListener('vineyard:initFormFromExistingPolygon', this.onInitFromExistingPolygon)
 
     // Настраиваем слушатели полей формы
     this.setupSpacingListeners()
     this.setupSideButtons()
     this.setupFirstBushButtons()
+  }
+
+  disconnect() {
+    document.removeEventListener('map:geometryChanged', this.onGeometryChanged)
+    document.removeEventListener('map:statisticsUpdated', this.onStatisticsUpdated)
+    document.removeEventListener('vineyard:initFormFromExistingPolygon', this.onInitFromExistingPolygon)
   }
 
   updateVerticesFields(vertices) {
@@ -83,7 +88,9 @@ export default class extends Controller {
 
   vertexChangeHandler() {
     const vertices = this.collectVerticesFromForm()
-    
+    // Не число — карту не трогаем, поле подсвечено: иначе вершина улетела бы (parseFloat("44,59") = 44) или стала NaN
+    if (!vertices) return
+
     // Отправляем обновленные вершины на карту
     const coordinates = [vertices.map(v => [v.lat, v.lng])]
     coordinates[0].push([vertices[0].lat, vertices[0].lng]) // замыкаем полигон
@@ -94,54 +101,48 @@ export default class extends Controller {
     document.dispatchEvent(polygonEvent)
   }
 
+  // Вершины из полей формы или null, если хоть одно поле — не число (такие поля подсвечиваются)
   collectVerticesFromForm() {
     const vertices = []
+    let valid = true
     const latInputs = document.querySelectorAll('[data-vertex-lat]')
-    
+
     latInputs.forEach(latInput => {
       const index = latInput.dataset.vertexLat
       const lngInput = document.querySelector(`[data-vertex-lng="${index}"]`)
-      if (lngInput) {
-        vertices.push({
-          lat: parseFloat(latInput.value),
-          lng: parseFloat(lngInput.value)
-        })
-      }
+      if (!lngInput) return
+
+      const lat = this.readCoordinate(latInput)
+      const lng = this.readCoordinate(lngInput)
+      if (lat === null || lng === null) valid = false
+      vertices.push({ lat, lng })
     })
-    
-    return vertices
+
+    return valid ? vertices : null
   }
 
-  // Числа с карты — только показать: при сохранении раскладку и площадь сервер считает сам (VineyardLayout)
-  updateStatistics({ rows, bushes, area }) {
+  // Число из поля координаты: десятичная запятая (русская раскладка) — тоже точка, и в самом поле,
+  // чтобы на сервер ушло то же, что на карту. Не число — null и красная рамка
+  readCoordinate(input) {
+    const text = input.value.trim().replace(',', '.')
+    const value = /^-?\d+(\.\d+)?$/.test(text) ? Number(text) : NaN
+    const valid = Number.isFinite(value)
+    if (valid) input.value = text
+    input.classList.toggle('!border-danger', !valid)
+    input.classList.toggle('!bg-danger-bg', !valid)
+    return valid ? value : null
+  }
+
+  // Числа с карты — только показать: при сохранении раскладку и площадь сервер считает сам (VineyardLayout).
+  // Номер опорной стороны ведёт карта (переключает сторону, поправляет его после удаления вершины), форма его хранит
+  updateStatistics({ rows, bushes, area, referenceSideIndex }) {
     const rowsField = document.getElementById('vineyard_total_rows')
     const bushesField = document.getElementById('vineyard_total_bushes')
     const areaField = document.getElementById('vineyard_area_hectares')
     if (rowsField) rowsField.value = rows
     if (bushesField) bushesField.value = bushes
     if (areaField) areaField.value = area + " га"
-  }
-  
-  updateSidesInfo({ direction }) {
-    let referenceSideIndex = parseInt(this.referenceSideIndexTarget.value) || 0
-    const vertexCount = document.querySelectorAll('.vertex-group').length
-    if (direction == "next") {
-      if (referenceSideIndex + 1 < vertexCount) {
-        referenceSideIndex += 1
-      }
-      else {
-        referenceSideIndex = 0
-      }
-    }
-    else {
-      if (referenceSideIndex - 1 >= 0) {
-        referenceSideIndex -= 1
-      }
-      else {
-        referenceSideIndex = vertexCount - 1
-      }
-    }
-    this.referenceSideIndexTarget.value = referenceSideIndex
+    if (this.hasReferenceSideIndexTarget) this.referenceSideIndexTarget.value = referenceSideIndex
   }
 
   setupSpacingListeners() {
@@ -168,7 +169,6 @@ export default class extends Controller {
     // Предыдущая сторона
     if (this.hasPrevSideTarget) {
       this.prevSideTarget.addEventListener('click', () => {
-        this.updateSidesInfo({ direction: "prev" })
         document.dispatchEvent(new CustomEvent('vineyard:prevSide'))
       })
     }
@@ -176,7 +176,6 @@ export default class extends Controller {
     // Следующая сторона
     if (this.hasNextSideTarget) {
       this.nextSideTarget.addEventListener('click', () => {
-        this.updateSidesInfo({ direction: "next" })
         document.dispatchEvent(new CustomEvent('vineyard:nextSide'))
       })
     }
@@ -190,7 +189,7 @@ export default class extends Controller {
         if (this.hasReferenceVertexIsFirstTarget) {
           this.referenceVertexIsFirstTarget.value = 'true'
         }
-        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged'))
+        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged', { detail: { referenceVertexIsFirst: true } }))
       })
     }
 
@@ -201,7 +200,7 @@ export default class extends Controller {
         if (this.hasReferenceVertexIsFirstTarget) {
           this.referenceVertexIsFirstTarget.value = 'false'
         }
-        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged'))
+        document.dispatchEvent(new CustomEvent('vineyard:firstBushChanged', { detail: { referenceVertexIsFirst: false } }))
       })
     }
   }

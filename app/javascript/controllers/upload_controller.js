@@ -88,6 +88,9 @@ export default class extends Controller {
   startUpload(entry) {
     const upload = new DirectUpload(entry.file, DIRECT_UPLOAD_URL, {
       directUploadWillStoreFileWithXHR: (xhr) => {
+        // Файл убрали, пока считалась контрольная сумма: загрузка ещё не началась, но DirectUpload её запустит —
+        // обрываем, иначе файл до 1 ГБ ушёл бы на сервер впустую
+        if (!this.uploads.has(entry.key)) return xhr.abort()
         entry.xhr = xhr
         entry.status = "uploading"
         xhr.upload.addEventListener("progress", (e) => {
