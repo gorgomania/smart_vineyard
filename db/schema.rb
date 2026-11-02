@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_02_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_02_140000) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -140,7 +140,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_120000) do
     t.index ["polygon"], name: "index_vineyards_on_polygon", using: :gist
     t.index ["user_id", "name"], name: "index_vineyards_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_vineyards_on_user_id"
-    t.check_constraint "area_hectares <= 10::numeric OR area_hectares IS NULL", name: "check_area_limit"
+    t.check_constraint "area_hectares <= 50::numeric OR area_hectares IS NULL", name: "check_area_limit"
     t.check_constraint "bush_spacing >= 1.2 AND bush_spacing <= 1.8", name: "check_bush_spacing_range"
     t.check_constraint "row_spacing >= 2.0 AND row_spacing <= 3.0", name: "check_row_spacing_range"
     t.check_constraint "total_bushes >= 0", name: "check_total_bushes_positive"

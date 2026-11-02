@@ -20,9 +20,24 @@ RSpec.describe Vineyard, type: :model do
       expect(vineyard).not_to be_valid
     end
 
-    it "rejects area_hectares above 10" do
-      vineyard.area_hectares = 10.1
+    it "accepts area_hectares up to 50" do
+      vineyard.area_hectares = 50
+      vineyard.validate
+      expect(vineyard.errors[:area_hectares]).to be_empty
+    end
+
+    it "rejects area_hectares above 50" do
+      vineyard.area_hectares = 50.01
       expect(vineyard).not_to be_valid
+      expect(vineyard.errors[:area_hectares]).to be_present
+    end
+
+    it "the database rejects area above 50 too (check_area_limit)" do
+      vineyard = create(:vineyard)
+      # Свой savepoint: ошибка CHECK иначе прервёт транзакцию теста, и следующий запрос не выполнится
+      expect { Vineyard.transaction(requires_new: true) { vineyard.update_column(:area_hectares, 50.01) } }
+        .to raise_error(ActiveRecord::StatementInvalid, /check_area_limit/)
+      expect { vineyard.update_column(:area_hectares, 50) }.not_to raise_error
     end
     it { is_expected.to validate_numericality_of(:row_spacing).is_greater_than_or_equal_to(2.0).is_less_than_or_equal_to(3.0) }
     it { is_expected.to validate_numericality_of(:bush_spacing).is_greater_than_or_equal_to(1.2).is_less_than_or_equal_to(1.8) }

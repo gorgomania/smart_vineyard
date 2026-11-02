@@ -188,7 +188,7 @@ class VineyardsController < ApplicationController
   end
 
   # Раскладку, площадь и итоги считает сервер (VineyardLayout) — так же, как карта в форме, но числам из браузера
-  # не верим: подложенные bushes_per_row или площадь создали бы миллионы кустов в обход «не больше 10 га».
+  # не верим: подложенные bushes_per_row или площадь создали бы миллионы кустов в обход Vineyard::MAX_AREA_HECTARES.
   # Возвращает bushes_per_row или nil, тогда ошибки уже в vineyard.errors
   def calculate_layout(vineyard)
     vineyard.validate
