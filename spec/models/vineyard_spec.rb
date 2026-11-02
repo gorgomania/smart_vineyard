@@ -6,7 +6,7 @@ RSpec.describe Vineyard, type: :model do
   describe "associations" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to have_many(:rows).dependent(:delete_all) }
-    it { is_expected.to have_many(:bushes).through(:rows) }
+    it { is_expected.to have_many(:bushes) }
     it { is_expected.to have_one(:folder).dependent(:nullify) }
   end
 
