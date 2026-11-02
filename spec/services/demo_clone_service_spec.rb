@@ -50,8 +50,43 @@ RSpec.describe DemoCloneService do
       expect(folder.vineyard_id).to be_nil
     end
 
-    it "enqueues CloneDemoMediaJob for the demo user" do
-      expect { clone }.to have_enqueued_job(CloneDemoMediaJob)
+    it "copies every row and bush with the same numbers into the right vineyard" do
+      big = create(:vineyard, user: master, name: "Большой")
+      small = setup_vineyard("Малый")
+      [ 1, 2, 5 ].each do |row_number|
+        row = create(:row, vineyard: big, row_number:)
+        (1..row_number).each { |bush_number| create(:bush, vineyard: big, row:, bush_number:) }
+      end
+      layout = ->(vineyard) { vineyard.bushes.joins(:row).order("rows.row_number", :bush_number).pluck("rows.row_number", :bush_number) }
+
+      demo = clone
+
+      expect(layout.(demo.vineyards.find_by!(name: "Большой"))).to eq(layout.(big))
+      expect(layout.(demo.vineyards.find_by!(name: "Малый"))).to eq(layout.(small))
+      expect(Bush.where(vineyard: demo.vineyards).pluck(:row_id, :vineyard_id))
+        .to all(satisfy { |row_id, vineyard_id| Row.find(row_id).vineyard_id == vineyard_id })
+    end
+
+    it "enqueues CloneDemoMediaJob with the vineyard map, not a map of every bush" do
+      vineyard = setup_vineyard("Живой")
+      demo = clone
+
+      expect(CloneDemoMediaJob).to have_been_enqueued.with(
+        demo.id, {}, vineyard_map: { vineyard.id.to_s => demo.vineyards.sole.id }
+      )
+    end
+
+    # Сервис и задача вместе: файл мастера на кусте оказывается на том же кусте клона
+    it "ends with the demo copy of a file linked to the matching demo bush" do
+      vineyard = setup_vineyard("Живой")
+      folder = create(:folder, user: master, vineyard:)
+      create(:media_item, :with_image, folder:, bush: vineyard.bushes.sole)
+
+      demo = clone
+      perform_enqueued_jobs(only: CloneDemoMediaJob)
+
+      copy = MediaItem.joins(:folder).where(folders: { user_id: demo.id }).sole
+      expect(copy.bush).to eq(demo.vineyards.sole.bushes.sole)
     end
   end
 end

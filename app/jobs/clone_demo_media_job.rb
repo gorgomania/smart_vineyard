@@ -1,9 +1,9 @@
 class CloneDemoMediaJob < ApplicationJob
   queue_as :default
 
-  def perform(user_id, folder_map, bush_map)
+  # vineyard_map — старый виноградник → новый: по нему находим кусты демо для привязанных файлов
+  def perform(user_id, folder_map, vineyard_map: {})
     folder_map = folder_map.transform_keys(&:to_i)
-    bush_map   = bush_map.transform_keys(&:to_i)
     now = Time.current
 
     items = MediaItem
@@ -13,6 +13,8 @@ class CloneDemoMediaJob < ApplicationJob
       .to_a
 
     return if items.empty?
+
+    bush_map = demo_bush_map(items.filter_map(&:bush_id).uniq, vineyard_map)
 
     items_data = items.map do |item|
       {
@@ -35,6 +37,23 @@ class CloneDemoMediaJob < ApplicationJob
   end
 
   private
+
+  # Старый куст → куст демо с тем же номером ряда и куста в клоне виноградника. Нет пары (виноградник
+  # мастер удалил, куста в клоне нет) — файл в демо остаётся без привязки
+  def demo_bush_map(bush_ids, vineyard_map)
+    return {} if bush_ids.empty? || vineyard_map.empty?
+
+    sql = ActiveRecord::Base.sanitize_sql_array([ <<~SQL, bush_ids ])
+      SELECT b.id, nb.id
+      FROM bushes b
+      JOIN rows r ON r.id = b.row_id
+      JOIN #{DemoCloneService.id_map_sql(vineyard_map, as: "m")} ON m.old_id = b.vineyard_id
+      JOIN rows nr ON nr.vineyard_id = m.new_id AND nr.row_number = r.row_number
+      JOIN bushes nb ON nb.row_id = nr.id AND nb.bush_number = b.bush_number
+      WHERE b.id IN (?)
+    SQL
+    ActiveRecord::Base.connection.select_rows(sql).to_h { |old_id, new_id| [ old_id.to_i, new_id.to_i ] }
+  end
 
   def attach_blobs(items, new_ids, now)
     media_attachments = items.each_with_index.filter_map do |item, i|
