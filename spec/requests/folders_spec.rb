@@ -288,4 +288,57 @@ RSpec.describe "Folders", type: :request do
       expect(response.body).to include(%(href="#{folder_path(folder)}"))
     end
   end
+
+  describe "GET /folders/:id pagination" do
+    before { sign_in user }
+
+    # 24 на странице: P01–P24 на первой, P25–P30 на второй
+    let!(:children) { (1..30).map { |n| create(:folder, user:, parent: folder, title: format("P%02d", n)) } }
+
+    def shown_titles
+      response.body.scan(/P\d\d/).uniq
+    end
+
+    [ "0", "-5", "abc" ].each do |page|
+      it "shows the first page for page=#{page} instead of failing on a negative OFFSET" do
+        get folder_path(folder, page:)
+        expect(response).to have_http_status(:ok)
+        expect(shown_titles).to include("P01")
+      end
+    end
+
+    it "shows the last page for a page past the end" do
+      get folder_path(folder, page: 99)
+      expect(shown_titles).to include("P30")
+    end
+
+    it "keeps page=-2 meaning the page with the last folder" do
+      get folder_path(folder, page: -2)
+      expect(shown_titles).to include("P30")
+    end
+
+    it "keeps page=-1 meaning the page where just uploaded files start" do
+      create_list(:media_item, 20, folder:)
+      get folder_path(folder, page: -1, successfull_uploads_count: 20) # 30 папок: загруженные начинаются на 2-й
+      expect(shown_titles).to include("P30")
+    end
+
+    it "falls back to the first page when page=-1 counts more uploads than there are items" do
+      get folder_path(folder, page: -1, successfull_uploads_count: 500)
+      expect(response).to have_http_status(:ok)
+      expect(shown_titles).to include("P01")
+    end
+
+    it "shows the first page for page=-2 in a folder without subfolders" do
+      empty = create(:folder, user:, parent: folder)
+      get folder_path(empty, page: -2)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "shows the first page of search results for page=0" do
+      get folders_path(folders: { title: "P" }, page: 0)
+      expect(response).to have_http_status(:ok)
+      expect(shown_titles).to include("P01")
+    end
+  end
 end

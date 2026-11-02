@@ -314,4 +314,14 @@ RSpec.describe "Vineyards", type: :request do
       end
     end
   end
+
+  describe "POST /vineyards/select_stats" do
+    before { sign_in user }
+
+    it "asks to choose a vineyard instead of failing when none is chosen" do
+      post select_stats_vineyards_path, params: { vineyard_id: "" }
+      expect(response).to redirect_to(select_stats_vineyards_path)
+      expect(flash[:alert]).to eq("Выберите виноградник")
+    end
+  end
 end

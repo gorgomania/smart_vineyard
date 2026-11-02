@@ -239,4 +239,52 @@ RSpec.describe "MediaItems", type: :request do
       expect(response.body).to include(%(href="#{folders_path}"))
     end
   end
+
+  describe "PATCH /media_items/:id errors" do
+    before { sign_in user }
+
+    it "keeps the page and search in the form when the name is blank" do
+      patch media_item_path(media_item), params: { media_item: { filename: "" }, page: 3, search_query: "куст" }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include('name="page" id="page" value="3"', 'name="search_query" id="search_query" value="куст"')
+    end
+
+    it "shows the blob's error when the rename does not save" do
+      media_item # файл прикреплён до подмены Blob#save
+      allow_any_instance_of(ActiveStorage::Blob).to receive(:save) do |blob|
+        blob.errors.add(:filename, "занято")
+        false
+      end
+      patch media_item_path(media_item), params: { media_item: { filename: "new" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("занято")
+    end
+
+    it "returns to the folder instead of a 500 when the record has no file" do
+      bare = create(:media_item, folder:)
+      patch media_item_path(bare), params: { media_item: { filename: "new" } }
+      expect(response).to redirect_to(folder_path(folder))
+      expect(flash[:alert]).to include("нет файла")
+    end
+  end
+
+  describe "attaching to a bush of a deleted vineyard" do
+    before { sign_in user }
+
+    let(:vineyard) { create(:vineyard, user:, deleted_at: Time.current) }
+    let(:row)      { create(:row, vineyard:, row_number: 1) }
+    let(:bush)     { create(:bush, vineyard:, row:, bush_number: 1) }
+
+    it "is denied: the user no longer sees the vineyard" do
+      post attach_to_bush_media_item_path(media_item), params: { bush_id: bush.id }
+      expect(media_item.reload.bush_id).to be_nil
+      expect(response).to redirect_to(folders_path)
+    end
+
+    it "opens the re-attach form empty instead of a 404 for a file left on such a bush" do
+      media_item.update!(bush:)
+      get edit_attach_media_item_path(media_item)
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

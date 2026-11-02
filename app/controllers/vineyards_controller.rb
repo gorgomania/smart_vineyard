@@ -112,8 +112,11 @@ class VineyardsController < ApplicationController
     else
       if params[:vineyard_id] == "all"
         redirect_to total_stats_vineyards_path
-      else
+      elsif params[:vineyard_id].present?
         redirect_to stats_vineyard_path(params[:vineyard_id])
+      else
+        # Без выбора stats_vineyard_path(nil) не строится — было 500
+        redirect_to select_stats_vineyards_path, alert: "Выберите виноградник"
       end
     end
   end

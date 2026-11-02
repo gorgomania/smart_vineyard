@@ -60,14 +60,21 @@ class MediaItemsController < ApplicationController
     @media_item = MediaItem.find(params[:id])
     authorize @media_item
 
-    search_query = params[:search_query]
-    page = params[:page]
+    # Форма при ошибке показывается снова: страница и поиск нужны её скрытым полям, чтобы вернуть туда же
+    @search_query = params[:search_query]
+    @page = params[:page]
 
     new_base_name = media_item_params[:filename]
 
     if new_base_name.blank?
       flash.now[:alert] = "Имя файла не может быть пустым"
       render "edit", status: :unprocessable_entity
+      return
+    end
+
+    # Форму без файла не показать (в ней имя файла) — возвращаем в папку
+    unless @media_item.media.attached?
+      redirect_to folder_path(@media_item.folder_id), alert: "У записи нет файла — переименовывать нечего"
       return
     end
 
@@ -79,15 +86,14 @@ class MediaItemsController < ApplicationController
     @media_item.normalize_filename!
 
     if blob.save
-      if search_query.blank?
-        redirect_to folder_path(@media_item.folder_id, page: page), notice: "Имя файла успешно изменено"
+      if @search_query.blank?
+        redirect_to folder_path(@media_item.folder_id, page: @page), notice: "Имя файла успешно изменено"
       else
-        redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Имя файла успешно изменено"
+        redirect_to folders_path(page: @page, folders: { title: @search_query }), notice: "Имя файла успешно изменено"
       end
     else
-      @search_query = search_query
-      @page = page
-      flash.now[:alert] = @media_item.errors[:media][0]
+      # Сохраняется блоб — ошибки у него, а не у MediaItem
+      flash.now[:alert] = blob.errors.full_messages.to_sentence.presence || "Не удалось переименовать файл"
       render "edit", status: :unprocessable_entity
     end
   end
@@ -155,7 +161,8 @@ class MediaItemsController < ApplicationController
 
     @vineyards = current_user.vineyards.active.order(:name)
 
-    if @media_item.bush.present?
+    # Куст удалённого виноградника не предлагаем: форма откроется пустой, как для неприкреплённого файла
+    if @media_item.bush.present? && @media_item.bush.vineyard.deleted_at.nil?
       @selected_vineyard_id = @media_item.bush.vineyard_id
       @selected_row_id = @media_item.bush.row_id
       @selected_bush_id = @media_item.bush_id
