@@ -26,6 +26,16 @@ RSpec.describe VineyardLayout do
     expect(described_class.for(vineyard).bushes_per_row).to eq(c["bushes_per_row"])
   end
 
+  # Шаг в базе может быть NULL (CHECK его пропускает): for даёт 0.0, и без проверки цикл рядов бесконечен —
+  # миграция пересчёта повисла бы на деплое
+  it "пустая раскладка, а не бесконечный цикл, при шаге не больше нуля" do
+    points = points(layouts.first["polygon"])
+    expect(described_class.new(points, side_index: 0, row_spacing: 0.0, bush_spacing: 1.5).bushes_per_row).to eq([])
+    expect(described_class.new(points, side_index: 0, row_spacing: 3.0, bush_spacing: 0.0).bushes_per_row).to eq([])
+    vineyard = build(:vineyard, polygon: layouts.first["polygon"], row_spacing: nil, bush_spacing: nil)
+    expect(described_class.for(vineyard).bushes_per_row).to eq([])
+  end
+
   it "нет опорной стороны — нет рядов" do
     expect(described_class.new(points(layouts.first["polygon"]), side_index: 9, row_spacing: 3, bush_spacing: 1.5).rows).to eq([])
   end

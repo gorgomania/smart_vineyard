@@ -127,6 +127,14 @@ RSpec.describe "MediaItems", type: :request do
 
     before { sign_in demo_user }
 
+    # Свой блоб создаётся по ходу переименования: проверка на дубль должна смотреть на него же, а не на старый
+    it "does not give the demo copy a name already taken in its folder" do
+      create(:media_item, :with_named_image, folder: demo_folder, image_filename: "taken.jpg")
+      patch media_item_path(demo_item), params: { media_item: { filename: "taken" } }
+
+      expect(demo_item.reload.media.blob.filename.to_s).to eq("taken(2).jpg")
+    end
+
     it "renames only the demo copy when the blob is shared with the master" do
       patch media_item_path(demo_item), params: { media_item: { filename: "renamed" } }
 

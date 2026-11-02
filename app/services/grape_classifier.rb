@@ -93,13 +93,11 @@ class GrapeClassifier
 
     # Ресайз и центрирование
     scale = IMAGE_SIZE.to_f / [ image.width, image.height ].min
-    resized_width = (image.width * scale).round
-    resized_height = (image.height * scale).round
     resized = image.resize(scale)
 
-    # Затем вырезаем центр
-    crop_x = (resized_width - IMAGE_SIZE) / 2
-    crop_y = (resized_height - IMAGE_SIZE) / 2
+    # Затем вырезаем центр — по фактическому размеру после resize, а не по своему пересчёту
+    crop_x = (resized.width - IMAGE_SIZE) / 2
+    crop_y = (resized.height - IMAGE_SIZE) / 2
     cropped = resized.crop(crop_x, crop_y, IMAGE_SIZE, IMAGE_SIZE)
 
     # Приводим к RGB и 8-бит, альфа-канал PNG отбрасываем

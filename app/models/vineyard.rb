@@ -34,9 +34,12 @@ class Vineyard < ApplicationRecord
     select(:id, :name, :polygon, :area_hectares, :grape_variety, :total_rows, :total_bushes).order(:name)
   }
 
-  # Пользователь сразу перестаёт видеть виноградник (scope :active), а запись удаляет DestroyVineyardJob
+  # Пользователь сразу перестаёт видеть виноградник (scope :active), а запись удаляет DestroyVineyardJob.
+  # Без валидаций: удалять можно и старую запись, которая не проходит нынешние правила, — иначе update
+  # молча вернул бы false, а задача удаления и рассылка всё равно ушли бы
   def soft_destroy
-    update(deleted_at: Time.current)
+    now = Time.current
+    update_columns(deleted_at: now, updated_at: now)
     DestroyVineyardJob.perform_later(id)
     # Открытая общая статистика владельца перестаёт учитывать этот виноградник
     Turbo::StreamsChannel.broadcast_refresh_to(user, :stats)

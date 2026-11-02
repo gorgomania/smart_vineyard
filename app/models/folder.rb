@@ -58,14 +58,23 @@ class Folder < ApplicationRecord
     RefreshFolderJob.set(wait: 3.seconds).perform_later(self)
   end
 
-  # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс.
-  # Превращаем это в обычную ошибку валидации: update вернёт false, а не 500
+  # Два одновременных запроса проходят валидацию оба, и второй упирается в уникальный индекс
+  # (одна папка на виноградник; имя — в своей папке и среди корневых). Превращаем это в обычную
+  # ошибку валидации: save вернёт false, а не 500
+  UNIQUE_INDEX_ERRORS = {
+    "index_folders_on_vineyard_id" => [ :vineyard_id, :taken ],
+    "index_folders_on_user_id_and_title_and_parent_id" => [ :title, "Имя папки уже используется" ],
+    "index_folders_on_user_id_and_title" => [ :title, "Имя папки уже используется" ]
+  }.freeze
+
   def save(...)
     super
   rescue ActiveRecord::RecordNotUnique => e
-    raise unless e.message.include?("index_folders_on_vineyard_id")
+    # Длинное имя первым: index_folders_on_user_id_and_title — префикс index_..._and_parent_id
+    index = UNIQUE_INDEX_ERRORS.keys.sort_by { -_1.length }.find { e.message.include?(_1) }
+    raise unless index
 
-    errors.add(:vineyard_id, :taken)
+    errors.add(*UNIQUE_INDEX_ERRORS[index])
     false
   end
 

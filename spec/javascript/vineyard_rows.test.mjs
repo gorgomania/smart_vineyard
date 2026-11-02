@@ -84,6 +84,12 @@ describe("layoutRows", () => {
     }
   }
 
+  test("шаг рядов не больше нуля — нет рядов, а не бесконечный цикл", () => {
+    assert.deepEqual(layoutRows(RECT, 0, 0), [])
+    assert.deepEqual(layoutRows(RECT, 0, -3), [])
+    assert.deepEqual(layoutRows(RECT, 0, NaN), [])
+  })
+
   test("нет опорной стороны — нет рядов", () => {
     assert.deepEqual(layoutRows(RECT, 7, 3), [])
   })
@@ -123,6 +129,10 @@ describe("bushPoints", () => {
     const gaps = bushes.slice(1).map((b, i) => meters(bushes[i].point, b.point))
     assert.ok(Math.max(...gaps) - Math.min(...gaps) < 1e-6)
     assert.ok(gaps[0] >= 1.5, "куст ближе заданного шага")
+  })
+
+  test("шаг кустов не больше нуля — нет кустов, а не бесконечный цикл", () => {
+    assert.deepEqual(bushPoints(start, end, 0), [])
   })
 
   test("ряд короче шага — один куст на start", () => {
