@@ -1,6 +1,8 @@
 class BushPolicy < ApplicationPolicy
+  # Свой виноградник и не удалённый: мягко удалённый (deleted_at) пользователь уже не видит
   def attach_to_bush?
-    record.row&.vineyard&.user_id == user.id
+    vineyard = record.row&.vineyard
+    vineyard.present? && vineyard.user_id == user.id && vineyard.deleted_at.nil?
   end
 
   def update_attach_to_bush?

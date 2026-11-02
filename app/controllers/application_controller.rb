@@ -11,9 +11,16 @@ class ApplicationController < ActionController::Base
     render file: Rails.public_path.join("404.html"), status: :not_found, layout: false, content_type: "text/html"
   end
 
+  # JSON-запросам (выбор ряда и куста, bush_select_controller) — 403 с JSON: редирект на HTML-страницу
+  # fetch прошёл бы насквозь, и response.json() упал бы на разметке
   def user_not_authorized
-    flash[:alert] = "В доступе отказано"
-    redirect_to folders_path
+    respond_to do |format|
+      format.json { render json: { error: "В доступе отказано" }, status: :forbidden }
+      format.any do
+        flash[:alert] = "В доступе отказано"
+        redirect_to folders_path
+      end
+    end
   end
 
   private

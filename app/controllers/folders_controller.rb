@@ -14,9 +14,8 @@ class FoldersController < ApplicationController
         @media_length = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").count
         @page_limit = ((@childrens_length + @media_length) / per_page.to_f).ceil
         @page_limit = 1 if @page_limit.zero?
-        if @page > @page_limit
-          @page = @page_limit
-        end
+        # page=0, отрицательный или не число — первая страница, больше последней — последняя
+        @page = @page.clamp(1, @page_limit)
 
         offset = (@page - 1) * per_page
         @childrens = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").order(created_at: :asc).limit(per_page).offset(offset)
@@ -59,14 +58,15 @@ class FoldersController < ApplicationController
     media_length = @folder.media_items.count
     @page_limit = ((childrens_length + media_length) / per_page.to_f).ceil
     @page_limit = 1 if @page_limit.zero?
-    if @page > @page_limit
-      @page = @page_limit
-    elsif @page == -1
-      @page = ((childrens_length + media_length - params[:successfull_uploads_count].to_i) / per_page.to_f).ceil
-      @page = 1 if @page.zero?
-    elsif @page == -2
-      @page = (childrens_length / per_page.to_f).ceil
-    end
+    # Особые номера: -1 — страница, с которой начинаются только что загруженные файлы (MediaItemsController#create),
+    # -2 — страница с последней папкой (после создания папки). Итог, как и любой другой номер, держим
+    # в 1..@page_limit: иначе 0 и отрицательные дают отрицательный OFFSET и 500
+    @page =
+      case @page
+      when -1 then ((childrens_length + media_length - params[:successfull_uploads_count].to_i) / per_page.to_f).ceil
+      when -2 then (childrens_length / per_page.to_f).ceil
+      else @page
+      end.clamp(1, @page_limit)
 
     offset = (@page - 1) * per_page
     @childrens = @folder.children.order(created_at: :asc).limit(per_page).offset(offset)

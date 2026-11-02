@@ -54,4 +54,20 @@ RSpec.describe "Rows", type: :request do
       end
     end
   end
+
+  describe "GET /rows/:id/bushes.json" do
+    it "answers another user with a JSON 403, not an HTML redirect fetch would follow" do
+      sign_in create(:user)
+      get bushes_row_path(row, format: :json)
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body).to eq("error" => "В доступе отказано")
+    end
+
+    it "does not list bushes of a deleted vineyard" do
+      sign_in user
+      vineyard.update!(deleted_at: Time.current)
+      get bushes_row_path(row, format: :json)
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

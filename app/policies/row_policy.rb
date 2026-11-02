@@ -1,6 +1,8 @@
 class RowPolicy < ApplicationPolicy
+  # Как BushPolicy: свой и не удалённый виноградник
   def bushes?
-    record.vineyard&.user_id == user.id
+    vineyard = record.vineyard
+    vineyard.present? && vineyard.user_id == user.id && vineyard.deleted_at.nil?
   end
 
 

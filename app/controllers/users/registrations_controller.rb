@@ -12,14 +12,11 @@ class Users::RegistrationsController < Devise::RegistrationsController
   # end
 
   # POST /resource
+  # Сообщение «подтвердите почту» Devise ставит сам (notice); здесь только убираем alert,
+  # оставшийся с прошлой страницы, чтобы на входе не висели два сообщения
   def create
     super do |resource|
-      if resource.persisted? && !resource.active_for_authentication?
-        set_flash_message! :notice, :"signed_up_but_#{resource.inactive_message}"
-        # Явно указываем, что сообщение - это notice, а не alert
-        flash[:notice] = flash[:notice]
-        flash.delete(:alert) if flash[:alert]
-      end
+      flash.delete(:alert) if resource.persisted? && !resource.active_for_authentication?
     end
   end
 

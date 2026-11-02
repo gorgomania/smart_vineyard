@@ -18,7 +18,8 @@ export default class extends Controller {
 
     // Загружаем ряды, в которых есть свободные кусты
     const response = await fetch(`/vineyards/${vineyardId}/rows.json${this.keepQuery}`)
-    const rows = await response.json()
+    // Нет доступа (403) или ошибка — пустой список, а не исключение на разборе ответа
+    const rows = response.ok ? await response.json() : []
 
     const rowSelect = document.getElementById('row_id')
     rowSelect.replaceChildren(new Option(rows.length ? '- Выберите ряд -' : '- Нет свободных кустов -', ''))
@@ -38,7 +39,7 @@ export default class extends Controller {
 
     // Загружаем свободные кусты выбранного ряда
     const response = await fetch(`/rows/${rowId}/bushes.json${this.keepQuery}`)
-    const bushes = await response.json()
+    const bushes = response.ok ? await response.json() : []
 
     const bushSelect = document.getElementById('bush_id')
     bushSelect.replaceChildren(new Option('- Выберите куст -', ''))
