@@ -29,6 +29,20 @@ RSpec.describe "Folders", type: :request do
         get folders_path, params: { folders: { title: "test" } }
         expect(response).to have_http_status(:ok)
       end
+
+      it "treats % and _ in the query as plain characters" do
+        create(:folder, user:, title: "100% done")
+        create(:folder, user:, title: "plan_2026")
+        create(:folder, user:, title: "plan-2026")
+
+        get folders_path, params: { folders: { title: "%" } }
+        expect(response.body).to include("100% done")
+        expect(response.body).not_to include("plan_2026", "plan-2026")
+
+        get folders_path, params: { folders: { title: "plan_" } }
+        expect(response.body).to include("plan_2026")
+        expect(response.body).not_to include("plan-2026")
+      end
     end
   end
 
