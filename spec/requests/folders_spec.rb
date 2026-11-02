@@ -295,7 +295,8 @@ RSpec.describe "Folders", type: :request do
     # 24 на странице: P01–P24 на первой, P25–P30 на второй. Время создания задаём явно: страницы
     # сортируются по created_at, а часы машины (например, WSL2) могут прыгнуть назад между созданиями
     let!(:children) do
-      (1..30).map { |n| create(:folder, user:, parent: folder, title: format("P%02d", n), created_at: 1.day.ago + n.seconds) }
+      base = 1.day.ago # одна точка отсчёта: 1.day.ago на каждую папку снова читал бы прыгающие часы
+      (1..30).map { |n| create(:folder, user:, parent: folder, title: format("P%02d", n), created_at: base + n.seconds) }
     end
 
     def shown_titles

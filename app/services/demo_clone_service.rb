@@ -26,14 +26,6 @@ class DemoCloneService
     temp_user
   end
 
-  # Таблица «старый id → новый id» для SQL: unnest двух массивов
-  def self.id_map_sql(map, as:)
-    ActiveRecord::Base.sanitize_sql_array([
-      "unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS #{as}(old_id, new_id)",
-      map.keys.map(&:to_i), map.values.map(&:to_i)
-    ])
-  end
-
   private
 
   def create_temp_user
@@ -59,22 +51,27 @@ class DemoCloneService
     end
     return if @vineyard_map.empty?
 
-    map = self.class.id_map_sql(@vineyard_map, as: "m")
-    connection = ActiveRecord::Base.connection
-    connection.execute(<<~SQL)
+    # m — таблица «старый виноградник → новый» из двух массивов id (параметры, без интерполяции в SQL)
+    ids = [ @vineyard_map.keys, @vineyard_map.values ]
+    execute_sql(<<~SQL, *ids)
       INSERT INTO rows (vineyard_id, row_number, created_at, updated_at)
       SELECT m.new_id, r.row_number, now(), now()
-      FROM rows r JOIN #{map} ON m.old_id = r.vineyard_id
+      FROM rows r
+      JOIN unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS m(old_id, new_id) ON m.old_id = r.vineyard_id
     SQL
     # Новый ряд — по винограднику и номеру (уникальны вместе), куст переносит свой номер
-    connection.execute(<<~SQL)
+    execute_sql(<<~SQL, *ids)
       INSERT INTO bushes (row_id, vineyard_id, bush_number, created_at, updated_at)
       SELECT nr.id, m.new_id, b.bush_number, now(), now()
       FROM bushes b
       JOIN rows r ON r.id = b.row_id
-      JOIN #{map} ON m.old_id = r.vineyard_id
+      JOIN unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS m(old_id, new_id) ON m.old_id = r.vineyard_id
       JOIN rows nr ON nr.vineyard_id = m.new_id AND nr.row_number = r.row_number
     SQL
+  end
+
+  def execute_sql(sql, *binds)
+    ActiveRecord::Base.connection.execute(ActiveRecord::Base.sanitize_sql_array([ sql, *binds ]))
   end
 
   def clone_folders(user)
