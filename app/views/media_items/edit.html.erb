@@ -3,11 +3,7 @@
         <div class="text-ink text-[22px] font-bold">
             <span>Редактирование файла</span>
         </div>
-        <% flash.each do |type, msg| %>
-            <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
-                <%= msg %>
-            </div>
-        <% end %>
+        <%= render "shared/form_flash" %>
         <%= form_for(:media_item, url: media_item_path(@media_item.id), html: { method: :patch }) do |f| %>
             <%= hidden_field_tag :page, @page %>
             <%= hidden_field_tag :search_query, @search_query %>

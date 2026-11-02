@@ -3,11 +3,7 @@
         <div class="text-ink text-[22px] font-bold text-center">
             <span>Прикрепление виноградника</span>
         </div>
-        <% flash.each do |type, msg| %>
-            <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
-                <%= msg %>
-            </div>
-        <% end %>
+        <%= render "shared/form_flash" %>
         <%= form_with model: @folder, url: attach_to_vineyard_folder_path(@folder), html: { method: :post }, class: "mt-5 w-70" do |form| %>
             <div class="flex flex-col gap-5">
                 <div>

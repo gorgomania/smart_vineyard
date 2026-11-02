@@ -1,19 +1,19 @@
 class FoldersController < ApplicationController
+  PER_PAGE = 24
+
   def index
     if params[:folders]
       title_search_query = folder_params[:title]
       if title_search_query.present?
-        per_page = 24
+        per_page = PER_PAGE
         if params[:page].nil?
           @page = 1
         else
           @page = params[:page].to_i
         end
 
-        @childrens_length = policy_scope(Folder).where("title ILIKE ?", "%#{title_search_query}%").count
-        @media_length = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", "%#{title_search_query}%").count
-        @page_limit = ((@childrens_length + @media_length) / per_page.to_f).ceil
-        @page_limit = 1 if @page_limit.zero?
+        @childrens_length, @media_length = search_counts(title_search_query)
+        @page_limit = page_count(@childrens_length + @media_length)
         # page=0, отрицательный или не число — первая страница, больше последней — последняя
         @page = @page.clamp(1, @page_limit)
 
@@ -41,7 +41,7 @@ class FoldersController < ApplicationController
   end
 
   def show
-    per_page = 24
+    per_page = PER_PAGE
     id = params[:id]
     @folder = Folder.find_by(id: id) || root_folder
     authorize @folder
@@ -56,8 +56,7 @@ class FoldersController < ApplicationController
 
     childrens_length = @folder.children.count
     media_length = @folder.media_items.count
-    @page_limit = ((childrens_length + media_length) / per_page.to_f).ceil
-    @page_limit = 1 if @page_limit.zero?
+    @page_limit = page_count(childrens_length + media_length)
     # Особые номера: -1 — страница, с которой начинаются только что загруженные файлы (MediaItemsController#create),
     # -2 — страница с последней папкой (после создания папки). Итог, как и любой другой номер, держим
     # в 1..@page_limit: иначе 0 и отрицательные дают отрицательный OFFSET и 500
@@ -156,9 +155,15 @@ class FoldersController < ApplicationController
 
     @search_query = params[:search_query]
 
-    # Диапазон для выбора
-    @range_start = params[:range_start].to_i
-    @range_end = params[:range_end].to_i
+    # Диапазон приходит из ссылки, но держим его в пределах реальных страниц: иначе range_end=100000000
+    # построил бы сто миллионов <option>
+    page_limit =
+      if @search_query.present? then page_count(search_counts(@search_query).sum)
+      elsif @folder then page_count(@folder.children.count + @folder.media_items.count)
+      else 1
+      end
+    @range_start = params[:range_start].to_i.clamp(1, page_limit)
+    @range_end = params[:range_end].to_i.clamp(1, page_limit)
 
     if request.post?
       page = params[:page].to_i
@@ -232,6 +237,20 @@ class FoldersController < ApplicationController
   end
 
   private
+
+  # Сколько папок и файлов пользователя подходят под поиск по названию
+  def search_counts(query)
+    pattern = "%#{query}%"
+    [
+      policy_scope(Folder).where("title ILIKE ?", pattern).count,
+      policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", pattern).count
+    ]
+  end
+
+  # Число страниц по PER_PAGE; пустая папка или поиск без результатов — одна страница
+  def page_count(items_count)
+    [ (items_count / PER_PAGE.to_f).ceil, 1 ].max
+  end
 
   def folder_params
     params.require(:folders).permit(:title, :parent_id)

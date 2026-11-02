@@ -11,8 +11,14 @@ class MediaItemsController < ApplicationController
     @id_path = @folder.id_path
   end
 
+  # Форма загрузки — только в свою существующую папку. Иначе create её отклонит, но браузер к тому
+  # времени уже загрузит все файлы в хранилище через DirectUpload
   def new
-    @folder_id = params[:folder_id]
+    return redirect_to folders_path if params[:folder_id].blank?
+
+    folder = Folder.find(params[:folder_id])
+    authorize folder, :create_media_item?
+    @folder_id = folder.id
     @media_item = MediaItem.new
   end
 
