@@ -8,7 +8,7 @@
         </div>
         <%= form_with model: @media_item, html: { method: :post, id: "media-upload-form" }, class: "mt-5", data: { "upload-target": "form", action: "submit->upload#submit" } do |form| %>
             <div class="space-y-3 w-70">
-                <label id="dropZone" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-pale rounded-xl px-6 py-8 bg-brand-tint hover:border-brand-light hover:bg-brand-soft cursor-pointer transition"
+                <label id="dropZone" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-brand-pale rounded-xl px-6 py-8 bg-brand-tint hover:border-brand-light hover:bg-brand-soft data-dragover:border-brand-light data-dragover:bg-brand-soft cursor-pointer transition"
                        data-upload-target="dropZone"
                        data-action="dragenter->upload#dragOver dragover->upload#dragOver dragleave->upload#dragLeave drop->upload#drop">
                     <span class="text-sm text-ink-soft pointer-events-none">
