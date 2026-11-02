@@ -97,7 +97,7 @@ class FoldersController < ApplicationController
     else
       flash.now[:alert] = folder.errors[:title][0]
       @parent_id = parent_id
-      render "new", status: :unprocessable_entity
+      render "new", status: :unprocessable_content
     end
   end
 
@@ -125,7 +125,7 @@ class FoldersController < ApplicationController
       @folder = folder
       @page = page
       @search_query = search_query
-      render "edit", status: :unprocessable_entity
+      render "edit", status: :unprocessable_content
     end
   end
 

@@ -74,7 +74,7 @@ class MediaItemsController < ApplicationController
 
     if new_base_name.blank?
       flash.now[:alert] = "Имя файла не может быть пустым"
-      render "edit", status: :unprocessable_entity
+      render "edit", status: :unprocessable_content
       return
     end
 
@@ -100,7 +100,7 @@ class MediaItemsController < ApplicationController
     else
       # Сохраняется блоб — ошибки у него, а не у MediaItem
       flash.now[:alert] = blob.errors.full_messages.to_sentence.presence || "Не удалось переименовать файл"
-      render "edit", status: :unprocessable_entity
+      render "edit", status: :unprocessable_content
     end
   end
 

@@ -46,7 +46,7 @@ RSpec.describe "ActiveStorage overrides", type: :request do
         expect {
           post "/rails/active_storage/direct_uploads", params: { blob: params[:blob].merge(overrides) }, as: :json
         }.not_to change(ActiveStorage::Blob, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -91,7 +91,7 @@ RSpec.describe "ActiveStorage overrides", type: :request do
       blob = unattached_blob(other_user.id)
       delete active_storage_blob_path(blob.signed_id)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(ActiveStorage::Blob.exists?(blob.id)).to be true
     end
 
@@ -102,13 +102,13 @@ RSpec.describe "ActiveStorage overrides", type: :request do
 
       delete active_storage_blob_path(blob.signed_id)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(item.reload.media).to be_attached
     end
 
     it "refuses an unknown or forged id" do
       delete active_storage_blob_path("forged")
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

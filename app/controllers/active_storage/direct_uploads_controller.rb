@@ -15,7 +15,7 @@ class ActiveStorage::DirectUploadsController < ApplicationController
 
   def create
     unless allowed_upload?
-      return render json: { error: "Можно загружать картинки, видео и ZIP-архивы до 1 ГБ" }, status: :unprocessable_entity
+      return render json: { error: "Можно загружать картинки, видео и ZIP-архивы до 1 ГБ" }, status: :unprocessable_content
     end
 
     blob = ActiveStorage::Blob.create_before_direct_upload!(**blob_args)

@@ -71,7 +71,7 @@ RSpec.describe "Users::Registrations", type: :request do
       expect {
         delete user_registration_path, params: { user: { current_password: "wrong" } }
       }.not_to change(User, :count)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Текущий пароль имеет неверное значение")
     end
 
@@ -80,7 +80,7 @@ RSpec.describe "Users::Registrations", type: :request do
       expect {
         delete user_registration_path
       }.not_to change(User, :count)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Текущий пароль не может быть пустым")
     end
 
@@ -98,7 +98,7 @@ RSpec.describe "Users::Registrations", type: :request do
         expect {
           delete user_registration_path
         }.not_to change(User, :count)
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
