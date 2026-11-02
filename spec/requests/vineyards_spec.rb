@@ -51,20 +51,21 @@ RSpec.describe "Vineyards", type: :request do
     end
   end
 
+  # Форма шлёт вершины, а не готовый контур: vineyard[vertex_N_lat], vineyard[vertex_N_lng]
+  def vertex_params(points)
+    points.each_with_index.flat_map { |(lat, lng), i| [ [ "vertex_#{i}_lat", lat.to_s ], [ "vertex_#{i}_lng", lng.to_s ] ] }.to_h
+  end
+
+  # Прямоугольник ~79 × 56 м, 0.44 га
+  let(:rectangle) { [ [ 44.744, 33.56 ], [ 44.744, 33.561 ], [ 44.7445, 33.561 ], [ 44.7445, 33.56 ] ] }
+  let(:rectangle_layout) do
+    points = (rectangle + [ rectangle.first ])
+    VineyardLayout.new(points, side_index: 0, row_spacing: 2.5, bush_spacing: 1.5)
+  end
+
   describe "POST /vineyards" do
     let(:valid_params) do
-      {
-        vineyard: {
-          name: "Мой виноградник",
-          polygon: "POLYGON((33.47 44.59, 33.48 44.59, 33.48 44.60, 33.47 44.60, 33.47 44.59))",
-          area_hectares: 1.5,
-          total_rows: 5,
-          total_bushes: 50,
-          row_spacing: 2.5,
-          bush_spacing: 1.5,
-          bushes_per_row: "[10,10,10,10,10]"
-        }
-      }
+      { vineyard: { name: "Мой виноградник", row_spacing: 2.5, bush_spacing: 1.5, reference_side_index: 0 }.merge(vertex_params(rectangle)) }
     end
 
     context "when not authenticated" do
@@ -77,26 +78,60 @@ RSpec.describe "Vineyards", type: :request do
     context "when authenticated" do
       before { sign_in user }
 
-      it "creates a vineyard and redirects" do
+      it "creates a vineyard from the form vertices and redirects" do
         expect {
           post vineyards_path, params: valid_params
         }.to change(Vineyard, :count).by(1)
         expect(response).to redirect_to(vineyard_path(Vineyard.last))
+        expect(Vineyard.last.polygon.exterior_ring.points.map { |p| [ p.y, p.x ] }).to eq(rectangle + [ rectangle.first ])
       end
 
-      it "enqueues GenerateRowsAndBushesJob with parsed counts" do
-        expect {
-          post vineyards_path, params: valid_params
-        }.to have_enqueued_job(GenerateRowsAndBushesJob).with(kind_of(Integer), [ 10, 10, 10, 10, 10 ])
-      end
+      # Числа из браузера подложить можно — сервер их не берёт, а считает раскладку и площадь сам
+      it "lays out rows on the server, ignoring bushes_per_row, area and totals from the client" do
+        params = valid_params.deep_merge(vineyard: { bushes_per_row: "[50000000]", area_hectares: 0.01, total_rows: 1, total_bushes: 1 })
+        expected = rectangle_layout.bushes_per_row
 
-      it "does not create when bushes_per_row was not calculated" do
-        params = valid_params.deep_merge(vineyard: { bushes_per_row: "[]" })
         expect {
           post vineyards_path, params:
-        }.not_to change(Vineyard, :count)
+        }.to have_enqueued_job(GenerateRowsAndBushesJob).with(kind_of(Integer), expected)
+        vineyard = Vineyard.last
+        expect([ vineyard.total_rows, vineyard.total_bushes ]).to eq([ expected.size, expected.sum ])
+        expect(vineyard.area_hectares).to eq(rectangle_layout.area_hectares.round(2))
+      end
+
+      it "ignores a ready-made polygon from the client" do
+        params = { vineyard: valid_params[:vineyard].reject { |key, _| key.start_with?("vertex_") }
+                                                    .merge(polygon: "POLYGON((33 44, 34 44, 34 45, 33 45, 33 44))") }
+        expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.body).to include("Не удалось рассчитать ряды и кусты")
+      end
+
+      it "rejects a plot over 10 ha, measured on the server" do
+        huge = [ [ 44.59, 33.47 ], [ 44.59, 33.48 ], [ 44.60, 33.48 ], [ 44.60, 33.47 ] ] # ~87 га
+        params = valid_params.deep_merge(vineyard: vertex_params(huge).merge(area_hectares: 1))
+        expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it "reports when the rows cannot be laid out from the reference side" do
+        params = valid_params.deep_merge(vineyard: { reference_side_index: 9 })
+        expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include("Не удалось разложить ряды")
+      end
+
+      # Номер вершины из имени параметра раньше задавал длину массива: vertex_1000000000 — гигабайты памяти
+      it "handles a huge vertex number without allocating for it" do
+        params = valid_params.deep_merge(vineyard: { "vertex_1000000000_lat" => "44.7445", "vertex_1000000000_lng" => "33.5605" })
+        expect { post vineyards_path, params: }.to change(Vineyard, :count).by(1)
+        expect(Vineyard.last.polygon.exterior_ring.points.size).to eq(6)
+      end
+
+      it "turns a degenerate polygon into a form error, not a 500" do
+        same_point = Array.new(4) { [ 44.744, 33.56 ] }
+        params = valid_params.deep_merge(vineyard: vertex_params(same_point))
+        expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
+        expect(response).to have_http_status(:unprocessable_entity)
       end
 
       it "does not create with invalid params" do
@@ -111,32 +146,34 @@ RSpec.describe "Vineyards", type: :request do
     before { sign_in user }
 
     context "when only the name changes" do
-      it "updates without regenerating rows" do
+      it "updates without regenerating rows, keeping the stored totals" do
         expect {
-          patch vineyard_path(vineyard), params: { vineyard: { name: "Новое имя", bushes_per_row: "[]" } }
+          patch vineyard_path(vineyard), params: { vineyard: { name: "Новое имя", total_rows: 999 } }
         }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
         expect(vineyard.reload.name).to eq("Новое имя")
+        expect(vineyard.total_rows).to eq(5)
         expect(response).to redirect_to(vineyard_path(vineyard))
       end
     end
 
-    context "when the layout changes with a valid bushes_per_row" do
-      it "enqueues RegenerateRowsAndBushesJob with parsed counts" do
+    context "when the layout changes" do
+      it "lays out rows on the server and enqueues RegenerateRowsAndBushesJob" do
+        expected = VineyardLayout.new(rectangle + [ rectangle.first ], side_index: 0, row_spacing: 2.8, bush_spacing: 1.5).bushes_per_row
         expect {
           patch vineyard_path(vineyard), params: { vineyard: { row_spacing: 2.8, bushes_per_row: "[3,4]" } }
-        }.to have_enqueued_job(RegenerateRowsAndBushesJob).with(vineyard.id, [ 3, 4 ])
+        }.to have_enqueued_job(RegenerateRowsAndBushesJob).with(vineyard.id, expected)
+        expect(vineyard.reload.total_bushes).to eq(expected.sum)
         expect(response).to redirect_to(vineyard_path(vineyard))
       end
     end
 
-    context "when the layout changes but bushes_per_row is empty" do
+    context "when the new layout cannot be laid out" do
       it "rejects the update and keeps rows" do
-        old_spacing = vineyard.row_spacing
         expect {
-          patch vineyard_path(vineyard), params: { vineyard: { row_spacing: 2.8, bushes_per_row: "[]" } }
+          patch vineyard_path(vineyard), params: { vineyard: { reference_side_index: 9 } }
         }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(vineyard.reload.row_spacing).to eq(old_spacing)
+        expect(vineyard.reload.reference_side_index).to eq(0)
       end
     end
   end

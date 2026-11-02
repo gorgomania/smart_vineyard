@@ -2,7 +2,8 @@ FactoryBot.define do
   factory :vineyard do
     association :user
     name { Faker::Lorem.unique.word.capitalize }
-    polygon { "POLYGON((33.47 44.59, 33.48 44.59, 33.48 44.60, 33.47 44.60, 33.47 44.59))" }
+    # Прямоугольник ~79 × 56 м (0.44 га): сервер сам считает площадь, а она не больше 10 га
+    polygon { "POLYGON((33.56 44.744, 33.561 44.744, 33.561 44.7445, 33.56 44.7445, 33.56 44.744))" }
     area_hectares { 1.5 }
     total_rows { 5 }
     total_bushes { 50 }
