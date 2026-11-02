@@ -122,3 +122,14 @@ jobs:
 
       - name: Run tests
         run: bundle exec rspec
+
+      # System-тесты (spec/system, headless Chrome раннера) при падении сохраняют скриншот страницы
+      - name: Keep screenshots of failed system tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: system-test-screenshots
+          path: |
+            tmp/screenshots
+            tmp/capybara
+          if-no-files-found: ignore
