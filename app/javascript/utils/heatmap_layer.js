@@ -3,7 +3,7 @@
 // heatmap_bush (heatmap:bush на элементе карты); легенда (heatmap_legend_controller) получает числа
 // кустов по диагнозам (heatmap:counts) и прячет диагнозы с карты (heatmap:filter)
 import { diagnosisKey, diagnosisColor } from "utils/diagnoses"
-import { bushPoints } from "utils/vineyard_rows"
+import { rowBushPoints } from "utils/vineyard_rows"
 
 export class HeatmapLayer {
   constructor(element, url) {
@@ -67,9 +67,10 @@ export class HeatmapLayer {
     })
   }
 
-  // Кусты ряда от start к end. Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis
-  addRow(rowNumber, start, end) {
-    bushPoints(start, end, this.bushSpacing).forEach(({ number, point }) => {
+  // Кусты ряда по его кускам (в порядке нумерации, utils/vineyard_rows#orientSegments), номера подряд через куски.
+  // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis
+  addRow(rowNumber, segments) {
+    rowBushPoints(segments, this.bushSpacing).forEach(({ number, point }) => {
       const id = `${rowNumber}-${number}`
       const [mediaItemId, classId] = this.diagnoses[id] || [null, null]
 
