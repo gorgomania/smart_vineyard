@@ -1,6 +1,9 @@
 class VineyardsController < ApplicationController
   LAYOUT_ATTRIBUTES = %w[polygon row_spacing bush_spacing reference_side_index reference_vertex_is_first].freeze
-  LAYOUT_NOT_CALCULATED_MESSAGE = "Не удалось рассчитать ряды и кусты. Дождитесь загрузки карты и попробуйте снова".freeze
+  LAYOUT_NOT_CALCULATED_MESSAGE = "Не удалось разложить ряды: проверьте контур участка и опорную сторону".freeze
+  # Вершин у участка столько не бывает; без лимита номер из имени параметра (vertex_N_lat) задавал бы объём разбора
+  MAX_VERTICES = 100
+  RGEO_FACTORY = RGeo::Geographic.spherical_factory(srid: 4326)
 
   def index
     @map_center, @map_zoom = initialize_map
@@ -43,14 +46,9 @@ class VineyardsController < ApplicationController
 
   def create
     @vineyard = current_user.vineyards.build(vineyard_params_permit)
-    bushes_per_row = parse_bushes_per_row(params[:vineyard][:bushes_per_row])
+    bushes_per_row = calculate_layout(@vineyard)
 
-    if bushes_per_row.nil?
-      @vineyard.valid? # чтобы вместе показать и остальные ошибки формы
-      @vineyard.errors.add(:base, LAYOUT_NOT_CALCULATED_MESSAGE)
-      setup_new_form_data
-      render :new, status: :unprocessable_entity
-    elsif @vineyard.save
+    if bushes_per_row && @vineyard.save
       GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
       redirect_to @vineyard, notice: "Виноградник создан"
     else
@@ -70,17 +68,12 @@ class VineyardsController < ApplicationController
     authorize @vineyard
 
     @vineyard.assign_attributes(vineyard_params_permit)
-    # Ряды пересчитываем только при изменении геометрии и только по валидной раскладке с карты:
-    # пустой "[]" (карта не пересчитала поле) иначе удалил бы все ряды и кусты
+    # Ряды пересчитываем только при изменении геометрии и только если раскладка получилась:
+    # пустая удалила бы все ряды и кусты
     layout_changed = @vineyard.changed.intersect?(LAYOUT_ATTRIBUTES)
-    bushes_per_row = parse_bushes_per_row(params[:vineyard][:bushes_per_row])
+    bushes_per_row = calculate_layout(@vineyard) if layout_changed
 
-    if layout_changed && bushes_per_row.nil?
-      @vineyard.valid?
-      @vineyard.errors.add(:base, LAYOUT_NOT_CALCULATED_MESSAGE)
-      setup_edit_form_data
-      render :edit, status: :unprocessable_entity
-    elsif @vineyard.save
+    if (!layout_changed || bushes_per_row) && @vineyard.save
       RegenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row) if layout_changed
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
@@ -191,48 +184,60 @@ class VineyardsController < ApplicationController
     end
   end
 
-  # Массив непустой, из целых >= 0, хотя бы один ряд с кустами; иначе nil
-  def parse_bushes_per_row(raw)
-    counts = JSON.parse(raw.to_s)
-    return unless counts.is_a?(Array) && counts.all? { |c| c.is_a?(Integer) && c >= 0 } && counts.any?(&:positive?)
+  # Раскладку, площадь и итоги считает сервер (VineyardLayout) — так же, как карта в форме, но числам из браузера
+  # не верим: подложенные bushes_per_row или площадь создали бы миллионы кустов в обход «не больше 10 га».
+  # Возвращает bushes_per_row или nil, тогда ошибки уже в vineyard.errors
+  def calculate_layout(vineyard)
+    vineyard.validate
+    # Эти поля считаются здесь, а не вводятся: их ошибки до расчёта только путают
+    %i[area_hectares total_rows total_bushes].each { |attribute| vineyard.errors.delete(attribute) }
+    # Без контура или с шагом вне допустимого раскладывать нечего (шаг 0 — бесконечный цикл), ошибка уже есть
+    return if vineyard.polygon.nil? || vineyard.errors.include?(:row_spacing) || vineyard.errors.include?(:bush_spacing)
 
-    counts
-  rescue JSON::ParserError
-    nil
+    layout = VineyardLayout.for(vineyard)
+    bushes_per_row = layout.bushes_per_row
+    if bushes_per_row.none?(&:positive?)
+      vineyard.errors.add(:base, LAYOUT_NOT_CALCULATED_MESSAGE)
+      return
+    end
+
+    vineyard.assign_attributes(area_hectares: layout.area_hectares.round(2),
+                               total_rows: bushes_per_row.size, total_bushes: bushes_per_row.sum)
+    bushes_per_row
   end
 
+  # Контур собирается из вершин формы (vineyard[vertex_N_lat], vineyard[vertex_N_lng]) по возрастанию N.
+  # Площадь, ряды и кусты из формы не принимаются — их считает calculate_layout
   def vineyard_params_permit
-    vertices = []
+    # Только из вершин: присланный готовым контур обошёл бы и лимит вершин, и проверку WKT
+    params[:vineyard].delete(:polygon)
+    vertices = {}
     params[:vineyard].each do |key, value|
-      if key =~ /vertex_(\d+)_lat/
-        index = $1.to_i
-        vertices[index] ||= {}
-        vertices[index][:lat] = value.to_f
-      elsif key =~ /vertex_(\d+)_lng/
-        index = $1.to_i
-        vertices[index] ||= {}
-        vertices[index][:lng] = value.to_f
-      end
+      match = key.to_s.match(/\Avertex_(\d+)_(lat|lng)\z/)
+      next unless match
+
+      (vertices[match[1].to_i] ||= {})[match[2].to_sym] = Float(value, exception: false)
     end
 
-    # Убираем nil и сортируем по индексу
-    vertices = vertices.compact
-
-    if vertices.size >= 3
-      # Создаем WKT в правильном формате (lng lat)
-      wkt_points = vertices.map { |v| "#{v[:lng]} #{v[:lat]}" }.join(", ")
-      wkt = "POLYGON((#{wkt_points}, #{vertices[0][:lng]} #{vertices[0][:lat]}))"
-
-      params[:vineyard][:polygon] = wkt
+    points = vertices.sort.map(&:last).select { |v| v[:lat]&.finite? && v[:lng]&.finite? }
+    if points.size.between?(3, MAX_VERTICES)
+      # WKT — «lng lat», контур замкнут
+      wkt = "POLYGON((#{(points + [ points.first ]).map { |v| "#{v[:lng]} #{v[:lat]}" }.join(", ")}))"
+      params[:vineyard][:polygon] = wkt if valid_polygon?(wkt)
     end
-
-    params[:vineyard].delete_if { |k, v| k.to_s.match?(/\Avertex_\d+_(lat|lng)\z/) }
 
     params.require(:vineyard).permit(
       :name, :grape_variety, :planting_year, :row_spacing, :bush_spacing,
-      :polygon, :reference_side_index, :reference_vertex_is_first,
-      :area_hectares, :total_rows, :total_bushes
+      :polygon, :reference_side_index, :reference_vertex_is_first
     )
+  end
+
+  # Вырожденный контур (совпадающие вершины) RGeo не примет: при присваивании это было бы 500, а не ошибка формы
+  def valid_polygon?(wkt)
+    RGEO_FACTORY.parse_wkt(wkt)
+    true
+  rescue RGeo::Error::RGeoError
+    false
   end
 
   def initialize_map

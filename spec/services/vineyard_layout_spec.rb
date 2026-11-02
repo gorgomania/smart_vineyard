@@ -13,6 +13,9 @@ RSpec.describe VineyardLayout do
       layout = described_class.new(points(c["polygon"]), side_index: c["reference_side_index"],
                                    row_spacing: c["row_spacing"], bush_spacing: c["bush_spacing"])
       expect(layout.bushes_per_row).to eq(c["bushes_per_row"])
+      # Площадь — разность почти равных слагаемых: последний бит sin у V8 и libm проступает в 11-м знаке.
+      # Хранится она до сотых гектара, так что допуск с запасом; кусты же совпадают точно
+      expect(layout.area_hectares).to be_within(1e-8).of(c["area_hectares"])
     end
   end
 

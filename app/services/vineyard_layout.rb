@@ -26,6 +26,18 @@ class VineyardLayout
     rows.map { |p1, p2| bush_count(p1, p2) }
   end
 
+  # Площадь участка в гектарах на сфере R = 6371 км (GeometryHelpers.calculateArea)
+  def area_hectares
+    radius = EARTH_RADIUS_KM * 1000
+    # inject, а не sum: sum складывает с компенсацией (Кэхэн–Бабушка), а JS — обычным +=
+    area = @points.each_index.inject(0.0) do |acc, i|
+      lat1, lon1 = @points[i].map { |deg| deg * Math::PI / 180 }
+      lat2, lon2 = @points[(i + 1) % @points.size].map { |deg| deg * Math::PI / 180 }
+      acc + (lon2 - lon1) * (2 + Math.sin(lat1) + Math.sin(lat2))
+    end
+    (area * radius * radius / 2).abs / 10_000
+  end
+
   # [[p1, p2], ...]: первый — опорная сторона, затем параллельные через row_spacing метров в одну сторону,
   # потом в другую, пока линия пересекает полигон (layoutRows)
   def rows
