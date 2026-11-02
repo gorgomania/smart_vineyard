@@ -47,20 +47,20 @@
           <div class="field mt-1">
             <%= f.label "Расстояние между рядами (м)", class: "text-brand text-sm" %>
             <div class="flex justify-between gap-3">
-              <%= f.range_field :row_spacing, in: 2.0..3.0, step: 0.1, value: 3.0, 
+              <%= f.range_field :row_spacing, in: 2.0..3.0, step: 0.1, 
                   class: "flex-1 accent-brand", 
                   data: { vineyard_form_target: "rowSpacing" } %>
-              <span data-vineyard-form-target="rowSpacingValue" class="text-brand font-bold w-12 text-center">3.0</span>
+              <span data-vineyard-form-target="rowSpacingValue" class="text-brand font-bold w-12 text-center"><%= f.object.row_spacing %></span>
             </div>
           </div>
         
           <div class="field -mt-1">
             <%= f.label "Расстояние между кустами (м)", class: "text-brand text-sm" %>
             <div class="flex justify-between gap-3">
-              <%= f.range_field :bush_spacing, in: 1.2..1.8, step: 0.1, value: 1.5, 
+              <%= f.range_field :bush_spacing, in: 1.2..1.8, step: 0.1, 
                   class: "flex-1 accent-brand", 
                   data: { vineyard_form_target: "bushSpacing" } %>
-              <span data-vineyard-form-target="bushSpacingValue" class="text-brand font-bold w-12 text-center">1.5</span>
+              <span data-vineyard-form-target="bushSpacingValue" class="text-brand font-bold w-12 text-center"><%= f.object.bush_spacing %></span>
             </div>
           </div>
 

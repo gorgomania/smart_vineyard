@@ -4,11 +4,7 @@
             <span>Перекрепление виноградника</span>
         </div>
 
-        <% flash.each do |type, msg| %>
-            <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
-                <%= msg %>
-            </div>
-        <% end %>
+        <%= render "shared/form_flash" %>
 
         <%= form_with model: @folder, url: update_attach_to_vineyard_folder_path(@folder), html: { method: :patch }, class: "mt-5 w-70" do |form| %>
             <div class="flex flex-col gap-5">

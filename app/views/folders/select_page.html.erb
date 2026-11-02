@@ -3,11 +3,7 @@
         <div class="text-ink text-[22px] font-bold text-center">
             <span>Выбор страницы</span>
         </div>
-        <% flash.each do |type, msg| %>
-            <div class="mt-5 px-3 h-16 w-full border border-danger text-danger bg-danger-bg rounded-lg flex items-center justify-center text-center">
-                <%= msg %>
-            </div>
-        <% end %>
+        <%= render "shared/form_flash" %>
         <%= form_tag select_page_folders_path, method: :post, class: "mt-5 w-70" do %>
             <%= hidden_field_tag :id, @folder.id if @folder %>
             <%= hidden_field_tag :search_query, @search_query if @search_query.present? %>

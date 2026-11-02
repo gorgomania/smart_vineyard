@@ -341,4 +341,40 @@ RSpec.describe "Folders", type: :request do
       expect(shown_titles).to include("P01")
     end
   end
+
+  describe "GET /folders/select_page range" do
+    before { sign_in user }
+
+    def page_options
+      response.body.scan(/<option value="(\d+)">/).flatten.map(&:to_i)
+    end
+
+    # Диапазон приходит в параметрах: без ограничения range_end=100000000 строил бы сто миллионов <option>
+    it "limits the range to the folder's real pages" do
+      create_list(:folder, 50, user:, parent: folder) # 3 страницы по 24
+
+      get select_page_folders_path(id: folder.id, range_start: -5, range_end: 100_000_000)
+      expect(page_options).to eq([ 1, 2, 3 ])
+    end
+
+    it "limits the range to the pages of the search results" do
+      30.times { |i| create(:folder, user:, parent: folder, title: "Куст #{i}") } # 2 страницы
+
+      get select_page_folders_path(search_query: "Куст", range_start: 2, range_end: 100_000_000)
+      expect(page_options).to eq([ 2 ])
+    end
+  end
+
+  describe "flash on form pages" do
+    # Уведомление Devise после входа — не ошибка: зелёное, а не красное
+    it "shows a notice in the success style" do
+      get new_folder_path(parent_id: folder.id)
+      post user_session_path, params: { user: { email: user.email, password: "password123" } }
+      follow_redirect!
+
+      notice = response.body[/<div[^>]*>\s*Вход в систему выполнен/]
+      expect(notice).to include("text-success")
+      expect(notice).not_to include("text-danger")
+    end
+  end
 end

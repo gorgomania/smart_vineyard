@@ -237,14 +237,10 @@ RSpec.describe "MediaItems", type: :request do
   describe "GET /media_items/new" do
     before { sign_in user }
 
-    # Ссылка «Назад» без истории ведёт в папку загрузки, а без папки — в корень
-    it "renders with and without a folder" do
+    # Ссылка «Назад» без истории ведёт в папку загрузки (без папки форма не открывается — см. ниже)
+    it "links back to the upload folder" do
       get new_media_item_path(folder_id: folder.id)
       expect(response.body).to include(%(href="#{folder_path(folder)}"))
-
-      get new_media_item_path
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include(%(href="#{folders_path}"))
     end
   end
 
@@ -293,6 +289,54 @@ RSpec.describe "MediaItems", type: :request do
       media_item.update!(bush:)
       get edit_attach_media_item_path(media_item)
       expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "GET /media_items/new" do
+    let(:upload_page) { new_media_item_path(folder_id: folder.id) }
+
+    # Devise после входа возвращает на сохранённую страницу с flash[:notice] строкой, а не массивом
+    it "renders after the login redirect with Devise's string notice" do
+      get upload_page
+      post user_session_path, params: { user: { email: user.email, password: "password123" } }
+      expect(response).to redirect_to(upload_page)
+
+      follow_redirect!
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Вход в систему выполнен")
+    end
+
+    it "shows the upload's own array alert as an error" do
+      sign_in user
+      post media_items_path, params: { media_item: { folder_id: folder.id } }
+      follow_redirect!
+
+      expect(response.body).to include("Сначала выберите файл")
+      expect(response.body).to include("text-danger")
+    end
+
+    # Без папки create не знает, куда класть файлы: браузер успел бы загрузить их в хранилище впустую
+    it "redirects to the folders when no folder is given" do
+      sign_in user
+      get new_media_item_path
+      expect(response).to redirect_to(folders_path)
+    end
+
+    it "does not open the upload form for someone else's folder" do
+      sign_in other_user
+      get upload_page
+      expect(response).to redirect_to(folders_path)
+    end
+  end
+
+  describe "GET /media_items/:id image size" do
+    before { sign_in user }
+
+    # Оригинал с телефона или дрона — десятки мегабайт; в колонку 30 % идёт уменьшенная копия
+    it "shows a resized variant, not the original upload" do
+      get media_item_path(media_item)
+      expect(response.body).to include("/rails/active_storage/representations/")
+      expect(response.body).not_to match(%r{<img[^>]+src="[^"]*/rails/active_storage/blobs/})
     end
   end
 end

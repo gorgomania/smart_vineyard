@@ -40,7 +40,9 @@
     <div class="flex justify-between items-start text-ink mt-4 max-[1000px]:grid max-[1000px]:grid-cols-2 max-[1000px]:gap-6 max-[710px]:grid-cols-1">
         <% if @media_item.media.image? %>
             <div class="w-[30%] max-[1000px]:w-auto">
-                <%= image_tag @media_item.media, loading: "lazy", class: "w-full max-h-[calc(100vh-150px)] object-contain" %>
+                <%# Оригинал с телефона или дрона — десятки мегабайт; колонке хватает копии до 1600 px (с запасом на retina) %>
+                <% image = @media_item.media.variable? ? @media_item.media.variant(resize_to_limit: [ 1600, 1600 ]) : @media_item.media %>
+                <%= image_tag image, loading: "lazy", class: "w-full max-h-[calc(100vh-150px)] object-contain" %>
             </div>
             
             <%= render "analysis_panel", media_item: @media_item, class_names: @class_names %>

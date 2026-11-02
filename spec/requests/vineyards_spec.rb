@@ -324,4 +324,21 @@ RSpec.describe "Vineyards", type: :request do
       expect(flash[:alert]).to eq("Выберите виноградник")
     end
   end
+
+  describe "GET /vineyards/:id/edit spacing" do
+    before { sign_in user }
+
+    # Карта подставит значения сама, но если она не загрузилась, форма не должна отправить 3.0/1.5
+    # и пересобрать ряды с чужим шагом
+    it "renders the saved row and bush spacing in the sliders" do
+      vineyard.update_columns(row_spacing: 2.4, bush_spacing: 1.3)
+
+      get edit_vineyard_path(vineyard)
+      expect(response.body).to match(/<input[^>]*name="vineyard\[row_spacing\]"[^>]*value="2.4"/)
+        .or match(/<input[^>]*value="2.4"[^>]*name="vineyard\[row_spacing\]"/)
+      expect(response.body).to match(/<input[^>]*name="vineyard\[bush_spacing\]"[^>]*value="1.3"/)
+        .or match(/<input[^>]*value="1.3"[^>]*name="vineyard\[bush_spacing\]"/)
+      expect(response.body).to include(">2.4</span>").and include(">1.3</span>")
+    end
+  end
 end
