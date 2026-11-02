@@ -56,6 +56,12 @@ public
     )
   end
 
+  # Канал, в который GenerateVideoPreviewJob шлёт готовое превью видео; folders/show подписан на него
+  # по одному разу на папку
+  def self.preview_stream(folder_id)
+    "folder_#{folder_id}_previews"
+  end
+
   # Открытая тепловая карта виноградника (turbo_stream_from в vineyards/show) перекрашивает точку куста без перезагрузки,
   # страницы статистики обновляются
   def broadcast_diagnosis

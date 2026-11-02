@@ -97,6 +97,7 @@ class VineyardsController < ApplicationController
 
   def total_stats
     @vineyards = policy_scope(Vineyard).active
+    @vineyards_count = @vineyards.count # шаблон спрашивает число в четырёх местах
     @stats_data = get_statistics(@vineyards)
     @total = true
     render "stats"
