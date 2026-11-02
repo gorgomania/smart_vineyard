@@ -1,12 +1,13 @@
 // app/javascript/controllers/map_controller.js
 // Карта виноградников на Яндекс Картах. Режимы (data-map-mode):
 //   index — все виноградники пользователя полигонами (data-map-multiple-polygons);
-//   show — один виноградник: линии рядов или, с data-map-heatmap-url, тепловая карта кустов (utils/heatmap_layer);
+//   show — один виноградник: линии рядов (utils/rows_layer) или, с data-map-heatmap-url, тепловая карта кустов (utils/heatmap_layer);
 //   new / edit — редактируемый полигон, ряды пересчитываются при каждом изменении и уходят в форму
 //                (vineyard_form_controller) событиями map:geometryChanged и map:statisticsUpdated
 import { Controller } from "@hotwired/stimulus"
 import { GeometryHelpers } from "utils/geometry_helpers"
 import { HeatmapLayer } from "utils/heatmap_layer"
+import { RowsLayer } from "utils/rows_layer"
 import { layoutRows, orientSegments, rowBushCount } from "utils/vineyard_rows"
 import { parseWKT } from "utils/wkt"
 
@@ -50,7 +51,7 @@ export default class extends Controller {
     this.vineyardData = this.element.dataset.mapVineyardData ? JSON.parse(this.element.dataset.mapVineyardData) : null
     this.multiplePolygons = this.element.dataset.mapMultiplePolygons
     this.currentPolygon = null
-    this.rowsCollection = null
+    this.rowsLayer = null
 
     // Устанавливаем параметры из данных виноградника или значения по умолчанию
     if (this.vineyardData) {
@@ -84,6 +85,7 @@ export default class extends Controller {
     this.loadToken = null
     this.stopListeningToForm()
     this.heatmap?.destroy()
+    this.rowsLayer?.destroy()
 
     if (this.map) {
       this.map.destroy()
@@ -135,12 +137,7 @@ export default class extends Controller {
 
       if (this.mode != "index") {
         this.map.geoObjects.add(this.currentPolygon)
-        this.rowsCollection = new ymaps.GeoObjectCollection({}, {
-          strokeColor: brandColor(),
-          strokeWidth: 2,
-          strokeOpacity: 0.8
-        })
-        this.map.geoObjects.add(this.rowsCollection)
+        if (!this.heatmap) this.rowsLayer = new RowsLayer(this.map, { color: brandColor(), firstColor: FIRST_ROW_COLOR })
 
         // Полигон двигают или правят вершины (на карте или в форме) — пересчитываем ряды и отдаём координаты форме
         this.currentPolygon.geometry.events.add('change', () => {
@@ -173,8 +170,9 @@ export default class extends Controller {
         strokeWidth: 3,
         visible: false, // показывает showPolygon, когда координаты уже заданы
         editorDrawing: false,
-        // Под тепловой картой контур не перехватывает мышь: подсказку и клик по кусту ищет слой (HeatmapLayer#hitTest)
-        ...(this.heatmap && !editable && { interactivityModel: 'default#silent', hasHint: false }),
+        // При просмотре контур не перехватывает мышь: подсказку ряда или куста под курсором ищет слой
+        // (RowsLayer#hitTest, HeatmapLayer#hitTest). Редактируемый контур тянут — его события слой слушает сам
+        ...(!editable && { interactivityModel: 'default#silent', hasHint: false }),
       }
     )
   }
@@ -374,7 +372,8 @@ export default class extends Controller {
     this.referenceSideIndex = Math.min(this.referenceSideIndex, polygonPoints.length - 2)
 
     this.heatmap?.reset({ rowSpacing: this.rowSpacing, bushSpacing: this.bushSpacing })
-    this.rowsCollection.removeAll()
+    this.rowLines = []
+    this.firstBush = null
 
     const rows = layoutRows(polygonPoints, this.referenceSideIndex, this.rowSpacing)
     const bushesPerRow = rows.map(row => this.addRow(row))
@@ -382,6 +381,7 @@ export default class extends Controller {
 
     this.sendStatisticsToForm(rows.length, totalBushes, GeometryHelpers.calculateArea(polygonPoints))
     this.heatmap?.rendered()
+    this.rowsLayer?.set(this.rowLines, this.firstBush)
   }
 
   // Ряд на карте — линия на каждый его кусок (выемка участка разрывает ряд); возвращает число кустов в ряду.
@@ -395,20 +395,9 @@ export default class extends Controller {
       return bushes
     }
 
-    const hint = { hintContent: `Ряд ${number} · ${bushes} ${pluralizeBushes(bushes)}` }
-    if (number === 1) {
-      // Опорная сторона золотая, первый куст — золотой круг на опорной вершине
-      const [start] = oriented[0]
-      this.rowsCollection.add(new ymaps.Circle(
-        [[start[0], start[1]], 3],
-        { hintContent: 'Первый куст' },
-        { fillColor: FIRST_ROW_COLOR, fillOpacity: 0.8, strokeColor: FIRST_ROW_COLOR, strokeWidth: 2, strokeOpacity: 1 }
-      ))
-    }
-    const style = number === 1 ? { strokeColor: FIRST_ROW_COLOR, strokeWidth: 4, strokeOpacity: 0.9 } : {}
-    segments.forEach(([p1, p2]) => {
-      this.rowsCollection.add(new ymaps.Polyline([[p1[0], p1[1]], [p2[0], p2[1]]], hint, style))
-    })
+    // Опорная сторона золотая, первый куст — золотой круг на опорной вершине (RowsLayer)
+    if (number === 1) this.firstBush = oriented[0][0]
+    this.rowLines.push({ number, segments, hint: `Ряд ${number} · ${bushes} ${pluralizeBushes(bushes)}` })
     return bushes
   }
 
