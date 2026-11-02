@@ -65,52 +65,61 @@ export class HeatmapLayer {
       const url = this.objectManager.objects.getById(e.get('objectId')).properties.bushUrl
       if (url) window.location.href = url
     })
+    this.pendingBushes = []
   }
 
   // Кусты ряда по его кускам (в порядке нумерации, utils/vineyard_rows#orientSegments), номера подряд через куски.
-  // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis
+  // Ключ "ряд-куст" — как в Vineyard#bushes_diagnoses и MediaItem#broadcast_diagnosis.
+  // На карту ряд сразу не идёт — все кусты добавит rendered одной пачкой
   addRow(rowNumber, segments) {
     rowBushPoints(segments, this.bushSpacing).forEach(({ number, point }) => {
       const id = `${rowNumber}-${number}`
       const [mediaItemId, classId] = this.diagnoses[id] || [null, null]
 
-      this.objectManager.add({
-        type: "FeatureCollection",
-        features: [{
-          type: "Feature",
-          id,
-          geometry: { type: "Point", coordinates: [point[0], point[1]] },
-          properties: {
-            hintContent: `Ряд ${rowNumber} Куст ${number}`,
-            bushUrl: mediaItemId ? `/media_items/${mediaItemId}` : null,
-            diagnosis: diagnosisKey(classId)
-          },
-          options: this.iconOptions(classId)
-        }]
+      this.pendingBushes.push({
+        type: "Feature",
+        id,
+        geometry: { type: "Point", coordinates: [point[0], point[1]] },
+        properties: {
+          hintContent: `Ряд ${rowNumber} Куст ${number}`,
+          bushUrl: mediaItemId ? `/media_items/${mediaItemId}` : null,
+          diagnosis: diagnosisKey(classId)
+        },
+        options: this.iconOptions(classId)
       })
     })
   }
 
-  // Все ряды добавлены: обновить легенду и фильтр
+  // Все ряды разложены: кусты — на карту одним вызовом. По одному каждое добавление в ObjectManager
+  // дороже предыдущего: 41 тысяча кустов (10 га, шаги 2 × 1.2 м) рисовались 27 с, а повторно — 7 минут.
+  // Затем легенда и фильтр
   rendered() {
+    this.objectManager.add({ type: "FeatureCollection", features: this.pendingBushes })
+    this.pendingBushes = []
     this.scheduleLegendUpdate()
   }
 
-  // Цвет и слой точки по диагнозу. Размер общий для всех точек, его задаёт resize
+  // Цвет и слой точки по диагнозу. Размер общий для всех точек, его задаёт resize.
+  // Объект каждой точке свой (его хранит ObjectManager), а картинка одна на диагноз — их всего пять
   iconOptions(classId) {
     const key = diagnosisKey(classId)
 
     return {
       iconLayout: 'default#image',
-      // Белая обводка отделяет соседние точки и держит цвет на спутниковой подложке
-      iconImageHref: 'data:image/svg+xml,' + encodeURIComponent(`
-        <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="6" cy="6" r="5.25" fill="${diagnosisColor(key)}" stroke="white" stroke-width="1.5"/>
-        </svg>
-      `),
+      iconImageHref: this.iconImage(key),
       // Больные кусты поверх здоровых и кустов без данных: иначе соседняя точка их закрывает
       zIndex: key === 'healthy' || key === 'none' ? 100 : 200
     }
+  }
+
+  // Белая обводка отделяет соседние точки и держит цвет на спутниковой подложке
+  iconImage(key) {
+    this.iconImages ||= {}
+    return this.iconImages[key] ||= 'data:image/svg+xml,' + encodeURIComponent(`
+        <svg width="12" height="12" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6" cy="6" r="5.25" fill="${diagnosisColor(key)}" stroke="white" stroke-width="1.5"/>
+        </svg>
+      `)
   }
 
   // Размер точек по зуму: доля расстояния между кустами в пикселях, от 4 до 14px.
