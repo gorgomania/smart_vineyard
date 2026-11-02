@@ -10,7 +10,8 @@ Rails.application.configure do
     policy.frame_src   :none
 
     # Яндекс Карты 2.1 динамически подгружает скрипты с нескольких доменов
-    policy.script_src :self,
+    # wasm_unsafe_eval — компиляция WebAssembly (MD5 файлов перед загрузкой, hash-wasm); eval в JS не открывает
+    policy.script_src :self, :wasm_unsafe_eval,
                       "https://api-maps.yandex.ru",
                       "https://yastatic.net",
                       "https://core.maps.yandex.ru",
