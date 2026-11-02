@@ -342,12 +342,23 @@ export default class extends Controller {
       entry.overlay.className = `absolute top-0 left-0 w-4 h-4 ${color} rounded-full text-white text-xs flex items-center justify-center`
       entry.overlay.textContent = symbol
     } else if (entry.status === "uploading") {
-      entry.overlay.textContent = `${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`
+      this.overlayText(entry, `${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`)
     } else if (entry.status === "checking") {
-      entry.overlay.textContent = `Проверка ${Math.floor((entry.checked / (entry.file.size || 1)) * 100)}%`
+      this.overlayText(entry, `Проверка\n${Math.floor((entry.checked / (entry.file.size || 1)) * 100)}%`)
     } else {
-      entry.overlay.textContent = "В очереди"
+      this.overlayText(entry, "В очереди")
     }
+  }
+
+  // Надпись по центру превью на своей плашке: читается поверх фото и подписи «ZIP архив», \n — перенос
+  overlayText(entry, text) {
+    let label = entry.overlay.firstElementChild
+    if (!label) {
+      label = document.createElement("span")
+      label.className = "bg-black/60 rounded px-1.5 py-0.5 text-center leading-tight whitespace-pre-line"
+      entry.overlay.replaceChildren(label)
+    }
+    label.textContent = text
   }
 
   // Пока не все файлы проверены — сколько проверено: иначе первые минуты на больших файлах ничего не движется
