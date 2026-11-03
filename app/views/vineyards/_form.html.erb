@@ -39,9 +39,9 @@
             <% end %>
           <% end %>
 
-          <%= render "shared/float_field", f: f, name: :name, label: "Название", width: "w-full", html: { autofocus: true, autocomplete: "name" } %>
-          <%= render "shared/float_field", f: f, name: :grape_variety, label: "Сорт винограда", width: "w-full", div_class: "", html: { autocomplete: "title" } %>
-          <%= render "shared/float_field", f: f, name: :planting_year, label: "Год посадки", width: "w-full", div_class: "", html: { autocomplete: "title" } %>
+          <%= render "shared/float_field", f: f, name: :name, label: "Название", width: "w-full", html: { autofocus: true } %>
+          <%= render "shared/float_field", f: f, name: :grape_variety, label: "Сорт винограда", width: "w-full", div_class: "" %>
+          <%= render "shared/float_field", f: f, name: :planting_year, label: "Год посадки", width: "w-full", div_class: "" %>
 
           <div id="vertices-container"></div>
 
@@ -93,17 +93,17 @@
 
           <div class="field flex-1 min-w-0 -mt-1">
             <%= f.label "Площадь", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
-            <%= f.text_field :area_hectares, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.text_field :area_hectares, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true %>
           </div>
 
           <div class="field flex-1 min-w-0 -mt-1">
             <%= f.label "Количество рядов", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
-            <%= f.text_field :total_rows, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.text_field :total_rows, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true %>
           </div>
 
           <div class="field flex-1 min-w-0 -mt-1">
             <%= f.label "Количество кустов", class: "text-[13px] relative top-[22px] left-[13px] text-muted pointer-events-none leading-4" %>
-            <%= f.text_field :total_bushes, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true, autocomplete: "name"%>
+            <%= f.text_field :total_bushes, class: "w-full px-3 rounded-lg border border-line h-[64px] bg-surface outline-none cursor-default", readonly: true %>
           </div>
 
           <div class="actions">
