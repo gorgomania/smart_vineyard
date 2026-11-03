@@ -132,7 +132,7 @@ jobs:
       # System-тесты (spec/system, headless Chrome раннера) при падении сохраняют скриншот страницы
       - name: Keep screenshots of failed system tests
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: system-test-screenshots
           path: |
