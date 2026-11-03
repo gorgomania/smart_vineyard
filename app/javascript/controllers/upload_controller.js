@@ -19,7 +19,7 @@ export default class extends Controller {
 
   connect() {
     // ключ name_size → { file, isZip, checked, loaded, status: queued|checking|uploading|done|error, signedId,
-    //                    abort, xhr, wrapper, overlay, caption, playIcon }
+    //                    abort, xhr, wrapper, overlay, overlayLabel, caption, playIcon }
     this.uploads = new Map()
     this.checkQueue = Promise.resolve() // проверка (MD5) — по одному файлу: диск читается последовательно
     this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
@@ -274,11 +274,11 @@ export default class extends Controller {
     if (entry.isZip) {
       const tile = document.createElement("div")
       tile.className = "w-full aspect-square bg-brand-tint rounded-lg border-2 border-brand-pale flex flex-col items-center justify-center"
-      // Подпись прячется, пока поверх идёт статус (см. renderEntry): иначе «25%» ложится на «ZIP архив»
+      // Иконка архива и размер. Прячутся, пока поверх идёт статус (см. renderEntry): иначе статус ложится на них
       entry.caption = document.createElement("div")
-      entry.caption.className = "flex flex-col items-center"
+      entry.caption.className = "flex flex-col items-center gap-1"
       entry.caption.innerHTML = `
-        <span class="text-xs text-ink-soft mt-2">ZIP архив</span>
+        <img src="/file-archive.png" alt="ZIP архив" title="ZIP архив" class="w-7 h-7">
         <span class="text-xs text-slate-500">${this.formatMb(entry.file.size)} МБ</span>
       `
       tile.appendChild(entry.caption)
@@ -301,7 +301,7 @@ export default class extends Controller {
     }
 
     entry.overlay = document.createElement("div")
-    entry.overlay.className = "absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center text-white text-xs"
+    entry.overlay.className = "absolute inset-0 bg-black/50 rounded-lg flex flex-col items-center justify-center gap-1 text-white text-xs"
     wrapper.appendChild(entry.overlay)
 
     const removeBtn = document.createElement("button")
@@ -382,7 +382,7 @@ export default class extends Controller {
       entry.overlay.className = `absolute top-0 left-0 w-4 h-4 ${color} rounded-full text-white text-xs flex items-center justify-center`
       entry.overlay.textContent = symbol
     } else if (entry.status === "uploading") {
-      this.overlayText(entry, `${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`)
+      this.overlayText(entry, `Загрузка\n${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`)
     } else if (entry.status === "checking") {
       this.overlayText(entry, `Проверка\n${Math.floor((entry.checked / (entry.file.size || 1)) * 100)}%`)
     } else {
@@ -390,15 +390,24 @@ export default class extends Controller {
     }
   }
 
-  // Надпись по центру превью, белым прямо по затемнению; \n — перенос, строки по центру, а не у левого края
+  // Надпись по центру превью, белым прямо по затемнению; \n — перенос, строки по центру, а не у левого края.
+  // У ZIP над надписью иконка архива: подпись плитки на это время скрыта, и без иконки архив не отличить от фото.
+  // Иконка фиолетовая, как все на сайте, — белой её делает фильтр
   overlayText(entry, text) {
-    let label = entry.overlay.firstElementChild
-    if (!label) {
-      label = document.createElement("span")
-      label.className = "px-1 text-center leading-tight whitespace-pre-line"
-      entry.overlay.replaceChildren(label)
+    if (!entry.overlayLabel?.isConnected) {
+      entry.overlayLabel = document.createElement("span")
+      entry.overlayLabel.className = "px-1 text-center leading-tight whitespace-pre-line"
+      const parts = [ entry.overlayLabel ]
+      if (entry.isZip) {
+        const icon = new Image()
+        icon.src = "/file-archive.png"
+        icon.alt = ""
+        icon.className = "w-7 h-7 brightness-0 invert pointer-events-none"
+        parts.unshift(icon)
+      }
+      entry.overlay.replaceChildren(...parts)
     }
-    label.textContent = text
+    entry.overlayLabel.textContent = text
   }
 
   // Пока не все файлы проверены — сколько проверено: иначе первые минуты на больших файлах ничего не движется
