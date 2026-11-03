@@ -3,6 +3,10 @@ import { opensElsewhere } from "utils/link_click"
 import { fileChecksum } from "utils/file_checksum"
 
 const MAX_FILE_SIZE = 1073741824 // 1 ГБ
+// Отметка «загружен / ошибка» — кружок цветов палитры, один и тот же на плитке и в строке итога.
+// Не эмодзи ✅: его цвет и форму рисует шрифт системы, и он не совпадал с кружком на плитке
+const MARKS = { done: [ "✓", "bg-success" ], error: [ "✗", "bg-danger" ] }
+const MARK_CLASS = "w-4 h-4 rounded-full text-white text-xs items-center justify-center"
 const DIRECT_UPLOAD_URL = "/rails/active_storage/direct_uploads"
 
 // Все файлы (включая ZIP) сразу грузятся на сервер прямой загрузкой ActiveStorage, тем же протоколом, что DirectUpload:
@@ -364,9 +368,13 @@ export default class extends Controller {
       this.submitBtnTarget.value = `Загрузка ${percent}%...`
     } else {
       this.finishBatch()
-      this.progressStatusTarget.textContent = failed > 0
-        ? `✅ Загружено ${done}, с ошибкой ${failed}`
-        : "✅ Все файлы загружены!"
+      const [ symbol, color ] = done > 0 ? MARKS.done : MARKS.error
+      const mark = document.createElement("span")
+      mark.className = `inline-flex align-text-bottom mr-1 ${MARK_CLASS} ${color}`
+      mark.textContent = symbol
+      this.progressStatusTarget.replaceChildren(mark, failed > 0
+        ? `Загружено ${done}, с ошибкой ${failed}`
+        : "Все файлы загружены!")
       this.submitBtnTarget.disabled = done === 0
       this.submitBtnTarget.value = "Загрузить"
     }
@@ -376,10 +384,9 @@ export default class extends Controller {
     entry.playIcon?.classList.toggle("hidden", entry.status !== "done")
     entry.caption?.classList.toggle("invisible", entry.status !== "done" && entry.status !== "error")
 
-    const marks = { done: [ "✓", "bg-green-500" ], error: [ "✗", "bg-red-500" ] }
-    if (marks[entry.status]) {
-      const [ symbol, color ] = marks[entry.status]
-      entry.overlay.className = `absolute top-0 left-0 w-4 h-4 ${color} rounded-full text-white text-xs flex items-center justify-center`
+    if (MARKS[entry.status]) {
+      const [ symbol, color ] = MARKS[entry.status]
+      entry.overlay.className = `absolute top-0 left-0 flex ${MARK_CLASS} ${color}`
       entry.overlay.textContent = symbol
     } else if (entry.status === "uploading") {
       this.overlayText(entry, `Загрузка\n${Math.floor((entry.loaded / (entry.file.size || 1)) * 100)}%`)

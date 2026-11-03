@@ -11,7 +11,7 @@ RSpec.describe "Uploading photos", type: :system do
   it "uploads a photo and shows it in the open folder without a reload" do
     visit new_media_item_path(folder_id: folder.id)
     attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
     record_confirms(answer: false)
     click_button "Загрузить"
 
@@ -38,7 +38,7 @@ RSpec.describe "Uploading photos", type: :system do
     visit folder_path(folder)
     visit new_media_item_path(folder_id: folder.id)
     attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
     blob = ActiveStorage::Blob.find_by!(filename: "pixel.jpg")
 
     record_confirms(answer: false)
@@ -62,14 +62,14 @@ RSpec.describe "Uploading photos", type: :system do
     click_link title: "Загрузить файлы" # переход Turbo: в истории есть куда вернуться, «Назад» идёт по истории
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
     attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
     record_confirms(answer: false)
 
     tab = window_opened_by { find_link("Назад").click(:control) }
     within_window(tab) { expect(page).to have_current_path(folder_path(folder)) }
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
     expect(evaluate_script("window.confirms")).to eq([])
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
   ensure
     tab&.close
   end
@@ -78,7 +78,7 @@ RSpec.describe "Uploading photos", type: :system do
   it "deletes uploaded but unsaved files when the page is reloaded" do
     visit new_media_item_path(folder_id: folder.id)
     attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
     blob = ActiveStorage::Blob.find_by!(filename: "pixel.jpg")
 
     execute_script("location.reload()")
@@ -124,7 +124,7 @@ RSpec.describe "Uploading photos", type: :system do
 
     visit new_media_item_path(folder_id: folder.id)
     attach_file "fileInput", files, make_visible: true
-    expect(page).to have_content("✅ Все файлы загружены!")
+    expect(page).to have_content("Все файлы загружены!")
     click_button "Загрузить"
 
     expect(page).to have_content("3 файла загружаются в фоне")
@@ -179,7 +179,7 @@ RSpec.describe "Uploading photos", type: :system do
     error = find("#error-container div", text: "Ошибка загрузки \"Ряд 9 Куст 9.jpg\": не удалось прочитать файл", wait: 30)
     expect(error[:class].split).to include("min-h-16")
     expect(error[:class].split).not_to include("h-16")
-    expect(page).to have_content("✅ Загружено 1, с ошибкой 1", wait: 30)
+    expect(page).to have_content("Загружено 1, с ошибкой 1", wait: 30)
   ensure
     FileUtils.rm_f(big) if big
     FileUtils.rm_f(gone) if gone
@@ -199,7 +199,7 @@ RSpec.describe "Uploading photos", type: :system do
     dismiss_confirm { click_link "Назад" }
     network.emulate_network_conditions
 
-    expect(page).to have_content("✅ Все файлы загружены!", wait: 30)
+    expect(page).to have_content("Все файлы загружены!", wait: 30)
     expect(page).to have_css("#preview-container img[alt='ZIP архив']") # загружен — фиолетовая иконка с размером вернулась
     expect(page).to have_no_css("#preview-container img[src='/file-archive.png'][alt='']")
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
