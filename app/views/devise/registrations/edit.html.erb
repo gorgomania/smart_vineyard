@@ -7,7 +7,7 @@
     <%= render "devise/shared/error_messages", resource: resource %>
 
     <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
-      <%= render "shared/float_field", f: f, name: :email, label: "Email", type: :email_field, html: { autofocus: true, autocomplete: "email" } %>
+      <%= render "shared/float_field", f: f, name: :email, label: "Email", type: :email_field, html: { autocomplete: "email" } %>
       <%= render "shared/float_field", f: f, name: :password, label: "Новый пароль", type: :password_field, html: { autocomplete: "new-password" } %>
       <%= render "shared/float_field", f: f, name: :password_confirmation, label: "Подтверждение пароля", type: :password_field, html: { autocomplete: "new-password" } %>
       <%= render "shared/float_field", f: f, name: :current_password, label: "Текущий пароль", type: :password_field, html: { autocomplete: "current-password" } %>

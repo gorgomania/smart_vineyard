@@ -39,7 +39,7 @@
             <% end %>
           <% end %>
 
-          <%= render "shared/float_field", f: f, name: :name, label: "Название", width: "w-full", html: { autofocus: true } %>
+          <%= render "shared/float_field", f: f, name: :name, label: "Название", width: "w-full", html: { autofocus: !f.object.persisted? } %>
           <%= render "shared/float_field", f: f, name: :grape_variety, label: "Сорт винограда", width: "w-full", div_class: "" %>
           <%= render "shared/float_field", f: f, name: :planting_year, label: "Год посадки", width: "w-full", div_class: "" %>
 
