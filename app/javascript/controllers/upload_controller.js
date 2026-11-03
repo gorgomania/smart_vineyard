@@ -18,7 +18,7 @@ export default class extends Controller {
 
   connect() {
     // ключ name_size → { file, isZip, checked, loaded, status: queued|checking|uploading|done|error, signedId,
-    //                    abort, xhr, wrapper, overlay }
+    //                    abort, xhr, wrapper, overlay, caption, playIcon }
     this.uploads = new Map()
     this.checkQueue = Promise.resolve() // проверка (MD5) — по одному файлу: диск читается последовательно
     this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
@@ -239,10 +239,14 @@ export default class extends Controller {
     if (entry.isZip) {
       const tile = document.createElement("div")
       tile.className = "w-full aspect-square bg-brand-tint rounded-lg border-2 border-brand-pale flex flex-col items-center justify-center"
-      tile.innerHTML = `
+      // Подпись прячется, пока поверх идёт статус (см. renderEntry): иначе «25%» ложится на «ZIP архив»
+      entry.caption = document.createElement("div")
+      entry.caption.className = "flex flex-col items-center"
+      entry.caption.innerHTML = `
         <span class="text-xs text-ink-soft mt-2">ZIP архив</span>
         <span class="text-xs text-slate-500">${this.formatMb(entry.file.size)} МБ</span>
       `
+      tile.appendChild(entry.caption)
       wrapper.appendChild(tile)
     } else {
       const img = new Image()
@@ -335,6 +339,7 @@ export default class extends Controller {
 
   renderEntry(entry) {
     entry.playIcon?.classList.toggle("hidden", entry.status !== "done")
+    entry.caption?.classList.toggle("invisible", entry.status !== "done" && entry.status !== "error")
 
     const marks = { done: [ "✓", "bg-green-500" ], error: [ "✗", "bg-red-500" ] }
     if (marks[entry.status]) {

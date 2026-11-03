@@ -132,10 +132,12 @@ RSpec.describe "Uploading photos", type: :system do
 
     attach_file "fileInput", big, make_visible: true
     expect(page).to have_css("#preview-container div", text: /\A\d+%\z/)
+    expect(page).to have_no_content("ZIP архив") # пока идёт загрузка, процент не ложится на подпись плитки
     dismiss_confirm { click_link "Назад" }
     network.emulate_network_conditions
 
     expect(page).to have_content("✅ Все файлы загружены!", wait: 30)
+    expect(page).to have_content("ZIP архив") # загружен — подпись вернулась
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
     expect(ActiveStorage::Blob.find_by(filename: "big_upload.zip").byte_size).to eq(64.megabytes)
   ensure
