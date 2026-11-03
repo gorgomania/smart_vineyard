@@ -43,7 +43,7 @@ RSpec.describe "Uploading photos", type: :system do
 
     record_confirms(answer: false)
     click_link "Назад"
-    expect(evaluate_script("window.confirms")).to eq([ "Загруженные файлы не сохранены в папку. Уйти со страницы? Они пропадут" ])
+    expect(evaluate_script("window.confirms")).to eq([ "Уйти, не сохранив загруженные файлы в папку?" ])
     expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
 
     record_confirms(answer: true)
@@ -152,7 +152,7 @@ RSpec.describe "Uploading photos", type: :system do
     execute_script("window.confirms = []; window.confirm = (message) => { window.confirms.push(message); return true }")
     click_link "Назад"
     expect(page).to have_current_path(folder_path(folder))
-    expect(evaluate_script("window.confirms")).to eq([ "Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся" ])
+    expect(evaluate_script("window.confirms")).to eq([ "Уйти со страницы и прервать загрузку?" ])
 
     upload = network.traffic.find { |exchange| exchange.request&.method == "PUT" }
     expect(upload).to be_present

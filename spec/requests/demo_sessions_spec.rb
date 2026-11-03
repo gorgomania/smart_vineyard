@@ -32,7 +32,7 @@ RSpec.describe "DemoSessions", type: :request do
 
       expect(DemoCloneService).to have_received(:call).exactly(10).times
       expect(response).to redirect_to(new_user_session_path)
-      expect(flash[:alert]).to eq("Слишком много демо-входов. Попробуйте позже")
+      expect(flash[:alert]).to eq("Слишком много демо-входов, попробуйте позже")
     end
 
     it "allows requests again after the window passes" do
@@ -49,7 +49,7 @@ RSpec.describe "DemoSessions", type: :request do
       post demo_session_path, env: { "REMOTE_ADDR" => "10.9.9.9" }
 
       expect(DemoCloneService).to have_received(:call).exactly(100).times
-      expect(flash[:alert]).to eq("Демо временно недоступно. Попробуйте позже")
+      expect(flash[:alert]).to eq("Демо временно недоступно, попробуйте позже")
     end
   end
 end

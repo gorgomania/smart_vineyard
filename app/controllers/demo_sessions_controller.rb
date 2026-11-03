@@ -7,9 +7,9 @@ class DemoSessionsController < ApplicationController
 
   # Каждый запрос создаёт пользователя и копию данных мастера — ограничиваем и по IP, и в целом
   rate_limit to: 10, within: 1.hour, store: RATE_LIMIT_STORE, name: "per_ip",
-             with: -> { redirect_to new_user_session_path, alert: "Слишком много демо-входов. Попробуйте позже" }
+             with: -> { redirect_to new_user_session_path, alert: "Слишком много демо-входов, попробуйте позже" }
   rate_limit to: 100, within: 1.hour, store: RATE_LIMIT_STORE, name: "global", by: -> { "all" },
-             with: -> { redirect_to new_user_session_path, alert: "Демо временно недоступно. Попробуйте позже" }
+             with: -> { redirect_to new_user_session_path, alert: "Демо временно недоступно, попробуйте позже" }
 
   def create
     user = DemoCloneService.call

@@ -83,8 +83,8 @@ export default class extends Controller {
   // После «Загрузить» форма сама уводит в папку — тут спрашивать не о чем
   leaveWarning() {
     if (this.submitted) return null
-    if (this.pending().length > 0) return "Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся"
-    if (this.done().length > 0) return "Загруженные файлы не сохранены в папку. Уйти со страницы? Они пропадут"
+    if (this.pending().length > 0) return "Уйти со страницы и прервать загрузку?"
+    if (this.done().length > 0) return "Уйти, не сохранив загруженные файлы в папку?"
     return null
   }
 
@@ -170,7 +170,7 @@ export default class extends Controller {
         if (error.name === "AbortError") throw error
         // Текст браузера (файл изменился на диске, WebAssembly запрещён и т. п.) — в консоль, пользователю — суть
         console.error(`Проверка "${entry.file.name}":`, error)
-        throw new Error("не удалось прочитать файл. Выберите его ещё раз")
+        throw new Error("не удалось прочитать файл, выберите его ещё раз")
       })
       const blob = await this.createBlob(entry.file, checksum, entry.abort.signal)
       if (!this.uploads.has(entry.key)) return // убрали, пока создавался blob: файл не отправляем
