@@ -6,7 +6,7 @@
 
       <%= render "shared/form_flash" %>
 
-      <%= form_for(:folders, url: :folders, html: { method: :post }) do |f| %>
+      <%= form_for(@folder, as: :folders, url: folders_path, html: { method: :post }) do |f| %>
         <%= f.hidden_field :parent_id, value: @parent_id %>
         <%= f.hidden_field :page, value: @page %>
 

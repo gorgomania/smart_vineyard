@@ -84,6 +84,7 @@ class FoldersController < ApplicationController
 
   def new
     @parent_id = params[:parent_id]
+    @folder = Folder.new
   end
 
   def create
@@ -97,6 +98,7 @@ class FoldersController < ApplicationController
     else
       flash.now[:alert] = folder.errors[:title][0]
       @parent_id = parent_id
+      @folder = folder # форма показывает введённое имя и подсвечивает поле, а не открывается пустой
       render "new", status: :unprocessable_content
     end
   end

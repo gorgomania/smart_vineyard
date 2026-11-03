@@ -92,6 +92,15 @@ RSpec.describe "Folders", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
     end
 
+    # Форма при ошибке открывается с тем, что ввели, и поле подсвечено — а не пустой
+    it "keeps the typed title and highlights the field on error" do
+      post folders_path, params: { folders: { title: "Слишком длинное имя", parent_id: root.id } }
+
+      field = response.parsed_body.at_css("form[method='post'][action='#{folders_path}'] input[name='folders[title]']")
+      expect(field["value"]).to eq("Слишком длинное имя")
+      expect(field["class"].split).to include("!border-danger")
+    end
+
     it "does not create a top-level folder without a parent" do
       expect {
         post folders_path, params: { folders: { title: "Orphan", parent_id: "" } }
@@ -149,6 +158,15 @@ RSpec.describe "Folders", type: :request do
     it "renders edit on blank title" do
       patch folder_path(child), params: { folders: { title: "" } }
       expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it "keeps the typed title and highlights the field on error" do
+      create(:folder, user:, title: "Занято", parent: root)
+      patch folder_path(child), params: { folders: { title: "Занято" } }
+
+      field = response.parsed_body.at_css("form[action='#{folder_path(child)}'] input[name='folders[title]']")
+      expect(field["value"]).to eq("Занято")
+      expect(field["class"].split).to include("!border-danger")
     end
   end
 
