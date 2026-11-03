@@ -120,6 +120,12 @@ jobs:
           bin/rails db:migrate
           bin/rails db:schema:load:cable
 
+      # app/assets/builds в .gitignore, а голый rspec CSS не собирает (gem подвешивает сборку только
+      # на test:prepare/spec:prepare). Без неё stylesheet_link_tag :app молча обходится без Tailwind,
+      # и system-тесты видят страницу без стилей
+      - name: Build Tailwind CSS
+        run: bin/rails tailwindcss:build
+
       - name: Run tests
         run: bundle exec rspec
 
