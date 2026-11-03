@@ -18,14 +18,14 @@ class FoldersController < ApplicationController
         @page = @page.clamp(1, @page_limit)
 
         offset = (@page - 1) * per_page
-        @childrens = policy_scope(Folder).where("title ILIKE ?", search_pattern(title_search_query)).order(created_at: :asc).limit(per_page).offset(offset)
+        @childrens = policy_scope(Folder).where("title ILIKE ?", search_pattern(title_search_query)).order(:created_at, :id).limit(per_page).offset(offset)
         if @childrens.length < per_page
           if @childrens_length > offset
             offset = 0
           else
             offset -= @childrens_length
           end
-          @media = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", search_pattern(title_search_query)).order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
+          @media = policy_scope(MediaItem).joins(media_attachment: :blob).where("active_storage_blobs.filename ILIKE ?", search_pattern(title_search_query)).order(:created_at, :id).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
         else
           @media = []
         end
@@ -68,14 +68,14 @@ class FoldersController < ApplicationController
       end.clamp(1, @page_limit)
 
     offset = (@page - 1) * per_page
-    @childrens = @folder.children.order(created_at: :asc).limit(per_page).offset(offset)
+    @childrens = @folder.children.order(:created_at, :id).limit(per_page).offset(offset)
     if @childrens.length < per_page
       if childrens_length > offset
         offset = 0
       else
         offset -= childrens_length
       end
-        @media = @folder.media_items.order(created_at: :asc).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
+        @media = @folder.media_items.order(:created_at, :id).limit(per_page - @childrens.length).offset(offset).includes(media_attachment: :blob, video_preview_attachment: :blob).to_a
     else
       @media = []
     end

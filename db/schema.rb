@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_02_140000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_03_120000) do
   create_schema "topology"
 
   # These are extensions that must be enabled in order to support this database
@@ -88,7 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_02_140000) do
     t.datetime "updated_at", null: false
     t.index ["ai_class_id"], name: "index_media_items_on_ai_class_id"
     t.index ["bush_id"], name: "index_media_items_on_bush_id", unique: true
-    t.index ["folder_id", "created_at"], name: "index_media_items_on_folder_id_and_created_at"
+    t.index ["folder_id", "created_at", "id"], name: "index_media_items_on_folder_id_and_created_at_and_id"
     t.index ["folder_id"], name: "index_media_items_on_folder_id"
   end
 

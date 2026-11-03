@@ -371,6 +371,25 @@ RSpec.describe "Folders", type: :request do
       expect(response).to have_http_status(:ok)
     end
 
+    # У пачки из ZIP или демо-копии created_at общий: страницы делятся по id, иначе порядок одинаковых строк
+    # не определён и файл мог попасть на две страницы, а другой ни на одну. Чётные записи переписываем —
+    # их строки уезжают в конец таблицы, и физический порядок перестаёт совпадать с id
+    it "pages through files with the same created_at in id order, each exactly once" do
+      batch = create(:folder, user:, parent: folder)
+      items = create_list(:media_item, 30, folder: batch)
+      # Файл без вложения папка не показывает. Один общий блоб на всех, как у демо-копий
+      blob = ActiveStorage::Blob.create_and_upload!(io: File.open(PIXEL_JPEG), filename: "pixel.jpg", content_type: "image/jpeg")
+      ActiveStorage::Attachment.insert_all(items.map { |item| { name: "media", record_type: "MediaItem", record_id: item.id, blob_id: blob.id, created_at: Time.current } })
+      MediaItem.where(id: items.map(&:id)).update_all(created_at: 1.day.ago.round)
+      MediaItem.where(id: items.map(&:id).select(&:even?)).update_all(updated_at: Time.current)
+
+      shown = (1..2).flat_map do |page|
+        get folder_path(batch, page:)
+        response.body.scan(%r{/media_items/(\d+)/edit}).flatten.uniq.map(&:to_i)
+      end
+      expect(shown).to eq(items.map(&:id).sort)
+    end
+
     it "shows the first page of search results for page=0" do
       get folders_path(folders: { title: "P" }, page: 0)
       expect(response).to have_http_status(:ok)
