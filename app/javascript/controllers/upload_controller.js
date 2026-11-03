@@ -350,12 +350,12 @@ export default class extends Controller {
     }
   }
 
-  // Надпись по центру превью на своей плашке: читается поверх фото и подписи «ZIP архив», \n — перенос
+  // Надпись по центру превью, белым прямо по затемнению; \n — перенос, строки по центру, а не у левого края
   overlayText(entry, text) {
     let label = entry.overlay.firstElementChild
     if (!label) {
       label = document.createElement("span")
-      label.className = "bg-black/60 rounded px-1.5 py-0.5 text-center leading-tight whitespace-pre-line"
+      label.className = "px-1 text-center leading-tight whitespace-pre-line"
       entry.overlay.replaceChildren(label)
     }
     label.textContent = text
