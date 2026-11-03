@@ -4,7 +4,7 @@
     <%end%>
     <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex ml-12 max-[634px]:hidden", data: { controller: "search" }) do |f| %>
         <div class="field w-full">
-        <%= f.text_field :title, class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-surface w-full min-w-61 outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", value: @search_query, placeholder: "Поиск папок и файлов",  required: @search_query.blank?, data: { "search-target": "input" } %>
+        <%= f.text_field :title, class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-surface w-full min-w-61 outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", value: @search_query, placeholder: "Поиск папок и файлов",  required: @search_query.blank?, data: { "search-target": "input", controller: "select-all", select_all_every_focus_value: true } %>
         </div>
         <div class="w-0 h-0">
         <%= image_submit_tag("/search.png", name: "commit", class: "search_img relative right-[50px] top-[11px] w-[26px] h-[26px] rounded-[12px] hover:bg-surface hover:shadow-[0_0_0_10px_var(--color-surface)]", title: "Поиск", data: { action: "mouseenter->search#imgEnter mouseleave->search#imgLeave" }) %>
@@ -36,7 +36,7 @@
     <div id="dropMenu" class="hidden absolute top-full left-0 right-0 bg-white shadow-lg border-t border-ink" data-nav-target="dropMenu">
         <%= form_for(:folders, url: :folders, html: { method: :get }, class: "flex px-4 py-3 min-[634px]:hidden", data: { controller: "search" }) do |f| %>
             <div class="field w-full">
-            <%= f.text_field :title, id: "folders_title_mobile", class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-surface w-full outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", value: @search_query, placeholder: "Поиск папок и файлов", required: @search_query.blank?, data: { "search-target": "input" } %>
+            <%= f.text_field :title, id: "folders_title_mobile", class: "search_input p-[12px_66px_12px_12px] rounded-[12px] border-0 bg-surface w-full outline-none hover:bg-white hover:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014] focus:bg-white focus:shadow-[0_0_0_1px_#0000000a,0_4px_4px_#0000000a,0_20px_40px_#00000014]", value: @search_query, placeholder: "Поиск папок и файлов", required: @search_query.blank?, data: { "search-target": "input", controller: "select-all", select_all_every_focus_value: true } %>
             </div>
             <div class="w-0 h-0">
             <%= image_submit_tag("/search.png", name: "commit", class: "search_img relative right-[50px] top-[11px] w-[26px] h-[26px] rounded-[12px] hover:bg-surface hover:shadow-[0_0_0_10px_var(--color-surface)]", title: "Поиск", data: { action: "mouseenter->search#imgEnter mouseleave->search#imgLeave" }) %>

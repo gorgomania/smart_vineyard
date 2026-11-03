@@ -34,6 +34,30 @@ RSpec.describe "Form focus", type: :system do
     expect(focused_selection).to eq([ media_item_path(item), "Ряд 1 Куст 2" ])
   end
 
+  # Поиск — как адресная строка: в поле прошлый запрос, первый клик выделяет его целиком, второй ставит курсор.
+  # Ушли из поля и вернулись кликом — снова целиком
+  it "selects the search query on the first click and places the caret on the second" do
+    visit folders_path(folders: { title: "Участок" })
+    search = find("#folders_title")
+
+    search.click
+    expect(focused_selection.last).to eq("Участок")
+    search.click
+    expect(focused_selection.last).to eq("")
+
+    find("body").click(x: 5, y: 5)
+    search.click
+    expect(focused_selection.last).to eq("Участок")
+  end
+
+  # На переименовании выделяет только autofocus: дальше клик ставит курсор, чтобы поправить имя
+  it "places the caret on a click into the rename field after the initial selection" do
+    visit edit_folder_path(child)
+    expect(focused_selection.last).to eq("Ряды 1–10")
+    find_field("Название").click
+    expect(focused_selection.last).to eq("")
+  end
+
   # При редактировании обычно правят границы на карте: клавиатура телефона не должна выезжать поверх неё
   it "focuses the vineyard name only when creating one" do
     vineyard = create(:vineyard, user:)
