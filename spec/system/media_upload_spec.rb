@@ -11,9 +11,12 @@ RSpec.describe "Uploading photos", type: :system do
   it "uploads a photo and shows it in the open folder without a reload" do
     visit new_media_item_path(folder_id: folder.id)
     attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
+    expect(page).to have_content("✅ Все файлы загружены!")
+    record_confirms(answer: false)
     click_button "Загрузить"
 
     expect(page).to have_current_path(folder_path(folder), ignore_query: true)
+    expect(evaluate_script("window.confirms")).to eq([]) # после «Загрузить» форма сама уводит в папку — не спрашиваем
     expect(page).to have_content("1 файл загружаются в фоне")
     expect(page).to have_no_content("pixel")
 
@@ -22,6 +25,65 @@ RSpec.describe "Uploading photos", type: :system do
 
     expect(page).to have_content("pixel")
     expect(folder.media_items.count).to eq(1)
+  end
+
+  # Подменяет confirm: вопросы копятся в window.confirms. Turbo не перезагружает страницу — счётчик доживает до проверки
+  def record_confirms(answer:)
+    execute_script("window.confirms = []; window.confirm = (message) => { window.confirms.push(message); return #{answer} }")
+  end
+
+  # Загружены, но не сохранены кнопкой «Загрузить»: без отправки формы в папку не попадут — уходить только с согласия,
+  # а ушли — файл сразу удаляется с сервера, а не ждёт ночной очистки
+  it "asks before leaving with uploaded but unsaved files and deletes them on leave" do
+    visit folder_path(folder)
+    visit new_media_item_path(folder_id: folder.id)
+    attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
+    expect(page).to have_content("✅ Все файлы загружены!")
+    blob = ActiveStorage::Blob.find_by!(filename: "pixel.jpg")
+
+    record_confirms(answer: false)
+    click_link "Назад"
+    expect(evaluate_script("window.confirms")).to eq([ "Загруженные файлы не сохранены в папку. Уйти со страницы? Они пропадут" ])
+    expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
+
+    record_confirms(answer: true)
+    click_link "Назад"
+    expect(page).to have_current_path(folder_path(folder))
+    expect(evaluate_script("window.confirms").size).to eq(1)
+    50.times { break unless ActiveStorage::Blob.exists?(blob.id); sleep 0.1 }
+    expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
+    expect(ActiveStorage::Blob.service.exist?(blob.key)).to be(false)
+  end
+
+  # Ctrl+клик по «Назад» — папка в новой вкладке, как у обычной ссылки. Со страницы никто не уходит:
+  # ни назад по истории, ни вопроса, загруженное остаётся
+  it "opens Назад in a new tab on Ctrl+click without leaving the page" do
+    visit folder_path(folder)
+    click_link title: "Загрузить файлы" # переход Turbo: в истории есть куда вернуться, «Назад» идёт по истории
+    expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
+    attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
+    expect(page).to have_content("✅ Все файлы загружены!")
+    record_confirms(answer: false)
+
+    tab = window_opened_by { find_link("Назад").click(:control) }
+    within_window(tab) { expect(page).to have_current_path(folder_path(folder)) }
+    expect(page).to have_current_path(new_media_item_path(folder_id: folder.id))
+    expect(evaluate_script("window.confirms")).to eq([])
+    expect(page).to have_content("✅ Все файлы загружены!")
+  ensure
+    tab&.close
+  end
+
+  # Вкладку перезагрузили или закрыли — Stimulus не вызывает disconnect, файл удаляется по pagehide
+  it "deletes uploaded but unsaved files when the page is reloaded" do
+    visit new_media_item_path(folder_id: folder.id)
+    attach_file "fileInput", Rails.root.join("spec/fixtures/files/pixel.jpg"), make_visible: true
+    expect(page).to have_content("✅ Все файлы загружены!")
+    blob = ActiveStorage::Blob.find_by!(filename: "pixel.jpg")
+
+    execute_script("location.reload()")
+    50.times { break unless ActiveStorage::Blob.exists?(blob.id); sleep 0.1 }
+    expect(ActiveStorage::Blob.exists?(blob.id)).to be(false)
   end
 
   # У зоны transition: цвет доходит до конечного не сразу — ждём, пока перестанет меняться

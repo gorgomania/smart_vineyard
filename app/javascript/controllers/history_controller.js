@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
+import { opensElsewhere } from "utils/link_click"
 
 // Вместо href="javascript:history.back()": такие ссылки блокирует CSP
 export default class extends Controller {
   // Назад по истории, если в этой вкладке до нас была страница сайта. Если страницу открыли
   // по ссылке или в новой вкладке, возвращаться некуда — тогда идём по href ссылки (разумное место рядом)
   back(event) {
+    if (opensElsewhere(event)) return // Ctrl+клик — по href в новой вкладке, а не назад в этой
     if (!this.canGoBack && this.element.getAttribute("href") !== "#") return
 
     event.preventDefault()

@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { opensElsewhere } from "utils/link_click"
 import { fileChecksum } from "utils/file_checksum"
 
 const MAX_FILE_SIZE = 1073741824 // 1 ГБ
@@ -22,41 +23,69 @@ export default class extends Controller {
     this.uploads = new Map()
     this.checkQueue = Promise.resolve() // проверка (MD5) — по одному файлу: диск читается последовательно
     this.batch = null // { startedAt, baseLoaded, timer } — текущая серия загрузок, для оценки оставшегося времени
+    // Сразу, а не при удалении: в disconnect Turbo уже меняет <head> под новую страницу. В тестах мета нет вовсе
+    this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
 
-    // Уход со страницы при незаконченной загрузке — только с подтверждения: файлы без отправки формы
-    // в папку не попадут. beforeunload — закрытие вкладки и перезагрузка, turbo:before-visit — ссылки сайта
-    this.warnOnUnload = (event) => { if (this.pending().length > 0) event.preventDefault() }
+    // Уход со страницы, пока файлы грузятся или загружены, но не сохранены кнопкой «Загрузить», — только
+    // с подтверждения: без отправки формы в папку они не попадут. beforeunload — закрытие вкладки и перезагрузка,
+    // turbo:before-visit — ссылки сайта
+    this.warnOnUnload = (event) => { if (this.leaveWarning()) event.preventDefault() }
     this.confirmVisit = (event) => { if (!this.mayLeave()) event.preventDefault() }
+    // Вкладку закрыли или перезагрузили — disconnect не будет. persisted — страница ушла в кэш вперёд-назад
+    // и может вернуться: тогда файлы не трогаем, иначе превью покажут уже удалённые
+    this.discardOnHide = (event) => { if (!event.persisted) this.discardUnsaved() }
     window.addEventListener("beforeunload", this.warnOnUnload)
+    window.addEventListener("pagehide", this.discardOnHide)
     document.addEventListener("turbo:before-visit", this.confirmVisit)
     this.render()
   }
 
   // Ушли со страницы (в том числе кнопкой браузера «назад»: Turbo не перезагружает страницу, и сам браузер
-  // ничего не обрывает) — останавливаем проверку и загрузку, иначе гигабайты шли бы на сервер впустую
+  // ничего не обрывает) — останавливаем проверку и загрузку, иначе гигабайты шли бы на сервер впустую.
+  // Загруженные, но не сохранённые в папку файлы удаляем сразу, а не оставляем до ночной очистки
   disconnect() {
     clearInterval(this.batch?.timer)
     window.removeEventListener("beforeunload", this.warnOnUnload)
+    window.removeEventListener("pagehide", this.discardOnHide)
     document.removeEventListener("turbo:before-visit", this.confirmVisit)
     this.uploads.forEach(entry => {
       entry.abort.abort()
       entry.xhr?.abort()
     })
+    this.discardUnsaved()
     this.uploads.clear()
   }
 
   // Ссылка «Назад» (history#back — переход по истории, turbo:before-visit его не видит)
   confirmLeave(event) {
-    if (this.mayLeave()) return
+    if (opensElsewhere(event) || this.mayLeave()) return // в новой вкладке — со страницы никто не уходит
     event.preventDefault()
     event.stopImmediatePropagation() // следующее действие на ссылке — history#back — не выполняется
   }
 
   // Согласие запоминаем: «Назад» без истории — обычный переход по ссылке, и turbo:before-visit спросил бы второй раз
   mayLeave() {
-    this.leaveConfirmed ||= this.pending().length === 0 ||
-      confirm("Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся")
-    return this.leaveConfirmed
+    if (this.leaveConfirmed) return true
+    const warning = this.leaveWarning()
+    return !warning || (this.leaveConfirmed = confirm(warning))
+  }
+
+  // Загруженные, но не сохранённые в папку файлы — удалить с сервера. Каждый один раз: после удаления
+  // запись уходит из списка
+  discardUnsaved() {
+    if (this.submitted) return
+    this.done().forEach(entry => {
+      this.uploads.delete(entry.key)
+      this.deleteBlob(entry)
+    })
+  }
+
+  // После «Загрузить» форма сама уводит в папку — тут спрашивать не о чем
+  leaveWarning() {
+    if (this.submitted) return null
+    if (this.pending().length > 0) return "Файлы ещё загружаются. Уйти со страницы? Загрузка прервётся"
+    if (this.done().length > 0) return "Загруженные файлы не сохранены в папку. Уйти со страницы? Они пропадут"
+    return null
   }
 
   fileInputChange(event) {
@@ -88,7 +117,7 @@ export default class extends Controller {
   }
 
   submit(event) {
-    const done = [ ...this.uploads.values() ].filter(u => u.status === "done")
+    const done = this.done()
     if (this.pending().length > 0 || done.length === 0) {
       event.preventDefault()
       if (done.length === 0) this.showError("Нет загруженных файлов")
@@ -99,6 +128,7 @@ export default class extends Controller {
     this.appendHidden("signed_zip_ids", done.filter(u => u.isZip).map(u => u.signedId))
     // Файлы уже на сервере: отключённое поле не попадает в тело запроса
     this.fileInputTarget.disabled = true
+    this.submitted = true
   }
 
   // --- добавление файлов ---
@@ -220,13 +250,18 @@ export default class extends Controller {
     } else if (entry.status === "uploading") {
       entry.xhr?.abort()
     } else if (entry.status === "done") {
-      const csrfToken = document.querySelector('[name="csrf-token"]').content
-      fetch(`/active_storage/blobs/${entry.signedId}`, {
-        method: "DELETE",
-        headers: { "X-CSRF-Token": csrfToken }
-      })
+      this.deleteBlob(entry)
     }
     this.render()
+  }
+
+  // keepalive — запрос доходит, даже если вкладку уже закрывают
+  deleteBlob(entry) {
+    fetch(`/active_storage/blobs/${entry.signedId}`, {
+      method: "DELETE",
+      headers: this.csrfToken ? { "X-CSRF-Token": this.csrfToken } : {},
+      keepalive: true
+    })
   }
 
   // --- превью ---
@@ -420,6 +455,10 @@ export default class extends Controller {
 
   pending() {
     return [ ...this.uploads.values() ].filter(u => [ "queued", "checking", "uploading" ].includes(u.status))
+  }
+
+  done() {
+    return [ ...this.uploads.values() ].filter(u => u.status === "done")
   }
 
   appendHidden(name, values) {
