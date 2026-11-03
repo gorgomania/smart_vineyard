@@ -14,7 +14,7 @@ A web application for vineyard management with AI-based vine health classificati
 
 | File Upload | Media Explorer |
 |------------|---------------|
-| ![File Upload](docs/screenshots/upload_file.png) | ![Media Explorer](docs/screenshots/media_explorer.png) |
+| ![File Upload](docs/screenshots/upload_files.png) | ![Media Explorer](docs/screenshots/media_explorer.png) |
 
 | Classification Result | Statistics |
 |----------------------|------------|
