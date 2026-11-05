@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require_relative "../smtp_settings"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
@@ -75,19 +76,7 @@ Rails.application.configure do
 
   if smtp_user_name && !smtp_user_name.empty? && smtp_password && !smtp_password.empty?
     config.action_mailer.delivery_method = :smtp
-    config.action_mailer.smtp_settings = {
-      address: ENV.fetch("SMTP_ADDRESS", "smtp.yandex.ru"),
-      port: ENV.fetch("SMTP_PORT", "465").to_i,
-      domain: ENV.fetch("SMTP_DOMAIN", "yandex.ru"),
-      user_name: smtp_user_name,
-      password: smtp_password,
-      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain"),
-      ssl: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_SSL", "true")),
-      tls: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_TLS", "false")),
-      enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "false")),
-      open_timeout: ENV.fetch("SMTP_OPEN_TIMEOUT", "10").to_i,
-      read_timeout: ENV.fetch("SMTP_READ_TIMEOUT", "10").to_i
-    }
+    config.action_mailer.smtp_settings = SmtpSettings.from_env
   elsif ENV["SECRET_KEY_BASE_DUMMY"].nil? || ENV["SECRET_KEY_BASE_DUMMY"].empty?
     raise KeyError, "SMTP_USER_NAME and SMTP_PASSWORD must be set"
   end

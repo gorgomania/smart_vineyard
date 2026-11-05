@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require_relative "../smtp_settings"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
@@ -59,17 +60,7 @@ Rails.application.configure do
 
   config.action_mailer.delivery_method = :smtp
 
-  config.action_mailer.smtp_settings = {
-    address:              "smtp.yandex.ru",
-    port:                 465,
-    domain:               "yandex.ru",
-    user_name:            ENV["SMTP_USER_NAME"],
-    password:             ENV["SMTP_PASSWORD"],
-    authentication:       "plain",
-    ssl:                  true,
-    tls:                  false,
-    enable_starttls_auto: false
-  }
+  config.action_mailer.smtp_settings = SmtpSettings.from_env
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
