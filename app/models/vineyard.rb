@@ -12,7 +12,7 @@ class Vineyard < ApplicationRecord
   validates :name, presence: true, length: { maximum: 100 }, uniqueness: { scope: :user_id }
   validates :polygon, presence: true
   # Тот же предел держит CHECK check_area_limit в базе. На 50 га при самых плотных шагах (2 × 1.2 м) — ~209 тысяч
-  # кустов: тепловая карта рисует их ~1.5 с (HeatmapLayer), GenerateRowsAndBushesJob вставляет ~4 с
+  # кустов: тепловая карта рисует их ~1.5 с (HeatmapLayer), SyncRowsAndBushesJob вставляет ~4 с
   MAX_AREA_HECTARES = 50
 
   validates :area_hectares, numericality: { greater_than: 0, less_than_or_equal_to: MAX_AREA_HECTARES }

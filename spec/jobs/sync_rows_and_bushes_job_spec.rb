@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe RegenerateRowsAndBushesJob, type: :job do
+RSpec.describe SyncRowsAndBushesJob, type: :job do
   let(:vineyard) { create(:vineyard) }
 
   def setup_rows(bushes_per_row)
@@ -21,6 +21,48 @@ RSpec.describe RegenerateRowsAndBushesJob, type: :job do
 
       perform([ 2 ])
       expect(Vineyard).to have_received(:broadcast_diagnoses_changed).with(vineyard.id)
+    end
+
+    context "on a new vineyard" do
+      it "creates the rows with their bushes, numbered from 1" do
+        perform([ 3, 4, 5 ])
+
+        counts = vineyard.rows.order(:row_number).map { |row| [ row.row_number, row.bushes.pluck(:bush_number).sort ] }
+        expect(counts).to eq([ [ 1, [ 1, 2, 3 ] ], [ 2, [ 1, 2, 3, 4 ] ], [ 3, [ 1, 2, 3, 4, 5 ] ] ])
+      end
+
+      it "creates every row and bush of a large layout" do
+        perform(Array.new(60) { 250 })
+        expect(vineyard.rows.count).to eq(60)
+        expect(vineyard.bushes.count).to eq(15_000)
+        expect(vineyard.rows.find_by(row_number: 60).bushes.maximum(:bush_number)).to eq(250)
+      end
+
+      it "does not create a row with no bushes" do
+        perform([ 2, 0, 3 ])
+        expect(vineyard.rows.pluck(:row_number)).to contain_exactly(1, 3)
+      end
+
+      it "creates nothing for an empty layout" do
+        expect { perform([]) }.not_to change(Row, :count)
+      end
+
+      # Создали и сразу поправили: задача правки могла успеть первой
+      it "changes nothing when run again with the same layout" do
+        perform([ 3, 4 ])
+        expect { perform([ 3, 4 ]) }.not_to change { vineyard.bushes.pluck(:id).sort }
+        expect(vineyard.rows.count).to eq(2)
+      end
+
+      # Её раскладка файлов отработала раньше, чем появились кусты
+      it "re-distributes the files of a folder attached while the rows were being built" do
+        folder = create(:folder, user: vineyard.user, vineyard:)
+        expect { perform([ 2 ]) }.to have_enqueued_job(DistributeMediaToBushesJob).with(folder.id)
+      end
+
+      it "does not distribute anything without a folder" do
+        expect { perform([ 2 ]) }.not_to have_enqueued_job(DistributeMediaToBushesJob)
+      end
     end
 
     context "adding bushes to an existing row" do

@@ -93,7 +93,7 @@ RSpec.describe "Vineyards", type: :request do
 
         expect {
           post vineyards_path, params:
-        }.to have_enqueued_job(GenerateRowsAndBushesJob).with(kind_of(Integer), expected)
+        }.to have_enqueued_job(SyncRowsAndBushesJob).with(kind_of(Integer), expected)
         vineyard = Vineyard.last
         expect([ vineyard.total_rows, vineyard.total_bushes ]).to eq([ expected.size, expected.sum ])
         expect(vineyard.area_hectares).to eq(rectangle_layout.area_hectares.round(2))
@@ -149,7 +149,7 @@ RSpec.describe "Vineyards", type: :request do
       it "updates without regenerating rows, keeping the stored totals" do
         expect {
           patch vineyard_path(vineyard), params: { vineyard: { name: "Новое имя", total_rows: 999 } }
-        }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
+        }.not_to have_enqueued_job(SyncRowsAndBushesJob)
         expect(vineyard.reload.name).to eq("Новое имя")
         expect(vineyard.total_rows).to eq(5)
         expect(response).to redirect_to(vineyard_path(vineyard))
@@ -157,11 +157,11 @@ RSpec.describe "Vineyards", type: :request do
     end
 
     context "when the layout changes" do
-      it "lays out rows on the server and enqueues RegenerateRowsAndBushesJob" do
+      it "lays out rows on the server and enqueues SyncRowsAndBushesJob" do
         expected = VineyardLayout.new(rectangle + [ rectangle.first ], side_index: 0, row_spacing: 2.8, bush_spacing: 1.5).bushes_per_row
         expect {
           patch vineyard_path(vineyard), params: { vineyard: { row_spacing: 2.8, bushes_per_row: "[3,4]" } }
-        }.to have_enqueued_job(RegenerateRowsAndBushesJob).with(vineyard.id, expected)
+        }.to have_enqueued_job(SyncRowsAndBushesJob).with(vineyard.id, expected)
         expect(vineyard.reload.total_bushes).to eq(expected.sum)
         expect(response).to redirect_to(vineyard_path(vineyard))
       end
@@ -171,7 +171,7 @@ RSpec.describe "Vineyards", type: :request do
       it "rejects the update and keeps rows" do
         expect {
           patch vineyard_path(vineyard), params: { vineyard: { reference_side_index: 9 } }
-        }.not_to have_enqueued_job(RegenerateRowsAndBushesJob)
+        }.not_to have_enqueued_job(SyncRowsAndBushesJob)
         expect(response).to have_http_status(:unprocessable_content)
         expect(vineyard.reload.reference_side_index).to eq(0)
       end

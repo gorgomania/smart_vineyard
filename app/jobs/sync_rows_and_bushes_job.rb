@@ -1,7 +1,10 @@
-class RegenerateRowsAndBushesJob < ApplicationJob
+# Приводит ряды и кусты виноградника к раскладке: новый строится с нуля, при правке меняется только разница.
+# Смотрит на то, что уже есть в базе, поэтому порядок задач и повторный запуск ничего не ломают
+class SyncRowsAndBushesJob < ApplicationJob
   queue_as :default
   discard_on ActiveRecord::RecordNotFound
 
+  # new_bushes_per_row — число кустов в каждом ряду по порядку номеров (VineyardLayout#bushes_per_row)
   def perform(vineyard_id, new_bushes_per_row)
     vineyard = Vineyard.find(vineyard_id)
 
@@ -49,6 +52,7 @@ class RegenerateRowsAndBushesJob < ApplicationJob
         { vineyard_id: vineyard.id, row_number:, created_at: now, updated_at: now }
       end
 
+      # Все ряды одним INSERT, кусты — тоже одним (Bush.insert_numbered!): на 50 га это сотни тысяч записей
       if new_rows_data.any?
         Row.insert_all!(new_rows_data, returning: [ :id, :row_number ]).each do |r|
           new_bushes[r["id"]] = 1..target_count.(r["row_number"])
@@ -62,6 +66,7 @@ class RegenerateRowsAndBushesJob < ApplicationJob
     # только о своих изменениях. Открытые статистика и тепловая карта перечитывают данные
     Vineyard.broadcast_diagnoses_changed(vineyard.id)
 
+    # Папку могли привязать, пока ряды ещё строились: её раскладка тогда не нашла кустов
     if vineyard.folder.present?
       DistributeMediaToBushesJob.perform_later(vineyard.folder.id)
     end

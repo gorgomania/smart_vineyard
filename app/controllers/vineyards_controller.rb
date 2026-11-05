@@ -49,7 +49,7 @@ class VineyardsController < ApplicationController
     bushes_per_row = calculate_layout(@vineyard)
 
     if bushes_per_row && @vineyard.save
-      GenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
+      SyncRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row)
       redirect_to @vineyard, notice: "Виноградник создан"
     else
       setup_new_form_data
@@ -74,7 +74,7 @@ class VineyardsController < ApplicationController
     bushes_per_row = calculate_layout(@vineyard) if layout_changed
 
     if (!layout_changed || bushes_per_row) && @vineyard.save
-      RegenerateRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row) if layout_changed
+      SyncRowsAndBushesJob.perform_later(@vineyard.id, bushes_per_row) if layout_changed
       redirect_to @vineyard, notice: "Виноградник обновлён"
     else
       setup_edit_form_data
