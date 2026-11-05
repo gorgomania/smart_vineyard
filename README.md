@@ -128,7 +128,7 @@ RSpec + FactoryBot + Shoulda Matchers + Faker, 487 examples, plus 180 JS tests:
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard), soft deletion of vineyards and deletion of folder trees
 - `spec/jobs/` — every background job: syncing rows and bushes with the layout, creating files from uploads, ZIP processing, filename normalization, bush distribution, previews, classification, folder page refresh, vineyard deletion, demo cloning and cleanup, blob purging, storage cleanup and its schedule
 - `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model), `VineyardLayout` (checked against the same reference layouts as its JS original, `spec/fixtures/files/vineyard_layouts.json`)
-- `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, unique element ids on the main pages, `/up`
+- `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, the check that every action calls `authorize`, unique element ids on the main pages, `/up`
 - `spec/initializers/` — ordered writes to Solid Cable (an advisory lock so concurrent broadcasts aren't lost)
 - `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, leaving the page during and after an upload, the vineyard → row → free bush cascade when attaching a photo, and focus and text selection in forms. Needs Chrome installed; `HEADLESS=false` shows the browser
 - `spec/javascript/` — unit tests for `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing, the upload MD5 checksum, and the rows and heatmap map layers against stubs of the browser and Yandex Maps), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
@@ -142,7 +142,8 @@ Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in p
 | Pool | Queues | Jobs | Processes × threads |
 |------|--------|------|---------------------|
 | heavy | `heavy` | ZIP extraction, AI classification, image and video previews | `JOB_CONCURRENCY` × 1 |
-| light | `default`, `low_priority` | attaching uploads, distribution to bushes, filename normalization, folder refresh broadcasts, row/bush generation, vineyard deletion, demo cloning and cleanup, storage cleanup | 1 × `JOB_THREADS` |
+| light | `default` | creating files from uploads, distribution to bushes, filename normalization, folder refresh broadcasts, syncing rows and bushes with the layout, vineyard deletion, demo cloning and cleanup | 1 × `JOB_THREADS` |
+| light | `low_priority` | blob purging, storage cleanup | shared with `default`, which is polled first |
 
 Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each: two ZIP archives are extracted on two cores at once. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
 
@@ -154,7 +155,7 @@ Upload jobs broadcast a Turbo refresh to the open folder page (`Folder#broadcast
 
 Recurring tasks (`config/recurring.yml`, production only):
 
-- `cleanup_orphaned_storage` — daily at 3:00, removes unattached blobs and attachments of deleted records (shared demo blobs and pending ZIP uploads are kept)
+- `cleanup_orphaned_storage` — daily at 3:00, removes unattached blobs and attachments of deleted records (blobs shared with demo copies and uploads younger than a day are kept)
 - `clear_solid_queue_finished_jobs` — hourly
 
 ## Demo Mode
