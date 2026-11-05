@@ -80,9 +80,9 @@ The Helm chart reads secrets from `smart-vineyard-secrets` in the `smart-vineyar
 
 | Secret key            | Env variable          | Required | Notes                                   |
 |-----------------------|-----------------------|----------|-----------------------------------------|
-| `db-name`             | `DB_NAME`             | yes      | also used by the Postgres StatefulSet   |
-| `db-user`             | `DB_USER`             | yes      |                                         |
-| `db-password`         | `DB_PASSWORD`         | yes      |                                         |
+| `db-name`             | `DB_NAME`             | yes      |                                         |
+| `db-user`             | `DB_USER`             | yes      | also used by the Postgres StatefulSet   |
+| `db-password`         | `DB_PASSWORD`         | yes      | also used by the Postgres StatefulSet   |
 | `secret-key-base`     | `SECRET_KEY_BASE`     | yes      |                                         |
 | `smtp-user-name`      | `SMTP_USER_NAME`      | yes      |                                         |
 | `smtp-password`       | `SMTP_PASSWORD`       | yes      |                                         |
@@ -160,7 +160,7 @@ Recurring tasks (`config/recurring.yml`, production only):
 
 ## Demo Mode
 
-When `DEMO_MASTER_EMAIL` is set and points to an existing user, the login page shows a "Demo account" button (`POST /demo_session`):
+When `DEMO_MASTER_EMAIL` is set, the login page shows a "Demo account" button (`POST /demo_session`). If no user has that email, the button only reports that the demo is unavailable. Otherwise:
 
 1. `DemoCloneService` creates a temporary confirmed user and copies the master's active vineyards, rows, bushes and folders.
 2. `CloneDemoMediaJob` copies media items; they share the master's files (no file copies). Renaming a file in the demo first gives it its own copy, so the master is never changed.
@@ -236,4 +236,4 @@ Links between the two trees (both optional and unique):
 - `Folder.vineyard_id` — at most one folder per vineyard; files in it are distributed to the vineyard's bushes by name
 - `MediaItem.bush_id` — at most one file per bush
 
-Distribution by name (`DistributeMediaToBushesJob`) runs for the whole folder when it is attached, reattached or detached and when bushes are regenerated, and for the new files after a ZIP upload. It touches only files named `Ряд N Куст M`: each one ends up on its bush, or unassigned if the bush doesn't exist in the current vineyard, the folder is detached, or the bush is already taken (by a manually assigned file or by an earlier file with the same name, e.g. `Ряд 1 Куст 1(2).jpg`). Files with other names keep their manual assignment, and their bushes are never taken away. The job works in a fixed number of queries regardless of folder size.
+Distribution by name (`DistributeMediaToBushesJob`) runs for the whole folder when it is attached, reattached or detached and when rows and bushes are synced with the layout, and for the new files after an upload. It touches only files named `Ряд N Куст M`: each one ends up on its bush, or unassigned if the bush doesn't exist in the current vineyard, the folder is detached, or the bush is already taken (by a manually assigned file or by an earlier file with the same name, e.g. `Ряд 1 Куст 1(2).jpg`). Files with other names keep their manual assignment, and their bushes are never taken away. The job works in a fixed number of queries regardless of folder size.
