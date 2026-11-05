@@ -1,5 +1,7 @@
 
 class ActiveStorage::BlobsController < ApplicationController
+  skip_after_action :verify_authorized # владельца проверяет сам: blob.metadata["user_id"]
+
   def destroy
     blob = ActiveStorage::Blob.find_signed(params[:id])
 

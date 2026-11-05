@@ -1,6 +1,9 @@
 class FoldersController < ApplicationController
   PER_PAGE = 24
 
+  # Поиск идёт через policy_scope, а в новой папке ещё нечего проверять: родителя проверит create
+  skip_after_action :verify_authorized, only: [ :index, :new ]
+
   def index
     if params[:folders]
       title_search_query = folder_params[:title]
@@ -153,6 +156,8 @@ class FoldersController < ApplicationController
     if params[:id].present?
       @folder = Folder.find(params[:id])
       authorize @folder
+    else
+      skip_authorization # страницы результатов поиска: папки нет
     end
 
     @search_query = params[:search_query]

@@ -4,6 +4,7 @@ class DemoSessionsController < ApplicationController
   RATE_LIMIT_STORE = ActiveSupport::Cache::MemoryStore.new
 
   skip_before_action :authenticate_user!
+  skip_after_action :verify_authorized # вход без учётной записи, проверять нечего
 
   # Каждый запрос создаёт пользователя и копию данных мастера — ограничиваем и по IP, и в целом
   rate_limit to: 10, within: 1.hour, store: RATE_LIMIT_STORE, name: "per_ip",

@@ -3,6 +3,9 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   before_action :authenticate_user!
+  # Забытый authorize — ошибка, а не молчаливый доступ. Действия без записи (списки своего, создание) отключают
+  # проверку сами через skip_after_action, а ветка с ранним выходом — через skip_authorization
+  after_action :verify_authorized, unless: :devise_controller?
   allow_browser versions: :modern
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
 

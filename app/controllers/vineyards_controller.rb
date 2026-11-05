@@ -5,6 +5,9 @@ class VineyardsController < ApplicationController
   MAX_VERTICES = 100
   RGEO_FACTORY = RGeo::Geographic.spherical_factory(srid: 4326)
 
+  # Только свои виноградники: через policy_scope и current_user.vineyards
+  skip_after_action :verify_authorized, only: [ :index, :new, :create, :total_stats, :select_stats ]
+
   def index
     @map_center, @map_zoom = initialize_map
     @mode = "index"
@@ -25,8 +28,7 @@ class VineyardsController < ApplicationController
   def show
     @map_center, @map_zoom = initialize_map
     @mode = "show"
-    @vineyard = policy_scope(Vineyard.active).find_by(id: params[:id])
-    return not_found if @vineyard.nil?
+    @vineyard = policy_scope(Vineyard.active).find(params[:id])
     authorize @vineyard
     # Диагнозы карта грузит сама с heatmap.json, когда подключится подписка на обновления
     @bushes_vision = params[:bushes_vision] == "true"

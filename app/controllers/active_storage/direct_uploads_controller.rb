@@ -8,6 +8,9 @@ class ActiveStorage::DirectUploadsController < ApplicationController
   # (uploadTimeoutSeconds в чарте, 1 час) с запасом на подсчёт checksum в браузере
   UPLOAD_URL_EXPIRES_IN = 2.hours
 
+  # Загружать может любой вошедший: чужого здесь нет, блоб привязывается к current_user
+  skip_after_action :verify_authorized
+
   # Те же ограничения, что в upload_controller.js, но на сервере: скрипт в обход формы иначе залил бы что угодно.
   # Обойти заявленный размер нельзя — сервис :local при загрузке сверяет Content-Length с byte_size
   MAX_BYTE_SIZE = 1.gigabyte

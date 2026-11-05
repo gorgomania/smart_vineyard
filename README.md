@@ -123,15 +123,15 @@ bundle exec rspec
 bin/test-js
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 485 examples, plus 180 JS tests:
+RSpec + FactoryBot + Shoulda Matchers + Faker, 487 examples, plus 180 JS tests:
 
-- `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard)
-- `spec/jobs/` — every background job: row/bush generation and regeneration, ZIP processing, bush distribution, previews, classification, demo cloning and cleanup, storage cleanup and its schedule
+- `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard), soft deletion of vineyards and deletion of folder trees
+- `spec/jobs/` — every background job: syncing rows and bushes with the layout, creating files from uploads, ZIP processing, filename normalization, bush distribution, previews, classification, folder page refresh, vineyard deletion, demo cloning and cleanup, blob purging, storage cleanup and its schedule
 - `spec/services/` — `DemoCloneService`, `GrapeClassifier` (runs the real ONNX model), `VineyardLayout` (checked against the same reference layouts as its JS original, `spec/fixtures/files/vineyard_layouts.json`)
 - `spec/requests/` — HTTP flows with authentication and authorization: vineyards, folders, media items, rows, registrations, demo sessions (incl. rate limiting), ActiveStorage overrides and owner-only file access, unique element ids on the main pages, `/up`
 - `spec/initializers/` — ordered writes to Solid Cable (an advisory lock so concurrent broadcasts aren't lost)
-- `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite, no chromedriver): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, leaving the page during and after an upload, the vineyard → row → free bush cascade when attaching a photo, and focus and text selection in forms. Needs Chrome installed; `HEADLESS=false` shows the browser
-- `spec/javascript/` — unit tests for the browser-free JS in `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing, the rows and heatmap map layers, the upload MD5 checksum), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
+- `spec/system/` — end-to-end flows in headless Chrome (Capybara + Cuprite): uploading a photo through DirectUpload until it appears in the open folder via Action Cable, leaving the page during and after an upload, the vineyard → row → free bush cascade when attaching a photo, and focus and text selection in forms. Needs Chrome installed; `HEADLESS=false` shows the browser
+- `spec/javascript/` — unit tests for `app/javascript/utils` (row layout, bush placement, geometry, WKT parsing, the upload MD5 checksum, and the rows and heatmap map layers against stubs of the browser and Yandex Maps), run by Node's built-in test runner: no npm, no `package.json`. Modules import each other by importmap names; `spec/javascript/support/register.mjs` resolves them for Node
 
 CI (`.github/workflows/ci.yml`) also runs Brakeman, `importmap audit` and RuboCop. To check the Helm chart locally: `helm lint chart`.
 
