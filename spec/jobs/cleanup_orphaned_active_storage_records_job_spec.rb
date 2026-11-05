@@ -21,7 +21,7 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
       }.to change(ActiveStorage::Blob, :count).by(-1)
     end
 
-    # Большая загрузка или забитая очередь: AttachMediaJob ещё не прикрепил файл, а ему уже больше часа
+    # Большая загрузка или забитая очередь: ProcessUploadsJob ещё не прикрепил файл, а ему уже больше часа
     it "keeps a recent upload that is still waiting to be attached" do
       blob = ActiveStorage::Blob.create_before_direct_upload!(
         filename: "late.jpg", byte_size: 100, checksum: "abc", content_type: "image/jpeg"

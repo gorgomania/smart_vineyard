@@ -1,7 +1,7 @@
 require "rails_helper"
 
 # Полный путь загрузки в браузере: Stimulus-контроллер upload грузит файл через DirectUpload, форма уходит
-# с signed id, AttachMediaJob создаёт файл, а открытая страница папки сама перерисовывается по refresh из кабеля
+# с signed id, ProcessUploadsJob создаёт файл, а открытая страница папки сама перерисовывается по refresh из кабеля
 RSpec.describe "Uploading photos", type: :system do
   let(:user)   { create(:user) }
   let(:folder) { create(:folder, user:, title: "Участок 1") }
@@ -21,7 +21,7 @@ RSpec.describe "Uploading photos", type: :system do
     expect(page).to have_no_content("pixel")
 
     # Задачу выполняем здесь, а не в фоне: страница уже открыта и узнает о файле только из кабеля
-    perform_enqueued_jobs(only: AttachMediaJob)
+    perform_enqueued_jobs(only: ProcessUploadsJob)
 
     expect(page).to have_content("pixel")
     expect(folder.media_items.count).to eq(1)
@@ -128,7 +128,7 @@ RSpec.describe "Uploading photos", type: :system do
     click_button "Загрузить"
 
     expect(page).to have_content("3 файла загружаются в фоне")
-    perform_enqueued_jobs(only: AttachMediaJob)
+    perform_enqueued_jobs(only: ProcessUploadsJob)
     expect(folder.media_items.joins(media_attachment: :blob).pluck("active_storage_blobs.filename"))
       .to match_array([ "Ряд 1 Куст 1.jpg", "Ряд 1 Куст 2.jpg", "Ряд 1 Куст 3.jpg" ])
   ensure

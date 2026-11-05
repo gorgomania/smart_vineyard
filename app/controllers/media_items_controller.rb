@@ -44,7 +44,7 @@ class MediaItemsController < ApplicationController
 
     # Обрабатываем обычные файлы если есть
     if blob_ids.present?
-      AttachMediaJob.perform_later(@folder, blob_ids)
+      ProcessUploadsJob.perform_later(@folder, blob_ids)
     end
 
     # Формируем сообщение

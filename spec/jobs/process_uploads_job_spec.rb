@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe AttachMediaJob, type: :job do
+RSpec.describe ProcessUploadsJob, type: :job do
   let(:user)   { create(:user) }
   let(:folder) { create(:folder, user:) }
 

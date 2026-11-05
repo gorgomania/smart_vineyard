@@ -1,4 +1,4 @@
-class AttachMediaJob < ApplicationJob
+class ProcessUploadsJob < ApplicationJob
   queue_as :default
   discard_on_deleted_arguments # папку удалили раньше, чем задача началась
 

@@ -1,7 +1,7 @@
 class CleanupOrphanedActiveStorageRecordsJob < ApplicationJob
   queue_as :low_priority
 
-  # Блоб без привязки удаляем не сразу: загруженный файл ждёт AttachMediaJob, архив — ProcessZipJob,
+  # Блоб без привязки удаляем не сразу: загруженный файл ждёт ProcessUploadsJob, архив — ProcessZipJob,
   # а большая загрузка и забитая очередь легко растягиваются за час (ссылка на загрузку живёт 2 часа).
   # Удалённый раньше файл пропал бы молча: find_signed вернёт nil, и задача его просто пропустит
   GRACE_PERIOD = 1.day
