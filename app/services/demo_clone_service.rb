@@ -22,7 +22,7 @@ class DemoCloneService
     end
     # Карта виноградников, а не кустов: новый куст задача найдёт сама по номеру ряда и куста
     # (сотни тысяч пар id в аргументах — мегабайты JSON в solid_queue)
-    CloneDemoMediaJob.perform_later(temp_user.id, @folder_map.stringify_keys, vineyard_map: @vineyard_map.stringify_keys)
+    CloneDemoDataJob.perform_later(temp_user.id, @folder_map.stringify_keys, vineyard_map: @vineyard_map.stringify_keys)
     temp_user
   end
 
@@ -38,9 +38,8 @@ class DemoCloneService
     )
   end
 
-  # Виноградников единицы — копируем моделями. Ряды и кусты (на 50 га это сотни тысяч) копирует сама база
-  # двумя INSERT … SELECT: через Ruby (объекты ActiveRecord + insert_all!) клон мастера на 183 тыс. кустов
-  # занимал больше 30 с, и всё это время пользователь ждал ответа на кнопку «Демо-аккаунт»
+  # Виноградников единицы — копируем моделями. Ряды, кусты и файлы (на 50 га это сотни тысяч записей) копирует
+  # CloneDemoDataJob: здесь пользователь ждёт ответа на кнопку
   def clone_vineyards(user)
     # Удалённые мастером (soft delete) не копируем: папки и медиа на них в демо просто останутся без привязки
     @master.vineyards.active.find_each do |vineyard|
@@ -49,29 +48,6 @@ class DemoCloneService
       new_vineyard.save!(validate: false)
       @vineyard_map[vineyard.id] = new_vineyard.id
     end
-    return if @vineyard_map.empty?
-
-    # m — таблица «старый виноградник → новый» из двух массивов id (параметры, без интерполяции в SQL)
-    ids = [ @vineyard_map.keys, @vineyard_map.values ]
-    execute_sql(<<~SQL, *ids)
-      INSERT INTO rows (vineyard_id, row_number, created_at, updated_at)
-      SELECT m.new_id, r.row_number, now(), now()
-      FROM rows r
-      JOIN unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS m(old_id, new_id) ON m.old_id = r.vineyard_id
-    SQL
-    # Новый ряд — по винограднику и номеру (уникальны вместе), куст переносит свой номер
-    execute_sql(<<~SQL, *ids)
-      INSERT INTO bushes (row_id, vineyard_id, bush_number, created_at, updated_at)
-      SELECT nr.id, m.new_id, b.bush_number, now(), now()
-      FROM bushes b
-      JOIN rows r ON r.id = b.row_id
-      JOIN unnest(ARRAY[?]::bigint[], ARRAY[?]::bigint[]) AS m(old_id, new_id) ON m.old_id = r.vineyard_id
-      JOIN rows nr ON nr.vineyard_id = m.new_id AND nr.row_number = r.row_number
-    SQL
-  end
-
-  def execute_sql(sql, *binds)
-    ActiveRecord::Base.connection.execute(ActiveRecord::Base.sanitize_sql_array([ sql, *binds ]))
   end
 
   def clone_folders(user)

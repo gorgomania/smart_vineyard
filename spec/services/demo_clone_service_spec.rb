@@ -24,13 +24,16 @@ RSpec.describe DemoCloneService do
       expect(demo.demo_expires_at).to be > 23.hours.from_now
     end
 
-    it "copies active vineyards with their rows and bushes" do
+    it "copies active vineyards, leaving their rows and bushes to the job" do
       setup_vineyard("Живой")
       demo = clone
 
       vineyard = demo.vineyards.sole
       expect(vineyard.name).to eq("Живой")
       expect(vineyard.deleted_at).to be_nil
+      expect(vineyard.rows).to be_empty
+
+      perform_enqueued_jobs(only: CloneDemoDataJob)
       expect(vineyard.rows.count).to eq(1)
       expect(vineyard.bushes.count).to eq(1)
     end
@@ -60,6 +63,7 @@ RSpec.describe DemoCloneService do
       layout = ->(vineyard) { vineyard.bushes.joins(:row).order("rows.row_number", :bush_number).pluck("rows.row_number", :bush_number) }
 
       demo = clone
+      perform_enqueued_jobs(only: CloneDemoDataJob)
 
       expect(layout.(demo.vineyards.find_by!(name: "Большой"))).to eq(layout.(big))
       expect(layout.(demo.vineyards.find_by!(name: "Малый"))).to eq(layout.(small))
@@ -67,11 +71,11 @@ RSpec.describe DemoCloneService do
         .to all(satisfy { |row_id, vineyard_id| Row.find(row_id).vineyard_id == vineyard_id })
     end
 
-    it "enqueues CloneDemoMediaJob with the vineyard map, not a map of every bush" do
+    it "enqueues CloneDemoDataJob with the vineyard map, not a map of every bush" do
       vineyard = setup_vineyard("Живой")
       demo = clone
 
-      expect(CloneDemoMediaJob).to have_been_enqueued.with(
+      expect(CloneDemoDataJob).to have_been_enqueued.with(
         demo.id, {}, vineyard_map: { vineyard.id.to_s => demo.vineyards.sole.id }
       )
     end
@@ -83,7 +87,7 @@ RSpec.describe DemoCloneService do
       create(:media_item, :with_image, folder:, bush: vineyard.bushes.sole)
 
       demo = clone
-      perform_enqueued_jobs(only: CloneDemoMediaJob)
+      perform_enqueued_jobs(only: CloneDemoDataJob)
 
       copy = MediaItem.joins(:folder).where(folders: { user_id: demo.id }).sole
       expect(copy.bush).to eq(demo.vineyards.sole.bushes.sole)
