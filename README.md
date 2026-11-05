@@ -141,9 +141,9 @@ Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in p
 
 | Pool | Queues | Jobs | Processes × threads |
 |------|--------|------|---------------------|
-| heavy | `heavy` | ZIP extraction, AI classification, image and video previews | `JOB_CONCURRENCY` × 1 |
-| light | `default` | creating files from uploads, distribution to bushes, filename normalization, folder refresh broadcasts, syncing rows and bushes with the layout, vineyard deletion, demo cloning and cleanup | 1 × `JOB_THREADS` |
-| light | `low_priority` | blob purging, storage cleanup | shared with `default`, which is polled first |
+| heavy | `heavy` | in priority order: ZIP extraction, AI classification, image and video previews | `JOB_CONCURRENCY` × 1 |
+| light | `default` | creating files from uploads, distribution to bushes, filename normalization, folder refresh broadcasts, syncing rows and bushes with the layout, demo cloning | 1 × `JOB_THREADS` |
+| light | `low_priority` | work nobody waits for: blob purging, storage cleanup, demo user cleanup, vineyard deletion | shared with `default`, which is polled first |
 
 Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each: two ZIP archives are extracted on two cores at once. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
 
