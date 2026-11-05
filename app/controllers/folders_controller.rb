@@ -121,7 +121,7 @@ class FoldersController < ApplicationController
 
     if folder.update(title: folder_params[:title])
       if search_query.blank?
-        redirect_to folder_path(folder.parent_id, page: page), notice: "Имя папки успешно изменено"
+        redirect_to folder_path(folder.parent_id || folder, page: page), notice: "Имя папки успешно изменено"
       else
         redirect_to folders_path(page: page, folders: { title: search_query }), notice: "Имя папки успешно изменено"
       end

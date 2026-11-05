@@ -123,6 +123,16 @@ RSpec.describe "Folders", type: :request do
       expect { get folders_path }.to change { user.folders.where(parent_id: nil).count }.from(0).to(1)
     end
 
+    # Родителя нет: возвращаемся в сам корень
+    it "can be renamed" do
+      root = create(:folder, user:, title: "Root")
+
+      patch folder_path(root), params: { folders: { title: "Новый" } }
+
+      expect(root.reload.title).to eq("Новый")
+      expect(response).to redirect_to(folder_path(root))
+    end
+
     it "has no delete button in search results, unlike nested folders" do
       root = create(:folder, user:, title: "Root")
       child = create(:folder, user:, title: "Rootstock", parent: root)
