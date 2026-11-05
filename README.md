@@ -123,7 +123,7 @@ bundle exec rspec
 bin/test-js
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 487 examples, plus 180 JS tests:
+RSpec + FactoryBot + Shoulda Matchers + Faker, 490 examples, plus 180 JS tests:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard), soft deletion of vineyards and deletion of folder trees
 - `spec/jobs/` — every background job: syncing rows and bushes with the layout, creating files from uploads, ZIP processing, filename normalization, bush distribution, previews, classification, folder page refresh, vineyard deletion, demo cloning and cleanup, blob purging, storage cleanup and its schedule
@@ -145,7 +145,7 @@ Solid Queue runs as a separate process (`bin/jobs`; the `worker` deployment in p
 | light | `default` | creating files from uploads, distribution to bushes, filename normalization, folder refresh broadcasts, syncing rows and bushes with the layout, demo cloning | 1 × `JOB_THREADS` |
 | light | `low_priority` | work nobody waits for: blob purging, storage cleanup, demo user cleanup, vineyard deletion | shared with `default`, which is polled first |
 
-Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each: two ZIP archives are extracted on two cores at once. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
+Heavy jobs are CPU-bound (libvips, ONNX Runtime, FFmpeg), and threads of one Ruby process don't run them in parallel (GVL), so they get one process each. A worker claims as many jobs as it has free threads, so a single thread also spreads heavy jobs evenly across processes. Light jobs mostly wait for the database, so threads suit them, and their own process keeps them from queuing behind long heavy jobs.
 
 Within a queue, jobs run by priority (`ApplicationJob`): ZIP extraction and bush binding first, then classification, then previews and filename normalization. Classification started manually with the "Анализ" button jumps ahead of bulk classification. If a thumbnail isn't ready yet when a folder is opened, the web server generates it on the fly.
 
@@ -162,8 +162,8 @@ Recurring tasks (`config/recurring.yml`, production only):
 
 When `DEMO_MASTER_EMAIL` is set, the login page shows a "Demo account" button (`POST /demo_session`). If no user has that email, the button only reports that the demo is unavailable. Otherwise:
 
-1. `DemoCloneService` creates a temporary confirmed user and copies the master's active vineyards, rows, bushes and folders.
-2. `CloneDemoMediaJob` copies media items; they share the master's files (no file copies). Renaming a file in the demo first gives it its own copy, so the master is never changed.
+1. `DemoCloneService` creates a temporary confirmed user and copies the master's active vineyards and folders, so the sign-in is instant.
+2. `CloneDemoDataJob` copies rows, bushes and media items in the database and refreshes the open pages. Media items share the master's files (no file copies). Renaming a file in the demo first gives it its own copy, so the master is never changed.
 3. `CleanupDemoUserJob` deletes the demo user after 24 hours; shared files stay with the master.
 
 Demo creation is rate limited: 10 per hour per IP and 100 per hour overall.
