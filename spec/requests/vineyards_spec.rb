@@ -106,7 +106,7 @@ RSpec.describe "Vineyards", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "rejects a plot over 10 ha, measured on the server" do
+      it "rejects a plot over the area limit, measured on the server" do
         huge = [ [ 44.59, 33.47 ], [ 44.59, 33.48 ], [ 44.60, 33.48 ], [ 44.60, 33.47 ] ] # ~87 га
         params = valid_params.deep_merge(vineyard: vertex_params(huge).merge(area_hectares: 1))
         expect { post vineyards_path, params: }.not_to change(Vineyard, :count)
@@ -288,7 +288,8 @@ RSpec.describe "Vineyards", type: :request do
     it "denies another user" do
       sign_in other_user
       get heatmap_vineyard_path(vineyard, format: :json)
-      expect(response).not_to have_http_status(:ok)
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body).to eq("error" => "В доступе отказано")
     end
   end
 

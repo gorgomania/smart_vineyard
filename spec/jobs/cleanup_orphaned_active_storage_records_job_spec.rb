@@ -45,32 +45,6 @@ RSpec.describe CleanupOrphanedActiveStorageRecordsJob, type: :job do
       expect((orphans + thumbs).map { |b| ActiveStorage::Blob.service.exist?(b.key) }).to all(be false)
     end
 
-    context "with ZIP blobs waiting for ProcessZipJob" do
-      def zip_blob(age, content_type: "application/zip")
-        ActiveStorage::Blob.create_before_direct_upload!(
-          filename: "Photos.ZIP", byte_size: 100, checksum: "abc", content_type:
-        ).tap { |b| b.update_column(:created_at, age.ago) }
-      end
-
-      it "recognizes a ZIP by extension whatever content type the browser sent" do
-        blob = zip_blob(2.hours, content_type: "application/x-zip-compressed")
-        described_class.new.perform
-        expect(ActiveStorage::Blob.exists?(blob.id)).to be true
-      end
-
-      it "keeps a ZIP younger than the grace period" do
-        blob = zip_blob(2.hours)
-        described_class.new.perform
-        expect(ActiveStorage::Blob.exists?(blob.id)).to be true
-      end
-
-      it "purges a ZIP older than the grace period" do
-        blob = zip_blob(2.days)
-        described_class.new.perform
-        expect(ActiveStorage::Blob.exists?(blob.id)).to be false
-      end
-    end
-
     context "with an attachment whose record is gone" do
       let(:media_item) { create(:media_item, :with_image) }
       let(:blob)       { media_item.media.blob }

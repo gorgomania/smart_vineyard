@@ -1,8 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Folder, ".delete_trees!" do
-  include ActiveJob::TestHelper
-
   let(:user)  { create(:user) }
   let(:root)  { create(:folder, user:, title: "Root") }
   let(:child) { create(:folder, user:, parent: root, title: "Child") }
@@ -46,7 +44,7 @@ RSpec.describe Folder, ".delete_trees!" do
 
     expect { root.delete_tree! }.to have_enqueued_job(PurgeUnattachedBlobsJob).with([ blob.id ])
 
-    perform_enqueued_jobs { perform_enqueued_jobs } # purge ставит PurgeJob для блоба превью
+    perform_enqueued_jobs
     expect(ActiveStorage::Blob.where(id: [ blob.id, *variant_blob_ids ])).to be_empty
     expect(ActiveStorage::Blob.service.exist?(blob.key)).to be false
   end

@@ -174,6 +174,11 @@ RSpec.describe "MediaItems", type: :request do
         delete media_item_path(media_item)
         expect(response).to redirect_to(folders_path)
       end
+
+      it "does not delete the file" do
+        media_item
+        expect { delete media_item_path(media_item) }.not_to change(MediaItem, :count)
+      end
     end
   end
 

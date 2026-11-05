@@ -115,6 +115,14 @@ RSpec.describe ProcessZipJob, type: :job do
 
       expect(folder.media_items.sole.media.blob.filename.to_s).to eq("Ряд 2 Куст 3.jpg")
     end
+
+    it "generates a preview for a video and does not classify it" do
+      described_class.new.perform(folder, create_zip_blob("clip.mp4" => "fake"))
+
+      expect(GenerateVideoPreviewJob).to have_been_enqueued.with(folder.media_items.sole.id)
+      expect(ClassifyMediaJob).not_to have_been_enqueued
+      expect(GenerateImagePreviewJob).not_to have_been_enqueued
+    end
   end
 
   describe "limits" do
@@ -141,6 +149,24 @@ RSpec.describe ProcessZipJob, type: :job do
       stub_const("#{described_class}::CHUNK_SIZE", 1.kilobyte)
       stub_const("#{described_class}::MAX_ENTRY_SIZE", 2.kilobytes)
       expect_rejected(zip_blob)
+    end
+
+    # Заголовки подделаны, поэтому предел срабатывает только на второй записи, когда первая уже сохранена
+    context "when a later entry breaks a limit" do
+      before do
+        allow_any_instance_of(Zip::Entry).to receive(:size).and_return(1)
+        stub_const("#{described_class}::CHUNK_SIZE", 1.kilobyte)
+      end
+
+      it "removes the files already extracted when the entry is too big" do
+        stub_const("#{described_class}::MAX_ENTRY_SIZE", 2.kilobytes)
+        expect_rejected(create_zip_blob("a.jpg" => "a" * 1.kilobyte, "b.jpg" => "b" * 4.kilobytes))
+      end
+
+      it "removes the files already extracted when the total is too big" do
+        stub_const("#{described_class}::MAX_TOTAL_SIZE", 3.kilobytes)
+        expect_rejected(create_zip_blob("a.jpg" => "a" * 2.kilobytes, "b.jpg" => "b" * 2.kilobytes))
+      end
     end
 
     it "is discarded when the folder was deleted before it started" do

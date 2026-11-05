@@ -42,8 +42,8 @@ RSpec.describe "ActiveStorage file access", type: :request do
     end
 
     it "returns 404 for a variant without processing it" do
-      # Поддельный JPEG из фабрики vips обработать не может: дойди дело до генерации превью, был бы Vips::Error
-      get rails_representation_path(blob.variant(resize_to_limit: [ 132, 88 ]))
+      variant = blob.variant(resize_to_limit: [ 132, 88 ])
+      expect { get rails_representation_path(variant) }.not_to change(ActiveStorage::VariantRecord, :count)
       expect(response).to have_http_status(:not_found)
     end
 

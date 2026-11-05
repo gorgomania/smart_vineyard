@@ -147,9 +147,7 @@ RSpec.describe "Uploading photos", type: :system do
 
     attach_file "fileInput", big, make_visible: true
     expect(page).to have_css("#preview-container div", text: /\AЗагрузка\s+\d+%\z/) # проверен, идёт загрузка
-    # Считаем вопросы: «Назад» без истории — переход по ссылке, его видит и turbo:before-visit.
-    # Turbo не перезагружает страницу, так что счётчик доживает до проверки
-    execute_script("window.confirms = []; window.confirm = (message) => { window.confirms.push(message); return true }")
+    record_confirms(answer: true) # «Назад» без истории — переход по ссылке, его видит и turbo:before-visit
     click_link "Назад"
     expect(page).to have_current_path(folder_path(folder))
     expect(evaluate_script("window.confirms")).to eq([ "Уйти со страницы и прервать загрузку?" ])
@@ -168,8 +166,7 @@ RSpec.describe "Uploading photos", type: :system do
   # Файл пропал с диска, пока ждал проверки: пользователю — понятная причина, а не текст браузера,
   # и блок ошибки растёт под текст, а не обрезает его
   it "explains in plain words when a file can no longer be read" do
-    big = Rails.root.join("tmp", "big_upload.zip")
-    File.open(big, "wb") { |f| 64.times { f.write(Random.bytes(1.megabyte)) } }
+    big = big_file
     gone = Rails.root.join("tmp", "Ряд 9 Куст 9.jpg").tap { |path| FileUtils.cp(Rails.root.join("spec/fixtures/files/pixel.jpg"), path) }
 
     visit new_media_item_path(folder_id: folder.id)

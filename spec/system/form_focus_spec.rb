@@ -12,12 +12,19 @@ RSpec.describe "Form focus", type: :system do
   # Форма, куда уйдёт поле в фокусе, и выделенный в нём текст. По форме, а не по name: у поиска в шапке
   # тоже folders[title]
   def focused_selection
-    evaluate_script("(() => { const el = document.activeElement; return [ el.form?.getAttribute('action'), el.value.slice(el.selectionStart, el.selectionEnd) ] })()")
+    evaluate_script("(() => { const el = document.activeElement; return [ el.form?.getAttribute('action'), (el.value ?? '').slice(el.selectionStart, el.selectionEnd) ] })()")
+  end
+
+  # С ожиданием: при переходе Turbo URL меняется раньше DOM, а текст выделяет контроллер уже после вставки страницы
+  def expect_selection(text, form: anything)
+    page.document.synchronize(errors: [ RSpec::Expectations::ExpectationNotMetError ]) do
+      expect(focused_selection).to match([ form, text ])
+    end
   end
 
   it "selects the folder name on a full page load" do
     visit edit_folder_path(child)
-    expect(focused_selection).to eq([ folder_path(child), "Ряды 1–10" ])
+    expect_selection("Ряды 1–10", form: folder_path(child))
   end
 
   # Переход Turbo без перезагрузки: фокус по autofocus ставит Turbo, а не браузер
@@ -25,13 +32,13 @@ RSpec.describe "Form focus", type: :system do
     visit folder_path(parent)
     find_link(title: "Переименовать").click
     expect(page).to have_current_path(edit_folder_path(child), ignore_query: true)
-    expect(focused_selection).to eq([ folder_path(child), "Ряды 1–10" ])
+    expect_selection("Ряды 1–10", form: folder_path(child))
   end
 
   it "selects the file name without the extension" do
     item = create(:media_item, :with_named_image, folder: parent, image_filename: "Ряд 1 Куст 2.jpg")
     visit edit_media_item_path(item)
-    expect(focused_selection).to eq([ media_item_path(item), "Ряд 1 Куст 2" ])
+    expect_selection("Ряд 1 Куст 2", form: media_item_path(item))
   end
 
   # Поиск — как адресная строка: в поле прошлый запрос, первый клик выделяет его целиком, второй ставит курсор.
@@ -41,21 +48,21 @@ RSpec.describe "Form focus", type: :system do
     search = find("#folders_title")
 
     search.click
-    expect(focused_selection.last).to eq("Участок")
+    expect_selection("Участок")
     search.click
-    expect(focused_selection.last).to eq("")
+    expect_selection("")
 
     find("body").click(x: 5, y: 5)
     search.click
-    expect(focused_selection.last).to eq("Участок")
+    expect_selection("Участок")
   end
 
   # На переименовании выделяет только autofocus: дальше клик ставит курсор, чтобы поправить имя
   it "places the caret on a click into the rename field after the initial selection" do
     visit edit_folder_path(child)
-    expect(focused_selection.last).to eq("Ряды 1–10")
+    expect_selection("Ряды 1–10")
     find_field("Название").click
-    expect(focused_selection.last).to eq("")
+    expect_selection("")
   end
 
   # При редактировании обычно правят границы на карте: клавиатура телефона не должна выезжать поверх неё
