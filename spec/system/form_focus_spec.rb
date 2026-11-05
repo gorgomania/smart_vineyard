@@ -15,10 +15,13 @@ RSpec.describe "Form focus", type: :system do
     evaluate_script("(() => { const el = document.activeElement; return [ el.form?.getAttribute('action'), (el.value ?? '').slice(el.selectionStart, el.selectionEnd) ] })()")
   end
 
-  # С ожиданием: при переходе Turbo URL меняется раньше DOM, а текст выделяет контроллер уже после вставки страницы
+  # С ожиданием: при переходе Turbo URL меняется раньше DOM, а текст выделяет контроллер уже после загрузки модулей.
+  # Не expect внутри блока: ExpectationNotMetError — наследник Exception, а synchronize повторяет только на
+  # StandardError, и проверка выполнилась бы один раз
   def expect_selection(text, form: anything)
-    page.document.synchronize(errors: [ RSpec::Expectations::ExpectationNotMetError ]) do
-      expect(focused_selection).to match([ form, text ])
+    matcher = match([ form, text ])
+    page.document.synchronize do
+      raise Capybara::ExpectationNotMet, matcher.failure_message unless matcher.matches?(focused_selection)
     end
   end
 
