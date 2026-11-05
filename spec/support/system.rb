@@ -2,7 +2,8 @@ require "capybara/cuprite"
 
 # System-тесты гоняют настоящий headless Chrome через протокол DevTools (Cuprite/Ferrum), без chromedriver.
 # Видимое окно для отладки: HEADLESS=false bundle exec rspec spec/system
-Capybara.register_driver(:cuprite) do |app|
+# Своё имя драйвера: :cuprite Rails в driven_by регистрирует заново, и все настройки ниже молча терялись
+Capybara.register_driver(:chrome_cuprite) do |app|
   Capybara::Cuprite::Driver.new(
     app,
     window_size: [ 1280, 900 ],
@@ -21,7 +22,7 @@ Capybara.server = :puma, { Silent: true }
 Capybara.default_max_wait_time = 5
 
 RSpec.configure do |config|
-  config.before(:each, type: :system) { driven_by :cuprite }
+  config.before(:each, type: :system) { driven_by :chrome_cuprite }
 
   # sign_in через Warden: сервер Capybara работает в том же процессе
   config.include Devise::Test::IntegrationHelpers, type: :system
