@@ -123,7 +123,7 @@ bundle exec rspec
 bin/test-js
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 490 examples, plus 180 JS tests:
+RSpec + FactoryBot + Shoulda Matchers + Faker, 491 examples, plus 180 JS tests:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard), soft deletion of vineyards and deletion of folder trees
 - `spec/jobs/` — every background job: syncing rows and bushes with the layout, creating files from uploads, ZIP processing, filename normalization, bush distribution, previews, classification, folder page refresh, vineyard deletion, demo cloning and cleanup, blob purging, storage cleanup and its schedule
@@ -236,4 +236,4 @@ Links between the two trees (both optional and unique):
 - `Folder.vineyard_id` — at most one folder per vineyard; files in it are distributed to the vineyard's bushes by name
 - `MediaItem.bush_id` — at most one file per bush
 
-Distribution by name (`DistributeMediaToBushesJob`) runs for the whole folder when it is attached, reattached or detached and when rows and bushes are synced with the layout, and for the new files after an upload. It touches only files named `Ряд N Куст M`: each one ends up on its bush, or unassigned if the bush doesn't exist in the current vineyard, the folder is detached, or the bush is already taken (by a manually assigned file or by an earlier file with the same name, e.g. `Ряд 1 Куст 1(2).jpg`). Files with other names keep their manual assignment, and their bushes are never taken away. The job works in a fixed number of queries regardless of folder size.
+Distribution by name (`DistributeMediaToBushesJob`) runs for the whole folder when it is attached, reattached or detached and when rows and bushes are synced with the layout, and for the new files after an upload. It touches only files named `Ряд N Куст M`: each one ends up on its bush, or unassigned if the bush doesn't exist in the current vineyard, the folder is detached, or the bush is already taken (by a manually assigned file or by an earlier file with the same name, e.g. `Ряд 1 Куст 1(2).jpg`). Files with other names keep their manual assignment, and their bushes are never taken away. The job works in bulk: a few queries plus one `UPDATE` per 1,000 changed files.
