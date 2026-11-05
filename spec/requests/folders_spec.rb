@@ -289,6 +289,25 @@ RSpec.describe "Folders", type: :request do
       }.to have_enqueued_job(DistributeMediaToBushesJob)
       expect(folder.reload.vineyard_id).to eq(vineyard.id)
     end
+
+    it "does not attach the folder to another user's vineyard" do
+      foreign = create(:vineyard, user: other_user)
+      expect {
+        post attach_to_vineyard_folder_path(folder), params: { vineyard_id: foreign.id }
+      }.not_to have_enqueued_job(DistributeMediaToBushesJob)
+      expect(response).to redirect_to(folders_path)
+      expect(folder.reload.vineyard_id).to be_nil
+    end
+
+    it "does not attach another user's folder" do
+      vineyard = create(:vineyard, user:)
+      foreign = create(:folder, user: other_user)
+      expect {
+        post attach_to_vineyard_folder_path(foreign), params: { vineyard_id: vineyard.id }
+      }.not_to have_enqueued_job(DistributeMediaToBushesJob)
+      expect(response).to redirect_to(folders_path)
+      expect(foreign.reload.vineyard_id).to be_nil
+    end
   end
 
   describe "DELETE /folders/:id/detach_from_vineyard" do

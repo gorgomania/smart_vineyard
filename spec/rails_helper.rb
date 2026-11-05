@@ -54,6 +54,11 @@ RSpec.configure do |config|
   # instead of true.
   config.use_transactional_fixtures = true
 
+  # Транзакция откатывает записи в БД, но не файлы: без этого tmp/storage растёт с каждым прогоном
+  config.after(:suite) do
+    FileUtils.rm_rf(Dir.glob(File.join(ActiveStorage::Blob.services.fetch(:test).root, "*")))
+  end
+
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 

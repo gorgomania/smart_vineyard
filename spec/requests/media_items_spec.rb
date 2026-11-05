@@ -200,6 +200,23 @@ RSpec.describe "MediaItems", type: :request do
       expect(media_item.reload.bush_id).to eq(bush.id)
       expect(response).to redirect_to(media_item_path(media_item))
     end
+
+    it "does not attach the file to another user's bush" do
+      foreign_row  = create(:row, vineyard: create(:vineyard, user: other_user), row_number: 1)
+      foreign_bush = create(:bush, vineyard: foreign_row.vineyard, row: foreign_row, bush_number: 1)
+
+      post attach_to_bush_media_item_path(media_item), params: { bush_id: foreign_bush.id }
+      expect(response).to redirect_to(folders_path)
+      expect(media_item.reload.bush_id).to be_nil
+    end
+
+    it "does not attach another user's file" do
+      foreign = create(:media_item, :with_image, folder: create(:folder, user: other_user))
+
+      post attach_to_bush_media_item_path(foreign), params: { bush_id: bush.id }
+      expect(response).to redirect_to(folders_path)
+      expect(foreign.reload.bush_id).to be_nil
+    end
   end
 
   describe "GET /media_items/:id/attach" do
