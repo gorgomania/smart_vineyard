@@ -31,13 +31,13 @@ A web application for vineyard management with AI-based vine health classificati
 
 ## Stack
 
-- **Ruby on Rails 8.1**, Ruby 3.3.12, PostgreSQL 16 + PostGIS
+- **Ruby on Rails 8.1**, **Ruby 3.3.12**, **PostgreSQL 16** + **PostGIS**
 - **Devise** — authentication (with email confirmation), **Pundit** — authorization
-- **Solid Queue** — background jobs, **Solid Cable** — Action Cable over PostgreSQL (no Redis)
+- **Solid Queue** — background jobs, **Solid Cable** — Action Cable over PostgreSQL
 - **ActiveStorage** — media storage on local disk (a persistent volume in production)
 - **ONNX Runtime** + **libvips** — AI inference and image processing, **FFmpeg** — video previews
-- **Hotwire** (Turbo + Stimulus), importmap, TailwindCSS 4, Chart.js
-- Deployment: Docker image (arm64) + Helm chart on k3s, GitHub Actions CI/CD
+- **Hotwire** (Turbo + Stimulus) + importmap — frontend with no JS bundler, **Tailwind CSS 4** — styling, **Chart.js** — statistics charts
+- **Docker** (arm64 image) + **Helm** chart on k3s — deployment, **GitHub Actions** — CI/CD
 
 ## Requirements
 
@@ -50,7 +50,7 @@ A web application for vineyard management with AI-based vine health classificati
 
 ### Development: `.env`
 
-Settings are read from environment variables; in development they are loaded from `.env` in the project root by `dotenv-rails` (the file is git-ignored):
+Settings are read from environment variables; in development and test they are loaded from `.env` in the project root by `dotenv-rails` (the file is git-ignored):
 
 ```dotenv
 # Database (database names are fixed in config/database.yml)
@@ -62,12 +62,16 @@ DB_PORT=5432
 # Yandex Maps JavaScript API key — required for the map
 YANDEX_MAPS_API_KEY=
 
-# SMTP for Devise emails (Yandex by default)
+# SMTP for Devise emails: Yandex by default, another server is set with the optional
+# SMTP_ADDRESS, SMTP_PORT etc. (see the Production table below)
 SMTP_USER_NAME=
 SMTP_PASSWORD=
 
 # Optional: email of the account cloned into demo users; the demo button is hidden if empty
 DEMO_MASTER_EMAIL=
+
+# Optional: heavy-job worker processes (see Setup and Background Jobs), 1 by default
+JOB_CONCURRENCY=1
 ```
 
 ### Production: Kubernetes secret
