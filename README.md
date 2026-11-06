@@ -123,7 +123,7 @@ bundle exec rspec
 bin/test-js
 ```
 
-RSpec + FactoryBot + Shoulda Matchers + Faker, 491 examples, plus 180 JS tests:
+RSpec + FactoryBot + Shoulda Matchers, 491 examples, plus 180 JS tests:
 
 - `spec/models/` — validations, associations and model methods, including database-level uniqueness (one file per bush, one folder per vineyard), soft deletion of vineyards and deletion of folder trees
 - `spec/jobs/` — every background job: syncing rows and bushes with the layout, creating files from uploads, ZIP processing, filename normalization, bush distribution, previews, classification, folder page refresh, vineyard deletion, demo cloning and cleanup, blob purging, storage cleanup and its schedule
